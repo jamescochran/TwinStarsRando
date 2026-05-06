@@ -1,0 +1,1742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Twin Stars Randomizer</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#07091a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Twin Stars">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-deep:      #07091a;
+      --bg-panel:     #0e1228;
+      --bg-card:      #131830;
+      --border:       #1e2d55;
+      --border-glow:  #2a4a8a;
+      --accent-orange:#ff6b35;
+      --accent-teal:  #00d4aa;
+      --accent-yellow:#f0b429;
+      --text-primary: #e8eaf6;
+      --text-muted:   #7a88b0;
+      --text-dim:     #3e4f78;
+      --loss-color:   #ff4455;
+    }
+
+    /* Light mode overrides — same space-computer feel, brighter environment */
+    [data-theme="light"] {
+      --bg-deep:      #f0f2fb;
+      --bg-panel:     #e4e8f8;
+      --bg-card:      #dce0f4;
+      --border:       #b8c4e0;
+      --border-glow:  #7890cc;
+      --accent-teal:   #008f74;
+      --accent-yellow: #b07d00;
+      --text-primary: #0b0f28;
+      --text-muted:   #2a3868;
+      --text-dim:     #7888b8;
+      --loss-color:   #c8001e;
+    }
+    /* Hide the dark starfield background in light mode */
+    [data-theme="light"] body::before { display: none; }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--bg-deep);
+      color: var(--text-primary);
+      font-family: 'Exo 2', sans-serif;
+      font-size: 15px;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        radial-gradient(1px 1px at 10% 20%, rgba(255,255,255,0.5) 0%, transparent 100%),
+        radial-gradient(1px 1px at 30% 55%, rgba(255,255,255,0.3) 0%, transparent 100%),
+        radial-gradient(1px 1px at 55% 10%, rgba(255,255,255,0.4) 0%, transparent 100%),
+        radial-gradient(1px 1px at 70% 75%, rgba(255,255,255,0.3) 0%, transparent 100%),
+        radial-gradient(1px 1px at 85% 35%, rgba(255,255,255,0.5) 0%, transparent 100%),
+        radial-gradient(1.5px 1.5px at 20% 85%, rgba(200,210,255,0.4) 0%, transparent 100%),
+        radial-gradient(1.5px 1.5px at 60% 45%, rgba(200,210,255,0.3) 0%, transparent 100%),
+        radial-gradient(1px 1px at 92% 60%, rgba(255,255,255,0.4) 0%, transparent 100%),
+        radial-gradient(1px 1px at 45% 90%, rgba(255,255,255,0.2) 0%, transparent 100%),
+        radial-gradient(1px 1px at 5%  50%, rgba(255,255,255,0.3) 0%, transparent 100%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .app-shell {
+      position: relative;
+      z-index: 1;
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 28px 16px 60px;
+    }
+
+    /* Header */
+    .app-header { text-align: center; margin-bottom: 32px; padding-top: 44px; position: relative; }
+    .app-header .author-label {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 10px;
+      font-weight: 400;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--text-primary);
+      margin-bottom: 6px;
+      opacity: 0.7;
+    }
+    .app-header h1 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: clamp(28px, 8vw, 48px);
+      font-weight: 900;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      line-height: 1.1;
+      color: var(--text-primary);
+    }
+    .app-header h1 .sub {
+      font-size: clamp(12px, 3vw, 18px);
+      font-weight: 400;
+      letter-spacing: 6px;
+      color: var(--accent-teal);
+    }
+    .header-rule {
+      width: 80px; height: 2px;
+      background: linear-gradient(90deg, var(--accent-orange), var(--accent-teal));
+      margin: 14px auto 0;
+      border-radius: 2px;
+    }
+
+    /* Tabs */
+    .tab-nav {
+      display: flex;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 24px;
+      background: var(--bg-panel);
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 13px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-family: 'Orbitron', sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.2s;
+      -webkit-tap-highlight-color: transparent;
+      min-height: 48px;
+    }
+    .tab-btn:first-child { border-right: 1px solid var(--border); }
+    .tab-btn.active { background: var(--accent-orange); color: #fff; }
+    .tab-btn:not(.active):hover { color: var(--text-primary); background: rgba(255,107,53,0.1); }
+
+    /* Panels */
+    .panel {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .panel-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--accent-teal);
+      margin-bottom: 16px;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 6px;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.18s;
+      -webkit-tap-highlight-color: transparent;
+      min-height: 48px;
+    }
+    .btn-primary {
+      background: var(--accent-orange);
+      color: #fff;
+      width: 100%;
+      font-size: 11px;
+      padding: 15px;
+    }
+    .btn-primary:hover  { background: #ff855a; }
+    .btn-primary:active { opacity: 0.85; }
+    .btn-secondary {
+      background: transparent;
+      border: 1px solid var(--border-glow);
+      color: var(--text-muted);
+    }
+    .btn-secondary:hover { border-color: var(--accent-teal); color: var(--accent-teal); }
+    .btn-danger {
+      background: transparent;
+      border: 1px solid #3a1a1a;
+      color: #ff4455;
+    }
+    .btn-danger:hover { border-color: #ff4455; background: rgba(255,68,85,0.1); }
+    .btn-load {
+      background: var(--bg-card);
+      border: 1px solid var(--border-glow);
+      color: var(--accent-teal);
+      width: 100%;
+      margin-top: 10px;
+    }
+    .btn-load:hover { border-color: var(--accent-teal); background: rgba(0,212,170,0.1); }
+    .btn-save {
+      background: var(--accent-teal);
+      color: var(--bg-deep);
+      width: 100%;
+      font-size: 11px;
+      padding: 14px;
+      font-weight: 700;
+    }
+    .btn-save:hover  { background: #00edc0; }
+    .btn-save:active { opacity: 0.85; }
+
+    /* Forms */
+    .form-row { margin-bottom: 12px; }
+    .form-row label {
+      display: block;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .form-row select {
+      width: 100%;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      font-family: 'Exo 2', sans-serif;
+      font-size: 15px;
+      padding: 11px 36px 11px 12px;
+      border-radius: 6px;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237a88b0' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      cursor: pointer;
+      transition: border-color 0.2s;
+      min-height: 48px;
+    }
+    .form-row select:focus { outline: none; border-color: var(--accent-teal); }
+    .form-row-inline {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    @media (max-width: 420px) {
+      .form-row-inline { grid-template-columns: 1fr; }
+    }
+
+    /* Combination display */
+    .combo-display {
+      background: var(--bg-card);
+      border: 1px solid var(--border-glow);
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 16px;
+      position: relative;
+      overflow: hidden;
+      animation: comboFadeIn 0.25s ease;
+    }
+    .combo-display::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent-orange), var(--accent-teal));
+    }
+    .combo-characters {
+      font-family: 'Orbitron', sans-serif;
+      font-size: clamp(13px, 4vw, 17px);
+      font-weight: 700;
+      margin-bottom: 6px;
+      line-height: 1.4;
+    }
+    .combo-vs { color: var(--accent-orange); font-size: 12px; margin: 0 6px; }
+    .combo-scenario {
+      font-size: 12px;
+      color: var(--accent-teal);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+
+    /* Difficulty badges */
+    .difficulty-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .diff-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      border: 1px solid;
+    }
+    .diff-badge.unplayed { border-color: var(--text-dim);   color: var(--text-dim);   background: rgba(62,79,120,0.15); }
+    .diff-badge.win      { border-color: var(--accent-teal); color: var(--accent-teal); background: rgba(0,212,170,0.1); }
+    .diff-badge.loss     { border-color: var(--loss-color); color: var(--loss-color); background: rgba(255,68,85,0.1); }
+    .diff-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .diff-badge.unplayed .diff-dot { background: var(--text-dim); }
+    .diff-badge.win      .diff-dot { background: var(--accent-teal); }
+    .diff-badge.loss     .diff-dot { background: var(--loss-color); }
+
+    /* Lock toggle buttons */
+    .btn-lock {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 12px;
+      line-height: 1;
+      padding: 3px 5px;
+      transition: border-color 0.15s, background 0.15s;
+      -webkit-tap-highlight-color: transparent;
+      flex-shrink: 0;
+    }
+    .btn-lock:hover  { border-color: var(--accent-teal); }
+    .btn-lock.locked { border-color: var(--accent-orange); background: rgba(255,107,53,0.1); }
+
+    /* Timer */
+    .timer-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+    }
+    .timer-label {
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 3px;
+    }
+    .timer-display {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: 3px;
+    }
+    .timer-display.paused { color: var(--text-muted); }
+    .btn-pause {
+      background: transparent;
+      border: 1px solid var(--border-glow);
+      color: var(--text-muted);
+      font-family: 'Orbitron', sans-serif;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 8px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.18s;
+      min-height: 36px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-pause:hover  { border-color: var(--accent-teal); color: var(--accent-teal); }
+    .btn-pause.paused { border-color: var(--accent-orange); color: var(--accent-orange); }
+
+    /* Tables */
+    .history-table-wrap { overflow-x: auto; margin-top: 12px; -webkit-overflow-scrolling: touch; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 380px; }
+    thead th {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      padding: 8px 10px;
+      text-align: left;
+      white-space: nowrap;
+    }
+    tbody td {
+      padding: 10px;
+      border-bottom: 1px solid rgba(30,45,85,0.5);
+      vertical-align: middle;
+    }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: rgba(42,74,138,0.12); }
+    .btn-delete-record {
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      cursor: pointer;
+      font-size: 14px;
+      padding: 4px 6px;
+      border-radius: 4px;
+      line-height: 1;
+      transition: color 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-delete-record:hover { color: var(--loss-color); }
+    .result-pill {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .result-pill.win  { background: rgba(0,212,170,0.15); color: var(--accent-teal); border: 1px solid rgba(0,212,170,0.3); }
+    .result-pill.loss { background: rgba(255,68,85,0.15);  color: var(--loss-color);  border: 1px solid rgba(255,68,85,0.3); }
+    .diff-pill {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      background: rgba(30,45,85,0.5);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+
+    /* Section heading */
+    .section-heading {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .section-heading::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    /* History toolbar */
+    .history-toolbar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+    .import-label {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px 20px;
+      border-radius: 6px;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      cursor: pointer;
+      background: transparent;
+      border: 1px solid var(--border-glow);
+      color: var(--text-muted);
+      transition: all 0.18s;
+      min-height: 48px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .import-label:hover { border-color: var(--accent-teal); color: var(--accent-teal); }
+    #importFile { display: none; }
+
+    /* Footer links — hover handled in CSS, not inline JS */
+    .footer-link {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 9px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      text-decoration: none;
+      border: 1px solid var(--border);
+      padding: 8px 14px;
+      border-radius: 6px;
+      transition: all 0.18s;
+    }
+    .footer-link:hover { color: var(--accent-teal); border-color: var(--accent-teal); }
+
+    /* Misc */
+    .empty-state { text-align: center; padding: 36px 20px; color: var(--text-dim); }
+    .empty-state p { font-size: 13px; font-style: italic; }
+    .notice {
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 12px;
+      color: var(--text-muted);
+      background: rgba(122,136,176,0.08);
+      border: 1px solid rgba(122,136,176,0.2);
+      margin-bottom: 14px;
+    }
+
+    /* Play count badge on combo card */
+    .combo-play-count {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-bottom: 12px;
+    }
+    .combo-play-count span {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+
+    /* Unplayed combos section */
+    .unplayed-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .unplayed-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 13px;
+      gap: 10px;
+    }
+    .unplayed-item-text { color: var(--text-muted); flex: 1; line-height: 1.4; }
+    .unplayed-item-scenario { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+    .btn-load-unplayed {
+      background: transparent;
+      border: 1px solid var(--border-glow);
+      color: var(--accent-teal);
+      font-family: 'Orbitron', sans-serif;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.18s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-load-unplayed:hover { background: rgba(0,212,170,0.1); border-color: var(--accent-teal); }
+
+    /* Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(7,9,26,0.88);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-glow);
+      border-radius: 12px;
+      padding: 28px 24px;
+      max-width: 360px;
+      width: 100%;
+      text-align: center;
+    }
+    .modal-box h2 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--loss-color);
+      margin-bottom: 12px;
+    }
+    .modal-box p { font-size: 14px; color: var(--text-muted); margin-bottom: 24px; line-height: 1.6; }
+    .modal-actions { display: flex; gap: 12px; }
+    .modal-actions .btn { flex: 1; }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 200;
+      min-width: 220px;
+      text-align: center;
+      padding: 10px 18px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      animation: fadeIn 0.2s ease;
+      pointer-events: none;
+    }
+    .toast.info  { color: var(--accent-teal); background: rgba(0,212,170,0.12);  border: 1px solid rgba(0,212,170,0.3); }
+    .toast.error { color: var(--loss-color);  background: rgba(255,68,85,0.12);  border: 1px solid rgba(255,68,85,0.3); }
+
+    .hidden { display: none !important; }
+
+    /* Toast slides up from bottom-center */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateX(-50%) translateY(6px); }
+      to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+
+    /* Combo card fades in from slightly below — no horizontal shift */
+    @keyframes comboFadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Footer */
+    .footer-byline {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 14px;
+    }
+    .footer-text {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.8;
+      margin-bottom: 18px;
+    }
+    .footer-text a { text-decoration: none; }
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .footer-disclaimer {
+      font-size: 11px;
+      color: var(--text-dim);
+      line-height: 1.8;
+      margin: 24px auto 0;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+      max-width: 560px;
+    }
+
+    /* Header action buttons (My Collection, theme toggle, info) */
+    .header-actions {
+      position: absolute;
+      top: 0; right: 0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-settings, .btn-theme {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-dim);
+      cursor: pointer;
+      line-height: 1;
+      transition: color 0.15s, border-color 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-settings:hover, .btn-theme:hover {
+      color: var(--accent-teal);
+      border-color: var(--accent-teal);
+    }
+    .btn-settings {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 5px 8px;
+    }
+    .btn-theme {
+      padding: 5px 7px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .active-packs-label {
+      font-size: 10px;
+      color: var(--text-dim);
+      letter-spacing: 1px;
+      margin-top: 10px;
+      min-height: 14px;
+    }
+    /* Onboarding tooltip */
+    .onboarding-tip {
+      position: absolute;
+      top: 36px; right: 0;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-glow);
+      border-radius: 10px;
+      padding: 14px 16px 12px;
+      width: 248px;
+      z-index: 100;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.35);
+      text-align: left;
+    }
+    .onboarding-tip::before {
+      content: '';
+      position: absolute;
+      top: -6px; right: 18px;
+      width: 10px; height: 10px;
+      background: var(--bg-panel);
+      border-left: 1px solid var(--border-glow);
+      border-top: 1px solid var(--border-glow);
+      transform: rotate(45deg);
+    }
+    .onboarding-tip p {
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 8px;
+    }
+    .onboarding-tip p:last-of-type { margin-bottom: 0; }
+    .onboarding-tip strong { color: var(--text-primary); }
+    .btn-tip-dismiss {
+      display: block;
+      width: 100%;
+      margin-top: 12px;
+      padding: 7px;
+      background: var(--accent-teal);
+      color: #07091a;
+      border: none;
+      border-radius: 6px;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+    /* Settings modal */
+    .settings-box {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-glow);
+      border-radius: 12px;
+      padding: 28px 24px;
+      max-width: 380px;
+      width: 100%;
+    }
+    .settings-box h2 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--accent-teal);
+      margin-bottom: 8px;
+    }
+    .settings-box > p {
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+    .pack-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .pack-item:last-child { border-bottom: none; }
+    .pack-item input[type="checkbox"] {
+      margin-top: 3px;
+      accent-color: var(--accent-teal);
+      width: 16px; height: 16px;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+    .pack-item-info { flex: 1; }
+    .pack-item-name {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text-primary);
+      margin-bottom: 3px;
+    }
+    .pack-item-desc { font-size: 11px; color: var(--text-dim); line-height: 1.4; }
+    .settings-warning {
+      font-size: 11px;
+      color: var(--loss-color);
+      margin-top: 12px;
+      min-height: 16px;
+    }
+
+    /* Footer element */
+    footer {
+      margin-top: 40px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+      text-align: center;
+    }
+
+    /* Utility — suppress default form-row bottom margin */
+    .form-row-flush { margin-bottom: 0; }
+    /* Utility — add top spacing to a form row */
+    .form-row-top { margin-top: 12px; }
+  </style>
+</head>
+<body>
+
+<div class="modal-overlay" id="restartModal">
+  <div class="modal-box">
+    <h2>Restart Timer</h2>
+    <p>Are you sure? The current elapsed time will be lost.</p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="restartCancel">Cancel</button>
+      <button class="btn btn-danger"    id="restartConfirm">Restart</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal-box">
+    <h2>Warning</h2>
+    <p>Clear ALL mission records? This cannot be undone.</p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="modalCancel">Cancel</button>
+      <button class="btn btn-danger"    id="modalConfirm">Clear All</button>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="settings-box">
+    <h2>Content Packs</h2>
+    <p>Select which expansions you own to include their characters and scenarios in the randomizer.</p>
+    <div id="packList"></div>
+    <p class="settings-warning" id="settingsWarning"></p>
+    <div class="modal-actions" style="margin-top:20px;">
+      <button class="btn btn-primary" id="settingsClose">Done</button>
+    </div>
+  </div>
+</div>
+
+<div class="app-shell">
+
+  <header class="app-header">
+    <div class="header-actions">
+      <button class="btn-theme"    id="themeBtn"    title="Toggle theme"></button>
+      <button class="btn-settings" id="settingsBtn" title="My Collection">My Collection</button>
+    </div>
+    <div class="onboarding-tip hidden" id="onboardingTip">
+      <p><strong>My Collection</strong> — tell the app which Twin Stars games you own. Only your content gets randomized.</p>
+      <p><strong>&#9790; / &#9728;</strong> — switch between dark and light mode.</p>
+      <button class="btn-tip-dismiss" id="tipDismiss">Got it</button>
+    </div>
+    <p class="author-label">Jason Tagmire &amp; Mike Mullins</p>
+    <h1>Twin<br>Stars<br><span>Adventure</span><br><span class="sub">Randomizer</span></h1>
+    <div class="header-rule"></div>
+    <p class="active-packs-label" id="activePacksLabel"></p>
+  </header>
+
+  <nav class="tab-nav">
+    <button class="tab-btn active" id="randomizerTab">Randomizer</button>
+    <button class="tab-btn"        id="historyTab">Mission Log</button>
+  </nav>
+
+  <!-- RANDOMIZER PAGE -->
+  <div id="randomizerPage">
+
+    <div class="panel">
+      <p class="panel-title">Random Mission</p>
+      <button class="btn btn-primary" id="generateBtn">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;">
+          <path d="M7 1L12.196 4V10L7 13L1.804 10V4L7 1Z" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linejoin="round"/>
+        </svg>
+        Randomize Combination
+      </button>
+    </div>
+
+    <div class="panel" id="manualPanel">
+      <p class="panel-title">Manual Selection</p>
+      <div class="form-row-inline">
+        <div class="form-row form-row-flush">
+          <label style="display:flex;align-items:center;justify-content:space-between;">Character 1 <button class="btn-lock" id="lockChar1" title="Lock">🔓</button></label>
+          <select id="manualChar1"></select>
+        </div>
+        <div class="form-row form-row-flush">
+          <label style="display:flex;align-items:center;justify-content:space-between;">Character 2 <button class="btn-lock" id="lockChar2" title="Lock">🔓</button></label>
+          <select id="manualChar2"></select>
+        </div>
+      </div>
+      <div class="form-row form-row-top">
+        <label style="display:flex;align-items:center;justify-content:space-between;">Scenario <button class="btn-lock" id="lockScenario" title="Lock">🔓</button></label>
+        <select id="manualScenario"></select>
+      </div>
+      <button class="btn btn-load" id="loadManualCombo">Load Mission</button>
+    </div>
+
+    <div id="combinationDisplay"></div>
+
+    <div id="annotationSection" class="panel hidden">
+      <p class="panel-title">Record Outcome</p>
+      <div class="form-row-inline">
+        <div class="form-row form-row-flush">
+          <label>Result</label>
+          <select id="result">
+            <option value="Win">Win</option>
+            <option value="Loss">Loss</option>
+          </select>
+        </div>
+        <div class="form-row form-row-flush">
+          <label>Difficulty</label>
+          <select id="difficulty">
+            <option value="Easy">Easy</option>
+            <option value="Medium">Medium</option>
+            <option value="Hard">Hard</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row-top">
+        <button class="btn btn-save" id="saveRecordBtn">Save Record</button>
+      </div>
+    </div>
+
+    <div id="comboHistory"></div>
+
+  </div>
+
+  <!-- HISTORY PAGE -->
+  <div id="historyPage" class="hidden">
+    <div class="panel">
+      <p class="panel-title">Mission Log</p>
+      <div class="history-toolbar">
+        <button class="btn btn-secondary" id="exportBtn">Export</button>
+        <label class="import-label" for="importFile">Import</label>
+        <input type="file" id="importFile" accept=".json">
+        <button class="btn btn-danger" id="clearDataBtn">Clear All</button>
+      </div>
+      <div id="historyTableContainer"></div>
+    </div>
+    <div class="panel">
+      <p class="panel-title">Unplayed Combinations</p>
+      <div id="unplayedContainer"></div>
+    </div>
+  </div>
+
+  <footer>
+    <p class="footer-byline">
+      Made with love by <a href="https://bsky.app/profile/jamescochran.bsky.social" target="_blank" style="color:#6aab96;font-style:italic;text-decoration:none;">THE</a> James Dean Cochran
+    </p>
+    <p class="footer-text">
+      If you enjoy this tool,
+      <a href="https://ko-fi.com/jamescochran" target="_blank" style="color:var(--accent-orange);border-bottom:1px solid rgba(255,107,53,0.4);">buy me a coffee</a>
+      or send me a copy of <a href="https://boardgamegeek.com/boardgame/211988/hot-dogs" target="_blank" style="color:#e8b800;border-bottom:1px solid rgba(232,184,0,0.4);">Hot Dogs</a>.
+    </p>
+    <p class="footer-text">
+      Come play amazing Button Shy games with us and talk about them at the
+      <a href="https://discord.gg/aUBMvnu" target="_blank" style="color:var(--accent-yellow);border-bottom:1px solid rgba(240,180,41,0.4);">Button Shy Discord</a>.
+    </p>
+    <div class="footer-links">
+      <a href="https://buttonshygames.com/products/twin-stars" target="_blank" class="footer-link">Buy Twin Stars</a>
+      <a href="https://boardgamegeek.com/boardgame/231854/twin-stars-adventure-series-i" target="_blank" class="footer-link">BGG</a>
+      <a href="https://github.com/jamescochran/jamescochran.github.io" target="_blank" class="footer-link">GitHub</a>
+    </div>
+    <p class="footer-disclaimer">
+      Twin Stars Adventure Series is designed by Jason Tagmire &amp; Mike Mullins and published by Button Shy Games. All characters, scenarios, and game content are the intellectual property of Button Shy Games and their creators. This is an unofficial, free, fan-made companion app made out of love for an incredible game — not affiliated with or endorsed by Button Shy Games. If you don't own Twin Stars yet, please go buy it. It's worth every penny.
+    </p>
+    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-05 16:00 EDT</p>
+  </footer>
+
+</div>
+
+<script>
+  // ─── Data ───────────────────────────────────────────────────────────────────
+
+  const CONTENT_PACKS = [
+    {
+      id: "series1",
+      name: "Series 1 Wallet",
+      shortName: "Series 1",
+      desc: "12 characters · 6 scenarios (the base game)",
+      characters: [
+        "Bood", "Stag Solar", "Fanoobia", "Inpon Gol",
+        "Grant Rockgardner", "Roux Jaezmina", "Yanfred Jima",
+        "Saaze", "Inzill Mey", "Strezelsior", "Kinglan", "Brenimov-X"
+      ],
+      scenarios: [
+        "Escape The Brig!", "Rule The World!", "Stop The Virus!",
+        "Hunt The Bounty!", "Steal The Plans!", "Confine The Quarks!"
+      ]
+    },
+    {
+      id: "series2",
+      name: "Series 2 Wallet",
+      shortName: "Series 2",
+      desc: "12 characters · 6 scenarios",
+      characters: [
+        "Dain Taubo", "Grulexon", "Gari Obul", "Smiff",
+        "Zoaze", "Tumbug Firo", "Mzerzo", "Phaeton",
+        "Hebolt Rom", "Tarla Voke", "Gruffles", "\"Mad\" Anxy"
+      ],
+      scenarios: [
+        "Master the Trials!", "Beat the Odds!", "Control the Skies!",
+        "Sell the Junk!", "Destroy the Order!", "Serve the Rabble!"
+      ]
+    },
+    {
+      id: "scenario14",
+      name: "Scenario 14: Save the Spacewhales!",
+      shortName: "Scenario 14",
+      desc: "2 characters · 1 scenario",
+      characters: ["Striker", "Bippinnidip"],
+      scenarios: ["Save the Spacewhales!"]
+    },
+    {
+      id: "captaincrag",
+      name: "Captain Crag",
+      shortName: "Cpt. Crag",
+      desc: "1 character · no new scenarios",
+      characters: ["Captain Crag"],
+      scenarios: []
+    }
+  ];
+
+  const ALL_CHARACTERS_SET = new Set(CONTENT_PACKS.flatMap(p => p.characters));
+  const ALL_SCENARIOS_SET  = new Set(CONTENT_PACKS.flatMap(p => p.scenarios));
+
+  let characters = [];
+  let scenarios  = [];
+
+  const VALID_RESULTS      = new Set(["Win", "Loss"]);
+  const VALID_DIFFICULTIES = new Set(["Easy", "Medium", "Hard"]);
+
+  // ─── Theme ──────────────────────────────────────────────────────────────────
+
+  const MOON_SVG = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+  const SUN_SVG  = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="4.22" y1="4.22" x2="6.34" y2="6.34"/><line x1="17.66" y1="17.66" x2="19.78" y2="19.78"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="4.22" y1="19.78" x2="6.34" y2="17.66"/><line x1="17.66" y1="6.34" x2="19.78" y2="4.22"/></svg>';
+
+  function getInitialTheme() {
+    try {
+      const saved = localStorage.getItem("theme");
+      if (saved === "light" || saved === "dark") return saved;
+    } catch(e) {}
+    return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+  }
+
+  function applyTheme(theme) {
+    document.documentElement.setAttribute("data-theme", theme);
+    const btn = document.getElementById("themeBtn");
+    // In dark mode show the sun (click to switch to light).
+    // In light mode show the moon (click to switch to dark).
+    if (btn) btn.innerHTML = theme === "dark" ? SUN_SVG : MOON_SVG;
+    try { localStorage.setItem("theme", theme); } catch(e) {}
+  }
+
+  function toggleTheme() {
+    const current = document.documentElement.getAttribute("data-theme") || "dark";
+    applyTheme(current === "dark" ? "light" : "dark");
+  }
+
+  applyTheme(getInitialTheme());
+
+  // ─── Onboarding tip ─────────────────────────────────────────────────────────
+  function initOnboardingTip() {
+    try { if (localStorage.getItem("hasSeenTip")) return; } catch(e) { return; }
+    document.getElementById("onboardingTip").classList.remove("hidden");
+  }
+
+  function dismissTip() {
+    document.getElementById("onboardingTip").classList.add("hidden");
+    try { localStorage.setItem("hasSeenTip", "1"); } catch(e) {}
+  }
+
+  // ─── Storage ────────────────────────────────────────────────────────────────
+
+  let records = [];
+  try {
+    const raw = localStorage.getItem("gameRecords");
+    if (raw) records = JSON.parse(raw);
+  } catch (e) {
+    console.warn("Could not load saved records:", e);
+  }
+
+  function saveRecords() {
+    try {
+      localStorage.setItem("gameRecords", JSON.stringify(records));
+    } catch (e) {
+      toast("Could not save — storage may be full.", "error");
+    }
+  }
+
+  // ─── Helpers ────────────────────────────────────────────────────────────────
+  function comboKey(comb) {
+    return comb.characters.slice().sort().join("|") + "-" + comb.scenario;
+  }
+
+  const _escEl = document.createElement("div");
+  function esc(str) {
+    _escEl.textContent = String(str);
+    return _escEl.innerHTML;
+  }
+
+  function formatTime(secs) {
+    const m = String(Math.floor(secs / 60)).padStart(2, "0");
+    const s = String(secs % 60).padStart(2, "0");
+    return m + ":" + s;
+  }
+
+  function shuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function toast(msg, type) {
+    const t = document.createElement("div");
+    t.className = "toast " + (type || "info");
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2600);
+  }
+
+  function isValidRecord(r) {
+    return (
+      r && typeof r === "object" &&
+      Array.isArray(r.characters) &&
+      r.characters.length === 2 &&
+      r.characters[0] !== r.characters[1] &&
+      r.characters.every(c => ALL_CHARACTERS_SET.has(c)) &&
+      ALL_SCENARIOS_SET.has(r.scenario) &&
+      VALID_RESULTS.has(r.result) &&
+      VALID_DIFFICULTIES.has(r.difficulty) &&
+      typeof r.timestamp === "string" &&
+      (r.playtime == null || (Number.isInteger(r.playtime) && r.playtime >= 0))
+    );
+  }
+
+
+// ─── Timer ──────────────────────────────────────────────────────────────────
+
+let timerSeconds    = 0;
+let timerInterval   = null;
+let timerPaused     = false;
+let startTime       = null;
+let accumulatedTime = 0;
+
+function startTimer() {
+  stopTimer();
+  timerPaused     = false;
+  accumulatedTime = 0;
+  startTime       = Date.now();
+  timerInterval   = setInterval(updateDisplay, 1000);
+  const el = document.getElementById("timerDisplay");
+  if (el) el.textContent = "00:00";
+}
+
+function stopTimer() {
+  if (timerInterval) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+}
+
+function togglePause() {
+  const btn = document.getElementById("pauseBtn");
+  const display = document.getElementById("timerDisplay");
+
+  if (!timerPaused) {
+    timerPaused = true;
+    accumulatedTime += Date.now() - startTime;
+  } else {
+    timerPaused = false;
+    startTime = Date.now();
+  }
+
+  if (btn) {
+    btn.textContent = timerPaused ? "Resume" : "Pause";
+    btn.classList.toggle("paused", timerPaused);
+  }
+
+  if (display) {
+    display.classList.toggle("paused", timerPaused);
+  }
+}
+
+
+function updateDisplay() {
+  if (timerPaused) return;
+  const elapsedMs = accumulatedTime + (Date.now() - startTime);
+  timerSeconds = Math.floor(elapsedMs / 1000);
+
+  const el = document.getElementById("timerDisplay");
+  if (el) {
+    el.textContent = formatTime(timerSeconds);
+  }
+}
+
+function getCurrentElapsed() {
+  if (timerPaused) return Math.floor(accumulatedTime / 1000);
+  if (!startTime) return timerSeconds;
+  return Math.floor((accumulatedTime + (Date.now() - startTime)) / 1000);
+}
+
+  // ─── Dropdowns ──────────────────────────────────────────────────────────────
+  function syncDropdown(srcId, tgtId) {
+    const exclude = document.getElementById(srcId).value;
+    const tgt     = document.getElementById(tgtId);
+    const prev    = tgt.value;
+    tgt.innerHTML = ""; // clear all current options
+    characters.forEach(char => {
+      if (char === exclude) return; // skip the character already chosen in the other dropdown
+      const opt = document.createElement("option");
+      opt.value = opt.textContent = char;
+      tgt.appendChild(opt);
+    });
+    if (prev && prev !== exclude) tgt.value = prev;
+  }
+
+  function populateSelectors() {
+    const c1 = document.getElementById("manualChar1");
+    const sc = document.getElementById("manualScenario");
+    c1.innerHTML = "";
+    sc.innerHTML = "";
+    characters.forEach(char => {
+      const opt = document.createElement("option");
+      opt.value = opt.textContent = char;
+      c1.appendChild(opt);
+    });
+    scenarios.forEach(s => {
+      const opt = document.createElement("option");
+      opt.value = opt.textContent = s;
+      sc.appendChild(opt);
+    });
+    syncDropdown("manualChar1", "manualChar2");
+  }
+
+  // ─── Difficulty status ──────────────────────────────────────────────────────
+  function getDifficultyStatus(comb) {
+    const key       = comboKey(comb);
+    const comboRecs = records.filter(r => comboKey(r) === key);
+    return ["Easy", "Medium", "Hard"].map(diff => {
+      const filtered = comboRecs.filter(r => r.difficulty === diff);
+      if (!filtered.length) return { diff, state: "unplayed" };
+      return { diff, state: filtered.some(r => r.result === "Win") ? "win" : "loss" };
+    });
+  }
+
+  function renderDiffBadges(comb) {
+    return getDifficultyStatus(comb).map(({ diff, state }) =>
+      `<div class="diff-badge ${state}"><div class="diff-dot"></div>${esc(diff)}</div>`
+    ).join("");
+  }
+
+  // ─── Render ─────────────────────────────────────────────────────────────────
+
+  let currentCombination = null;
+
+  const locks = { char1: false, char2: false, scenario: false };
+
+  function updateLockButtons() {
+    const btn1 = document.getElementById("lockChar1");
+    const btn2 = document.getElementById("lockChar2");
+    const btnSc = document.getElementById("lockScenario");
+    btn1.textContent = locks.char1    ? "🔒" : "🔓";
+    btn2.textContent = locks.char2    ? "🔒" : "🔓";
+    btnSc.textContent = locks.scenario ? "🔒" : "🔓";
+    btn1.classList.toggle("locked",  locks.char1);
+    btn2.classList.toggle("locked",  locks.char2);
+    btnSc.classList.toggle("locked", locks.scenario);
+  }
+
+  function displayCombination(comb) {
+    const key       = comboKey(comb);
+    const playCount = records.filter(r => comboKey(r) === key).length;
+    const countText = playCount === 0 ? "Never played" : playCount === 1 ? "Played 1 time" : `Played ${playCount} times`;
+
+    document.getElementById("combinationDisplay").innerHTML = `
+      <div class="combo-display">
+        <div class="combo-characters">
+          ${esc(comb.characters[0])}<span class="combo-vs">&amp;</span>${esc(comb.characters[1])}
+        </div>
+        <div class="combo-scenario">${esc(comb.scenario)}</div>
+        <div class="combo-play-count"><span>${esc(countText)}</span></div>
+        <div class="difficulty-row">${renderDiffBadges(comb)}</div>
+        <div class="timer-row">
+          <div>
+            <div class="timer-label">Elapsed Time</div>
+            <div class="timer-display" id="timerDisplay">00:00</div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn-pause" id="restartBtn">Restart</button>
+            <button class="btn-pause" id="pauseBtn">Pause</button>
+          </div>
+        </div>
+      </div>`;
+    document.getElementById("pauseBtn").addEventListener("click", togglePause);
+    document.getElementById("restartBtn").addEventListener("click", () => {
+      document.getElementById("restartModal").classList.add("open");
+    });
+
+    const timerEl = document.getElementById("timerDisplay");
+    const pauseB  = document.getElementById("pauseBtn");
+    timerEl.textContent = formatTime(getCurrentElapsed());
+    if (timerPaused) {
+      pauseB.textContent = "Resume";
+      pauseB.classList.add("paused");
+      timerEl.classList.add("paused");
+    }
+  }
+
+  function displayComboHistory(comb) {
+    const div  = document.getElementById("comboHistory");
+    const recs = records.filter(r => comboKey(r) === comboKey(comb));
+
+    if (!recs.length) {
+      div.innerHTML = `<div class="notice">No records yet for this combination.</div>`;
+      return;
+    }
+    const rows = recs.map((rec, idx) => {
+      const globalIdx = records.indexOf(rec);
+      return `
+      <tr>
+        <td style="color:var(--text-muted);font-size:12px;white-space:nowrap;">${esc(rec.timestamp)}</td>
+        <td><span class="result-pill ${rec.result === "Win" ? "win" : "loss"}">${esc(rec.result)}</span></td>
+        <td><span class="diff-pill">${esc(rec.difficulty)}</span></td>
+        <td style="color:var(--text-muted);font-size:12px;white-space:nowrap;">${rec.playtime != null ? formatTime(rec.playtime) : "—"}</td>
+        <td><button class="btn-delete-record" data-idx="${globalIdx}" title="Delete">✕</button></td>
+      </tr>`;}).join("");
+
+    div.innerHTML = `
+      <div class="panel">
+        <p class="section-heading">This Combination</p>
+        <div class="history-table-wrap">
+          <table>
+            <thead><tr><th>Date / Time</th><th>Result</th><th>Difficulty</th><th>Time</th><th></th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </div>`;
+
+    div.querySelectorAll(".btn-delete-record").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const idx = parseInt(btn.dataset.idx);
+        records.splice(idx, 1);
+        saveRecords();
+        displayCombination(currentCombination);
+        displayComboHistory(currentCombination);
+      });
+    });
+  }
+
+  // Build and display the list of combinations that haven't been played yet.
+  function displayUnplayed() {
+    const container = document.getElementById("unplayedContainer");
+
+    const playedKeys = new Set(records.map(r => comboKey(r)));
+    const unplayed = [];
+    for (let i = 0; i < characters.length; i++) {
+      for (let j = i + 1; j < characters.length; j++) {
+        for (const scenario of scenarios) {
+          const comb = { characters: [characters[i], characters[j]], scenario };
+          if (!playedKeys.has(comboKey(comb))) unplayed.push(comb);
+        }
+      }
+    }
+
+    if (!unplayed.length) {
+      container.innerHTML = `<div class="empty-state"><p>You've played every combination. Incredible!</p></div>`;
+      return;
+    }
+
+    const total = characters.length * (characters.length - 1) / 2 * scenarios.length;
+    const played = total - unplayed.length;
+
+    let html = `<p style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">
+      <span style="color:var(--accent-teal);font-weight:700;">${played}</span> of <span style="font-weight:700;">${total}</span> combinations played
+    </p><div class="unplayed-grid">`;
+
+    unplayed.slice(0, 20).forEach(comb => {
+      html += `
+        <div class="unplayed-item">
+          <div class="unplayed-item-text">
+            <div>${esc(comb.characters.join(" & "))}</div>
+            <div class="unplayed-item-scenario">${esc(comb.scenario)}</div>
+          </div>
+          <button class="btn-load-unplayed"
+            data-chars="${esc(comb.characters.join("|"))}"
+            data-scenario="${esc(comb.scenario)}">
+            Play
+          </button>
+        </div>`;
+    });
+
+    if (unplayed.length > 20) {
+      html += `<p style="font-size:12px;color:var(--text-dim);text-align:center;padding:8px 0;">
+        …and ${unplayed.length - 20} more
+      </p>`;
+    }
+
+    html += "</div>";
+    container.innerHTML = html;
+
+    container.querySelectorAll(".btn-load-unplayed").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const chars    = btn.dataset.chars.split("|");
+        const scenario = btn.dataset.scenario;
+        showTab("randomizer");
+        loadCombination({ characters: chars, scenario });
+      });
+    });
+  }
+
+  function displayHistory() {
+    const container = document.getElementById("historyTableContainer");
+    if (!records.length) {
+      container.innerHTML = `<div class="empty-state"><p>No mission records yet. Start playing!</p></div>`;
+      return;
+    }
+    const rows = records.map((rec, idx) => `
+      <tr>
+        <td style="color:var(--text-muted);font-size:12px;white-space:nowrap;">${esc(rec.timestamp)}</td>
+        <td style="white-space:nowrap;">${esc(rec.characters.join(" & "))}</td>
+        <td style="color:var(--accent-teal);font-size:12px;">${esc(rec.scenario)}</td>
+        <td><span class="result-pill ${rec.result === "Win" ? "win" : "loss"}">${esc(rec.result)}</span></td>
+        <td><span class="diff-pill">${esc(rec.difficulty)}</span></td>
+        <td style="color:var(--text-muted);font-size:12px;white-space:nowrap;">${rec.playtime != null ? formatTime(rec.playtime) : "—"}</td>
+        <td><button class="btn-delete-record" data-idx="${idx}" title="Delete">✕</button></td>
+      </tr>`).join("");
+
+    container.innerHTML = `
+      <div class="history-table-wrap">
+        <table>
+          <thead><tr><th>Date / Time</th><th>Characters</th><th>Scenario</th><th>Result</th><th>Difficulty</th><th>Time</th><th></th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+
+    container.querySelectorAll(".btn-delete-record").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const idx = parseInt(btn.dataset.idx);
+        records.splice(idx, 1);
+        saveRecords();
+        displayHistory();
+        displayUnplayed();
+        if (currentCombination) { displayCombination(currentCombination); displayComboHistory(currentCombination); }
+      });
+    });
+  }
+
+  // ─── Content packs ──────────────────────────────────────────────────────────
+  let enabledPacks;
+  try {
+    const raw = localStorage.getItem("enabledPacks");
+    enabledPacks = raw ? new Set(JSON.parse(raw)) : new Set(["series1"]);
+  } catch(e) {
+    enabledPacks = new Set(["series1"]);
+  }
+
+  function saveEnabledPacks() {
+    try { localStorage.setItem("enabledPacks", JSON.stringify([...enabledPacks])); } catch(e) {}
+  }
+
+  function buildActiveContent() {
+    const active = CONTENT_PACKS.filter(p => enabledPacks.has(p.id));
+    characters = [...new Set(active.flatMap(p => p.characters))];
+    scenarios  = [...new Set(active.flatMap(p => p.scenarios))];
+    // Update the label below the header so the user can always see what's active
+    const label = document.getElementById("activePacksLabel");
+    if (label) label.textContent = active.map(p => p.shortName).join(" · ");
+  }
+
+  function openSettings() {
+    const list = document.getElementById("packList");
+    list.innerHTML = "";
+    CONTENT_PACKS.forEach(pack => {
+      const item = document.createElement("div");
+      item.className = "pack-item";
+      const cb = document.createElement("input");
+      cb.type    = "checkbox";
+      cb.id      = "pack-" + pack.id;
+      cb.checked = enabledPacks.has(pack.id);
+      cb.addEventListener("change", () => {
+        if (cb.checked) {
+          enabledPacks.add(pack.id);
+        } else {
+          enabledPacks.delete(pack.id);
+        }
+        // Require at least 2 characters and 1 scenario to play
+        const testChars = CONTENT_PACKS.filter(p => enabledPacks.has(p.id)).flatMap(p => p.characters);
+        const testScens = CONTENT_PACKS.filter(p => enabledPacks.has(p.id)).flatMap(p => p.scenarios);
+        const warn = document.getElementById("settingsWarning");
+        if (testChars.length < 2 || testScens.length === 0) {
+          warn.textContent = "At least 2 characters and 1 scenario required.";
+          cb.checked = !cb.checked;
+          if (cb.checked) enabledPacks.add(pack.id); else enabledPacks.delete(pack.id);
+        } else {
+          warn.textContent = "";
+        }
+      });
+      const info = document.createElement("div");
+      info.className = "pack-item-info";
+      info.innerHTML = `<div class="pack-item-name">${esc(pack.name)}</div><div class="pack-item-desc">${esc(pack.desc)}</div>`;
+      item.appendChild(cb);
+      item.appendChild(info);
+      list.appendChild(item);
+    });
+    document.getElementById("settingsWarning").textContent = "";
+    document.getElementById("settingsModal").classList.add("open");
+  }
+
+  function closeSettings() {
+    document.getElementById("settingsModal").classList.remove("open");
+    buildActiveContent();
+    saveEnabledPacks();
+    populateSelectors();
+    displayHistory();
+    displayUnplayed();
+    if (currentCombination) {
+      displayCombination(currentCombination);
+      displayComboHistory(currentCombination);
+    }
+  }
+
+  // ─── Actions ────────────────────────────────────────────────────────────────
+  function loadCombination(comb) {
+    currentCombination = comb;
+    startTimer();
+    displayCombination(comb);
+    displayComboHistory(comb);
+    document.getElementById("annotationSection").classList.remove("hidden");
+
+    // Sync manual selectors to reflect the loaded combination
+    const c1 = document.getElementById("manualChar1");
+    const c2 = document.getElementById("manualChar2");
+    const sc = document.getElementById("manualScenario");
+    c1.value = comb.characters[0];
+    syncDropdown("manualChar1", "manualChar2");
+    c2.value = comb.characters[1];
+    sc.value = comb.scenario;
+
+    setTimeout(() => {
+      const el = document.getElementById("combinationDisplay");
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
+  }
+
+  function handleGenerate() {
+    const c1El = document.getElementById("manualChar1");
+    const c2El = document.getElementById("manualChar2");
+    const scEl = document.getElementById("manualScenario");
+
+    if (!locks.char1 && !locks.char2) {
+      const shuffled = shuffle(characters);
+      c1El.value = shuffled[0];
+      syncDropdown("manualChar1", "manualChar2");
+      c2El.value = shuffled[1];
+    } else if (locks.char1 && !locks.char2) {
+      const pool = characters.filter(c => c !== c1El.value);
+      syncDropdown("manualChar1", "manualChar2");
+      c2El.value = pool[Math.floor(Math.random() * pool.length)];
+    } else if (!locks.char1 && locks.char2) {
+      const pool = characters.filter(c => c !== c2El.value);
+      c1El.value = pool[Math.floor(Math.random() * pool.length)];
+      syncDropdown("manualChar1", "manualChar2");
+    }
+
+    if (!locks.scenario) {
+      scEl.value = scenarios[Math.floor(Math.random() * scenarios.length)];
+    }
+
+    if (locks.char1 && locks.char2 && locks.scenario) {
+      toast("All slots are locked — nothing to randomize.", "error");
+    } else if (locks.char1 && locks.char2) {
+      toast("Characters locked — scenario re-rolled.");
+    }
+  }
+
+  function handleLoadManualCombo() {
+    const char1    = document.getElementById("manualChar1").value;
+    const char2    = document.getElementById("manualChar2").value;
+    const scenario = document.getElementById("manualScenario").value;
+    if (char1 === char2) { toast("Select two different characters.", "error"); return; }
+    loadCombination({ characters: [char1, char2].sort(), scenario });
+  }
+
+  function handleSaveRecord() {
+    if (!currentCombination) return;
+    const result     = document.getElementById("result").value;
+    const difficulty = document.getElementById("difficulty").value;
+    const playtime = getCurrentElapsed();
+    stopTimer();
+    records.push({
+      characters: currentCombination.characters,
+      scenario:   currentCombination.scenario,
+      result,
+      difficulty,
+      playtime,
+      timestamp: new Date().toLocaleString()
+    });
+    try { localStorage.setItem("lastResult", result); localStorage.setItem("lastDifficulty", difficulty); } catch(e) {}
+    saveRecords();
+    displayCombination(currentCombination);
+    startTimer();
+    displayComboHistory(currentCombination);
+    toast("Record saved!");
+  }
+
+  function handleExport() {
+    if (!records.length) { toast("No records to export.", "error"); return; }
+    const date     = new Date().toISOString().slice(0, 10);
+    const blob     = new Blob([JSON.stringify(records, null, 2)], { type: "application/json" });
+    const url      = URL.createObjectURL(blob);
+    const a        = document.createElement("a");
+    a.href         = url;
+    a.download     = `twin_stars_records_${date}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    toast("Exported successfully!");
+  }
+
+  document.getElementById("importFile").addEventListener("change", function () {
+    const file = this.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const parsed = JSON.parse(e.target.result);
+        if (!Array.isArray(parsed)) { toast("Invalid file format.", "error"); return; }
+        const valid   = parsed.filter(isValidRecord);
+        const skipped = parsed.length - valid.length;
+        records = valid;
+        saveRecords();
+        displayHistory();
+        displayUnplayed();
+        if (currentCombination) { displayCombination(currentCombination); displayComboHistory(currentCombination); }
+        const msg = skipped > 0
+          ? `Replaced records with ${valid.length} imported. ${skipped} skipped (invalid).`
+          : `Replaced records with ${valid.length} imported.`;
+        toast(msg);
+      } catch (e) { toast("Could not read file.", "error"); }
+    };
+    reader.readAsText(file);
+    this.value = "";
+  });
+
+  document.getElementById("restartCancel").addEventListener("click", () => {
+    document.getElementById("restartModal").classList.remove("open");
+  });
+  document.getElementById("restartConfirm").addEventListener("click", () => {
+    document.getElementById("restartModal").classList.remove("open");
+    startTimer();
+  });
+
+  document.getElementById("clearDataBtn").addEventListener("click", () => {
+    document.getElementById("confirmModal").classList.add("open");
+  });
+  document.getElementById("modalCancel").addEventListener("click", () => {
+    document.getElementById("confirmModal").classList.remove("open");
+  });
+  document.getElementById("modalConfirm").addEventListener("click", () => {
+    records = [];
+    saveRecords();
+    displayHistory();
+    displayUnplayed();
+    if (currentCombination) { displayCombination(currentCombination); displayComboHistory(currentCombination); }
+    document.getElementById("confirmModal").classList.remove("open");
+    toast("All records cleared.");
+  });
+
+  function showTab(tab) {
+    document.getElementById("randomizerPage").classList.toggle("hidden", tab !== "randomizer");
+    document.getElementById("historyPage")   .classList.toggle("hidden", tab !== "history");
+    document.getElementById("randomizerTab") .classList.toggle("active", tab === "randomizer");
+    document.getElementById("historyTab")    .classList.toggle("active", tab === "history");
+    if (tab === "history") { displayHistory(); displayUnplayed(); }
+  }
+
+  // ─── Init ───────────────────────────────────────────────────────────────────
+  document.getElementById("generateBtn")    .addEventListener("click", handleGenerate);
+  document.getElementById("lockChar1")      .addEventListener("click", () => { locks.char1    = !locks.char1;    updateLockButtons(); });
+  document.getElementById("lockChar2")      .addEventListener("click", () => { locks.char2    = !locks.char2;    updateLockButtons(); });
+  document.getElementById("lockScenario")   .addEventListener("click", () => { locks.scenario = !locks.scenario; updateLockButtons(); });
+  document.getElementById("loadManualCombo").addEventListener("click", handleLoadManualCombo);
+  document.getElementById("saveRecordBtn")  .addEventListener("click", handleSaveRecord);
+  document.getElementById("exportBtn")      .addEventListener("click", handleExport);
+  document.getElementById("randomizerTab")  .addEventListener("click", () => showTab("randomizer"));
+  document.getElementById("historyTab")     .addEventListener("click", () => showTab("history"));
+  document.getElementById("settingsBtn")    .addEventListener("click", openSettings);
+  document.getElementById("settingsClose")  .addEventListener("click", closeSettings);
+  document.getElementById("settingsModal")  .addEventListener("click", e => { if (e.target === e.currentTarget) closeSettings(); });
+  document.getElementById("manualChar1")    .addEventListener("change", () => syncDropdown("manualChar1", "manualChar2"));
+  document.getElementById("manualChar2")    .addEventListener("change", () => syncDropdown("manualChar2", "manualChar1"));
+  document.getElementById("themeBtn")       .addEventListener("click", toggleTheme);
+  document.getElementById("tipDismiss")     .addEventListener("click", dismissTip);
+
+  try {
+    const lastResult     = localStorage.getItem("lastResult");
+    const lastDifficulty = localStorage.getItem("lastDifficulty");
+    if (lastResult)     document.getElementById("result").value     = lastResult;
+    if (lastDifficulty) document.getElementById("difficulty").value = lastDifficulty;
+  } catch(e) {}
+
+  buildActiveContent();
+  populateSelectors();
+  initOnboardingTip();
+
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("service-worker.js").catch(() => {});
+    });
+  }
+</script>
+</body>
+</html>
