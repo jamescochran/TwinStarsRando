@@ -80,6 +80,14 @@ Any character can be paired with any scenario regardless of pack. With both Seri
 
 This thing is aggressively simple. One HTML file. No framework. No build step. No `node_modules` folder haunting your dreams.
 
+### First-time setup
+
+After cloning, activate the pre-commit hook that auto-bumps the service worker cache name on every commit:
+
+```sh
+git config core.hooksPath .githooks
+```
+
 ### Stack
 
 ```
