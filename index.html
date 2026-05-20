@@ -764,6 +764,56 @@
       align-items: center;
       justify-content: center;
     }
+    .btn-radio {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-dim);
+      cursor: pointer;
+      padding: 5px 7px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+      font-size: 14px;
+      transition: color 0.15s, border-color 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-radio:hover      { color: var(--accent-teal);   border-color: var(--accent-teal); }
+    .btn-radio.is-playing { color: var(--accent-teal);   border-color: var(--accent-teal); }
+    .btn-radio.is-loading { color: var(--accent-yellow); border-color: var(--accent-yellow); }
+    .btn-radio.is-error   { color: var(--loss-color);    border-color: var(--loss-color); }
+    .btn-radio:disabled   { opacity: 0.35; cursor: not-allowed; }
+    .radio-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 6px 16px;
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border);
+      animation: slideDown 0.2s ease;
+    }
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .radio-bar { animation: none; }
+    }
+    .radio-bar-label {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: var(--accent-teal);
+      white-space: nowrap;
+    }
+    .radio-volume {
+      flex: 1;
+      max-width: 180px;
+      accent-color: var(--accent-teal);
+      cursor: pointer;
+    }
     .active-packs-label {
       font-size: 10px;
       color: var(--text-dim);
@@ -900,7 +950,7 @@
     .faq-content {
       overflow-y: auto;
       flex: 1;
-      scroll-padding-top: 32px;
+      scroll-padding-top: 44px;
     }
     .faq-section-header {
       font-family: 'Orbitron', sans-serif;
@@ -909,8 +959,7 @@
       letter-spacing: 2px;
       text-transform: uppercase;
       color: var(--accent-orange);
-      padding: 10px 0 6px;
-      margin-top: 8px;
+      padding: 18px 0 6px;
       border-bottom: 1px solid var(--border);
       position: sticky;
       top: 0;
@@ -926,7 +975,7 @@
       text-transform: uppercase;
       color: var(--text-muted);
       padding: 10px 0 4px;
-      scroll-margin-top: 32px;
+      scroll-margin-top: 44px;
     }
     details.faq-item {
       border-bottom: 1px solid var(--border);
@@ -1401,6 +1450,7 @@
 
   <header class="app-header">
     <div class="header-actions">
+      <button class="btn-radio"    id="radioBtn"    title="SomaFM Mission Control" aria-label="Play ambient radio">♫</button>
       <button class="btn-theme"    id="themeBtn"    title="Toggle theme" aria-label="Toggle theme"></button>
       <button class="btn-settings" id="settingsBtn" title="My Collection">My Collection</button>
     </div>
@@ -1414,6 +1464,12 @@
     <p class="author-label" style="margin-top:10px;">A game by Jason Tagmire &amp; Mike Mullins</p>
     <p class="active-packs-label" id="activePacksLabel"></p>
   </header>
+
+  <div class="radio-bar" id="radioBar" hidden>
+    <span class="radio-bar-label">♫ MISSION CONTROL</span>
+    <input type="range" id="radioVolume" class="radio-volume" min="0" max="1" step="0.05"
+           value="0.5" aria-label="Volume">
+  </div>
 
   <nav class="tab-nav">
     <button class="tab-btn active" id="randomizerTab">Randomizer</button>
@@ -1521,11 +1577,12 @@
     <p class="footer-disclaimer">
       Twin Stars Adventure Series is designed by Jason Tagmire &amp; Mike Mullins and published by Button Shy Games. All characters, scenarios, and game content are the intellectual property of Button Shy Games and their creators. This is an unofficial, free, fan-made companion app made out of love for an incredible game — not affiliated with or endorsed by Button Shy Games. If you don't own Twin Stars yet, please go buy it. It's worth every penny.
     </p>
-    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-20 14:01 EST</p>
+    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-20 14:38 EST</p>
   </footer>
 
 </div>
 
+<audio id="radioAudio" preload="none"></audio>
 <script>
   // ─── Data ───────────────────────────────────────────────────────────────────
 
@@ -1622,6 +1679,14 @@
     "Zoaze":             "faq-char-zoaze",
   };
 
+  const RADIO_STREAMS = [
+    "https://ice2.somafm.com/missioncontrol-128-aac",
+    "https://ice6.somafm.com/missioncontrol-128-aac",
+    "https://ice4.somafm.com/missioncontrol-128-aac",
+    "https://ice5.somafm.com/missioncontrol-128-aac",
+    "https://ice3.somafm.com/missioncontrol-128-aac",
+  ];
+
   function faqHelpBtn(anchor) {
     return `<button class="btn-faq-inline" data-faq-anchor="${esc(anchor)}" title="Rules FAQ" aria-label="Rules FAQ">?</button>`;
   }
@@ -1693,6 +1758,9 @@
   }
 
   // ─── Storage ────────────────────────────────────────────────────────────────
+
+  let _radioIndex = 0;
+  let _radioState = "stopped";
 
   let records = [];
   let historyDirty  = true;
@@ -2512,6 +2580,66 @@ function getCurrentElapsed() {
     }
   });
 
+  // ─── Radio ──────────────────────────────────────────────────────────────────
+
+  function setRadioState(state) {
+    _radioState = state;
+    const btn = document.getElementById("radioBtn");
+    const bar = document.getElementById("radioBar");
+    btn.classList.remove("is-playing", "is-loading", "is-error");
+    if (state === "stopped") {
+      btn.textContent = "♫";
+      btn.setAttribute("aria-label", "Play ambient radio");
+      bar.hidden = true;
+    } else if (state === "loading") {
+      btn.classList.add("is-loading");
+      btn.textContent = "…";
+      btn.setAttribute("aria-label", "Connecting…");
+      bar.hidden = false;
+    } else if (state === "playing") {
+      btn.classList.add("is-playing");
+      btn.textContent = "◼";
+      btn.setAttribute("aria-label", "Stop ambient radio");
+      bar.hidden = false;
+    } else if (state === "error") {
+      btn.classList.add("is-error");
+      btn.textContent = "♫";
+      btn.setAttribute("aria-label", "Stream unavailable");
+      bar.hidden = true;
+      setTimeout(() => setRadioState("stopped"), 3000);
+    }
+  }
+
+  function startRadio() {
+    if (!navigator.onLine) { toast("Ambient radio requires an internet connection."); return; }
+    _radioIndex = 0;
+    setRadioState("loading");
+    const audio = document.getElementById("radioAudio");
+    audio.src = RADIO_STREAMS[0];
+    audio.volume = parseFloat(localStorage.getItem("radioVolume") || "0.5");
+    audio.play().catch(() => tryNextStream());
+  }
+
+  function stopRadio() {
+    const audio = document.getElementById("radioAudio");
+    audio.pause();
+    audio.src = "";
+    setRadioState("stopped");
+    if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "none";
+  }
+
+  function tryNextStream() {
+    _radioIndex++;
+    if (_radioIndex >= RADIO_STREAMS.length) {
+      setRadioState("error");
+      toast("Stream unavailable — try again later.");
+      return;
+    }
+    const audio = document.getElementById("radioAudio");
+    audio.src = RADIO_STREAMS[_radioIndex];
+    audio.play().catch(() => tryNextStream());
+  }
+
   // ─── Init ───────────────────────────────────────────────────────────────────
   document.getElementById("generateBtn")    .addEventListener("click", handleGenerate);
   document.getElementById("lockChar1")      .addEventListener("click", () => { locks.char1    = !locks.char1;    updateLockButtons(); });
@@ -2543,6 +2671,36 @@ function getCurrentElapsed() {
   });
   document.getElementById("themeBtn")       .addEventListener("click", toggleTheme);
   document.getElementById("tipDismiss")     .addEventListener("click", dismissTip);
+  document.getElementById("radioBtn")       .addEventListener("click", () => {
+    if (_radioState === "stopped" || _radioState === "error") startRadio();
+    else stopRadio();
+  });
+  document.getElementById("radioVolume")    .addEventListener("input", e => {
+    document.getElementById("radioAudio").volume = parseFloat(e.target.value);
+    try { localStorage.setItem("radioVolume", e.target.value); } catch(_) {}
+  });
+  const _radioAudio = document.getElementById("radioAudio");
+  _radioAudio.addEventListener("playing", () => {
+    setRadioState("playing");
+    if ("mediaSession" in navigator) {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: "Mission Control", artist: "SomaFM", album: "Twin Stars Radio"
+      });
+      navigator.mediaSession.playbackState = "playing";
+      navigator.mediaSession.setActionHandler("pause", stopRadio);
+      navigator.mediaSession.setActionHandler("stop",  stopRadio);
+    }
+  });
+  _radioAudio.addEventListener("error", () => {
+    if (_radioState !== "stopped") tryNextStream();
+  });
+  window.addEventListener("offline", () => {
+    if (_radioState !== "stopped") { stopRadio(); toast("Stream stopped — you're offline."); }
+    document.getElementById("radioBtn").disabled = true;
+  });
+  window.addEventListener("online", () => {
+    document.getElementById("radioBtn").disabled = false;
+  });
 
   try {
     const lastResult     = localStorage.getItem("lastResult");
@@ -2550,6 +2708,9 @@ function getCurrentElapsed() {
     if (lastResult)     document.getElementById("result").value     = lastResult;
     if (lastDifficulty) document.getElementById("difficulty").value = lastDifficulty;
   } catch(e) {}
+
+  document.getElementById("radioVolume").value = parseFloat(localStorage.getItem("radioVolume") || "0.5");
+  if (!navigator.onLine) document.getElementById("radioBtn").disabled = true;
 
   buildActiveContent();
   populateSelectors();
