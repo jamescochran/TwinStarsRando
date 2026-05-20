@@ -1,0 +1,5 @@
+#!/bin/sh
+# Bump the service worker cache name to the current timestamp on every commit.
+stamp="twin-stars-$(date +%Y-%m-%d-%H%M)"
+sed -i "s/const CACHE = \"twin-stars-[0-9-]*\";/const CACHE = \"$stamp\";/" service-worker.js
+git add service-worker.js
