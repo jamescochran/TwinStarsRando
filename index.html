@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Twin Stars Randomizer</title>
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#07091a">
+  <meta name="theme-color" content="#07091a" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#f0f2fb" media="(prefers-color-scheme: light)">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Twin Stars">
@@ -255,6 +256,9 @@
       min-height: 48px;
     }
     .form-row select:focus { outline: 2px solid var(--accent-teal); outline-offset: 1px; border-color: var(--accent-teal); }
+    [data-theme="light"] .form-row select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%232a3868' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    }
     .form-row-inline {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -383,7 +387,7 @@
     .btn-pause.paused { border-color: var(--accent-orange); color: var(--accent-orange); }
 
     /* Tables */
-    .history-table-wrap { overflow-x: auto; margin-top: 12px; -webkit-overflow-scrolling: touch; }
+    .history-table-wrap { overflow-x: auto; margin-top: 12px; }
     table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 380px; }
     thead th {
       font-family: 'Orbitron', sans-serif;
@@ -634,6 +638,11 @@
     @keyframes comboFadeIn {
       from { opacity: 0; transform: translateY(6px); }
       to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .combo-display { animation: none; }
+      .toast         { animation: none; }
     }
 
     /* Footer */
@@ -1086,6 +1095,12 @@
 
   function applyTheme(theme) {
     document.documentElement.setAttribute("data-theme", theme);
+    document.querySelectorAll('meta[name="theme-color"]').forEach(m => {
+      const isDark = m.getAttribute("content") === "#07091a";
+      m.setAttribute("media", isDark
+        ? (theme === "dark"  ? "all" : "not all")
+        : (theme === "light" ? "all" : "not all"));
+    });
     const btn = document.getElementById("themeBtn");
     // In dark mode show the sun (click to switch to light).
     // In light mode show the moon (click to switch to dark).
@@ -1142,7 +1157,7 @@
 
   // ─── Helpers ────────────────────────────────────────────────────────────────
   function comboKey(comb) {
-    return comb.characters.slice().sort().join("|") + "-" + comb.scenario;
+    return comb.characters.slice().sort().join("\x1F") + "\x1E" + comb.scenario;
   }
 
   const _escEl = document.createElement("div");
@@ -1629,7 +1644,8 @@ function getCurrentElapsed() {
 
     setTimeout(() => {
       const el = document.getElementById("combinationDisplay");
-      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (el) el.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
     }, 80);
   }
 
@@ -1788,8 +1804,20 @@ function getCurrentElapsed() {
     if (tab === "history") { displayHistory(); displayUnplayed(); }
   }
 
-  // ─── Keyboard: Escape closes modals, Tab traps focus ────────────────────────
+  // ─── Onboarding tip: dismiss on outside click ───────────────────────────────
+  document.addEventListener("click", e => {
+    const tip = document.getElementById("onboardingTip");
+    if (!tip || tip.classList.contains("hidden")) return;
+    if (!tip.contains(e.target)) dismissTip();
+  });
+
+  // ─── Keyboard: Escape closes modals and tooltip, Tab traps focus ─────────────
   document.addEventListener("keydown", e => {
+    if (e.key === "Escape") {
+      const tip = document.getElementById("onboardingTip");
+      if (tip && !tip.classList.contains("hidden")) { dismissTip(); return; }
+    }
+
     const overlay = document.querySelector(".modal-overlay.open");
     if (!overlay) return;
 
@@ -1877,6 +1905,6 @@ function getCurrentElapsed() {
     });
   }
 </script>
-<noscript><img referrerpolicy="no-referrer-when-downgrade" src="https://umami.1jc.in/collect?v=1&type=pageview&website=726ddc74-d419-4856-a3c8-cd5ce54f7093&url=%2FTwinStarsRando%2F&title=Twin%20Stars%20Randomizer&hostname=jamescochran.github.io" style="position:absolute;width:1px;height:1px;" alt="" /></noscript>
+<noscript><p style="font-family:sans-serif;text-align:center;padding:40px;">Twin Stars Randomizer requires JavaScript to run.</p></noscript>
 </body>
 </html>

@@ -143,11 +143,9 @@ Each saved record looks like this:
 
 ### Combo Key Format
 
-Combinations are keyed as: `[char1]|[char2]-[scenario]`
+Combinations are keyed as: `[char1]\x1F[char2]\x1E[scenario]`
 
-Characters are sorted alphabetically before joining. Example: `"Bood|Stag Solar-Escape The Brig!"`
-
-> ⚠️ **Known fragility:** the `|` and `-` delimiters are not validated out of character or scenario names. All current names are safe, but a future content pack entry containing either character would silently break key matching. See Issue #31.
+Characters are sorted alphabetically before joining. The delimiters are ASCII control characters — unit separator (`\x1F`) between characters and record separator (`\x1E`) before the scenario — so they can never appear in a character or scenario name.
 
 ### XSS / innerHTML
 
