@@ -3,3 +3,10 @@
 stamp="twin-stars-$(date +%Y-%m-%d-%H%M)"
 sed -i "s/const CACHE = \"twin-stars-[0-9-]*\";/const CACHE = \"$stamp\";/" service-worker.js
 git add service-worker.js
+
+# Update the visible date stamp in index.html only when index.html is being committed.
+if git diff --cached --name-only | grep -q '^index\.html$'; then
+  datestamp="$(date '+%Y-%m-%d %H:%M EST')"
+  sed -i "s/[0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\} [0-9]\{2\}:[0-9]\{2\} EST/$datestamp/" index.html
+  git add index.html
+fi
