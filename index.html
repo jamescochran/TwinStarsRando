@@ -856,6 +856,17 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="importConfirmModal">
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="importConfirmModalTitle">
+    <h2 id="importConfirmModalTitle">Replace Records?</h2>
+    <p id="importConfirmMsg"></p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="importCancel">Cancel</button>
+      <button class="btn btn-danger"    id="importConfirm">Replace</button>
+    </div>
+  </div>
+</div>
+
 <!-- SETTINGS MODAL -->
 <div class="modal-overlay" id="settingsModal">
   <div class="settings-box" role="dialog" aria-modal="true" aria-labelledby="settingsModalTitle">
@@ -1107,7 +1118,15 @@
   let records = [];
   try {
     const raw = localStorage.getItem("gameRecords");
-    if (raw) records = JSON.parse(raw).filter(isValidRecord);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      records = parsed.filter(isValidRecord);
+      const dropped = parsed.length - records.length;
+      if (dropped > 0) {
+        console.warn(`Discarded ${dropped} invalid record(s) from localStorage.`);
+        setTimeout(() => toast(`${dropped} saved record(s) could not be loaded and were skipped.`, "error"), 300);
+      }
+    }
   } catch (e) {
     console.warn("Could not load saved records:", e);
   }
@@ -1128,7 +1147,7 @@
   const _escEl = document.createElement("div");
   function esc(str) {
     _escEl.textContent = String(str);
-    return _escEl.innerHTML;
+    return _escEl.innerHTML.replace(/"/g, '&quot;');
   }
 
   function formatTime(secs) {
@@ -1194,9 +1213,12 @@ function stopTimer() {
     clearInterval(timerInterval);
     timerInterval = null;
   }
+  timerPaused = false;
+  startTime   = null;
 }
 
 function togglePause() {
+  if (!timerInterval && !timerPaused) return; // timer is stopped, not just paused
   const btn = document.getElementById("pauseBtn");
   const display = document.getElementById("timerDisplay");
 
@@ -1342,6 +1364,8 @@ function getCurrentElapsed() {
       pauseB.textContent = "Resume";
       pauseB.classList.add("paused");
       timerEl.classList.add("paused");
+    } else if (!timerInterval) {
+      pauseB.disabled = true;
     }
   }
 
@@ -1641,7 +1665,6 @@ function getCurrentElapsed() {
     try { localStorage.setItem("lastResult", result); localStorage.setItem("lastDifficulty", difficulty); } catch(e) {}
     saveRecords();
     displayCombination(currentCombination);
-    startTimer();
     displayComboHistory(currentCombination);
     toast("Record saved!");
   }
@@ -1661,6 +1684,8 @@ function getCurrentElapsed() {
     toast("Exported successfully!");
   }
 
+  let _pendingImport = null;
+
   document.getElementById("importFile").addEventListener("change", function () {
     const file = this.files[0];
     if (!file) return;
@@ -1671,19 +1696,38 @@ function getCurrentElapsed() {
         if (!Array.isArray(parsed)) { toast("Invalid file format.", "error"); return; }
         const valid   = parsed.filter(isValidRecord);
         const skipped = parsed.length - valid.length;
-        records = valid;
-        saveRecords();
-        displayHistory();
-        displayUnplayed();
-        if (currentCombination) { displayCombination(currentCombination); displayComboHistory(currentCombination); }
-        const msg = skipped > 0
-          ? `Replaced records with ${valid.length} imported. ${skipped} skipped (invalid).`
-          : `Replaced records with ${valid.length} imported.`;
-        toast(msg);
-      } catch (e) { toast("Could not read file.", "error"); }
+        _pendingImport = { valid, skipped };
+        const skipNote = skipped > 0 ? ` (${skipped} invalid records will be skipped.)` : "";
+        const existing = records.length;
+        document.getElementById("importConfirmMsg").textContent =
+          `This will replace your ${existing} existing record(s) with ${valid.length} imported record(s).${skipNote} This cannot be undone.`;
+        document.getElementById("importConfirmModal").classList.add("open");
+        setTimeout(() => document.getElementById("importCancel").focus(), 0);
+      } catch (err) { toast("Could not read file.", "error"); }
     };
     reader.readAsText(file);
     this.value = "";
+  });
+
+  document.getElementById("importCancel").addEventListener("click", () => {
+    _pendingImport = null;
+    document.getElementById("importConfirmModal").classList.remove("open");
+  });
+
+  document.getElementById("importConfirm").addEventListener("click", () => {
+    document.getElementById("importConfirmModal").classList.remove("open");
+    if (!_pendingImport) return;
+    const { valid, skipped } = _pendingImport;
+    _pendingImport = null;
+    records = valid;
+    saveRecords();
+    displayHistory();
+    displayUnplayed();
+    if (currentCombination) { displayCombination(currentCombination); displayComboHistory(currentCombination); }
+    const msg = skipped > 0
+      ? `Replaced records with ${valid.length} imported. ${skipped} skipped (invalid).`
+      : `Replaced records with ${valid.length} imported.`;
+    toast(msg);
   });
 
   document.getElementById("restartCancel").addEventListener("click", () => {
