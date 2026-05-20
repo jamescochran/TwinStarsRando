@@ -1516,14 +1516,14 @@
       <p class="panel-title">Record Outcome</p>
       <div class="form-row-inline">
         <div class="form-row form-row-flush">
-          <label>Result</label>
+          <label for="result">Result</label>
           <select id="result">
             <option value="Win">Win</option>
             <option value="Loss">Loss</option>
           </select>
         </div>
         <div class="form-row form-row-flush">
-          <label>Difficulty</label>
+          <label for="difficulty">Difficulty</label>
           <select id="difficulty">
             <option value="Easy">Easy</option>
             <option value="Medium">Medium</option>
@@ -1560,12 +1560,12 @@
 
   <footer>
     <p class="footer-byline">
-      Made with love by <a href="https://bsky.app/profile/jamescochran.bsky.social" target="_blank" rel="noopener noreferrer" style="color:#6aab96;font-style:italic;text-decoration:none;">THE</a> James Dean Cochran
+      Made with love by <a href="https://bsky.app/profile/jamescochran.bsky.social" target="_blank" rel="noopener noreferrer" style="color:var(--accent-teal);font-style:italic;text-decoration:none;">THE</a> James Dean Cochran
     </p>
     <p class="footer-text">
       If you enjoy this tool,
       <a href="https://ko-fi.com/jamescochran" target="_blank" rel="noopener noreferrer" style="color:var(--accent-orange);border-bottom:1px solid rgba(255,107,53,0.4);">buy me a coffee</a>
-      or send me a copy of <a href="https://boardgamegeek.com/boardgame/211988/hot-dogs" target="_blank" rel="noopener noreferrer" style="color:#e8b800;border-bottom:1px solid rgba(232,184,0,0.4);">Hot Dogs</a>.
+      or send me a copy of <a href="https://boardgamegeek.com/boardgame/211988/hot-dogs" target="_blank" rel="noopener noreferrer" style="color:var(--accent-yellow);border-bottom:1px solid rgba(240,180,41,0.4);">Hot Dogs</a>.
     </p>
     <p class="footer-text">
       Come play amazing Button Shy games with us and talk about them at the
@@ -1582,7 +1582,7 @@
     <p class="footer-disclaimer">
       Twin Stars Adventure Series is designed by Jason Tagmire &amp; Mike Mullins and published by Button Shy Games. All characters, scenarios, and game content are the intellectual property of Button Shy Games and their creators. This is an unofficial, free, fan-made companion app made out of love for an incredible game — not affiliated with or endorsed by Button Shy Games. If you don't own Twin Stars yet, please go buy it. It's worth every penny.
     </p>
-    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-20 15:38 EST</p>
+    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-20 17:32 EST</p>
   </footer>
 
 </div>
@@ -1769,6 +1769,7 @@
 
   let _radioIndex = 0;
   let _radioState = "stopped";
+  let _errorTimeout = null;
 
   let records = [];
   let historyDirty  = true;
@@ -1789,7 +1790,9 @@
   }
 
   function syncExportBtn() {
-    document.getElementById("exportBtn").disabled = !records.length;
+    const empty = !records.length;
+    document.getElementById("exportBtn").disabled  = empty;
+    document.getElementById("clearDataBtn").disabled = empty;
   }
 
   function saveRecords() {
@@ -2472,6 +2475,7 @@ function getCurrentElapsed() {
         if (!Array.isArray(parsed)) { toast("Invalid file format.", "error"); return; }
         const valid   = parsed.filter(isValidRecord);
         const skipped = parsed.length - valid.length;
+        if (valid.length === 0) { toast("No valid records found in file.", "error"); return; }
         _pendingImport = { valid, skipped };
         const skipNote = skipped > 0 ? ` (${skipped} invalid records will be skipped.)` : "";
         const existing = records.length;
@@ -2597,6 +2601,7 @@ function getCurrentElapsed() {
   // ─── Radio ──────────────────────────────────────────────────────────────────
 
   function setRadioState(state) {
+    if (_errorTimeout) { clearTimeout(_errorTimeout); _errorTimeout = null; }
     _radioState = state;
     const btn     = document.getElementById("radioBtn");
     const volBtn  = document.getElementById("volumeBtn");
@@ -2628,7 +2633,7 @@ function getCurrentElapsed() {
       volBtn.classList.remove("visible");
       label.hidden  = true;
       popover.classList.remove("open");
-      setTimeout(() => setRadioState("stopped"), 3000);
+      _errorTimeout = setTimeout(() => setRadioState("stopped"), 3000);
     }
   }
 

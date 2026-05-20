@@ -1,4 +1,4 @@
-const CACHE = "twin-stars-2026-05-20-1538";
+const CACHE = "twin-stars-2026-05-20-1732";
 const FONTS_CACHE = "twin-stars-fonts-v1";
 const ASSETS = [
   "/TwinStarsRando/",
