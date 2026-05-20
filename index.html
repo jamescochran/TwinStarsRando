@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Twin Stars Randomizer</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#07091a">
@@ -82,7 +82,7 @@
       z-index: 1;
       max-width: 760px;
       margin: 0 auto;
-      padding: 28px 16px 60px;
+      padding: 28px 16px calc(60px + env(safe-area-inset-bottom, 0px));
     }
 
     /* Header */
@@ -361,7 +361,8 @@
       color: var(--text-primary);
       letter-spacing: 3px;
     }
-    .timer-display.paused { color: var(--text-muted); }
+    .timer-display.paused   { color: var(--text-muted); }
+    .timer-display.stopped  { color: var(--text-dim); font-style: italic; }
     .btn-pause {
       background: transparent;
       border: 1px solid var(--border-glow);
@@ -604,7 +605,7 @@
     /* Toast */
     .toast {
       position: fixed;
-      bottom: 28px;
+      bottom: calc(28px + env(safe-area-inset-bottom, 0px));
       left: 50%;
       transform: translateX(-50%);
       z-index: 200;
@@ -920,16 +921,16 @@
       <p class="panel-title">Manual Selection</p>
       <div class="form-row-inline">
         <div class="form-row form-row-flush">
-          <label style="display:flex;align-items:center;justify-content:space-between;">Character 1 <button class="btn-lock" id="lockChar1" title="Lock" aria-label="Lock Character 1" aria-pressed="false">🔓</button></label>
+          <label style="display:flex;align-items:center;justify-content:space-between;">Character 1 <button class="btn-lock" id="lockChar1" title="Lock" aria-label="Lock Character 1" aria-pressed="false"><svg aria-hidden="true" width="12" height="14" viewBox="0 0 12 14" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="6" width="10" height="8" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M3 6V4a3 3 0 0 1 6 0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button></label>
           <select id="manualChar1"></select>
         </div>
         <div class="form-row form-row-flush">
-          <label style="display:flex;align-items:center;justify-content:space-between;">Character 2 <button class="btn-lock" id="lockChar2" title="Lock" aria-label="Lock Character 2" aria-pressed="false">🔓</button></label>
+          <label style="display:flex;align-items:center;justify-content:space-between;">Character 2 <button class="btn-lock" id="lockChar2" title="Lock" aria-label="Lock Character 2" aria-pressed="false"><svg aria-hidden="true" width="12" height="14" viewBox="0 0 12 14" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="6" width="10" height="8" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M3 6V4a3 3 0 0 1 6 0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button></label>
           <select id="manualChar2"></select>
         </div>
       </div>
       <div class="form-row form-row-top">
-        <label style="display:flex;align-items:center;justify-content:space-between;">Scenario <button class="btn-lock" id="lockScenario" title="Lock" aria-label="Lock Scenario" aria-pressed="false">🔓</button></label>
+        <label style="display:flex;align-items:center;justify-content:space-between;">Scenario <button class="btn-lock" id="lockScenario" title="Lock" aria-label="Lock Scenario" aria-pressed="false"><svg aria-hidden="true" width="12" height="14" viewBox="0 0 12 14" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="6" width="10" height="8" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M3 6V4a3 3 0 0 1 6 0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button></label>
         <select id="manualScenario"></select>
       </div>
       <button class="btn btn-load" id="loadManualCombo">Load Mission</button>
@@ -1205,7 +1206,7 @@ function startTimer() {
   startTime       = Date.now();
   timerInterval   = setInterval(updateDisplay, 1000);
   const el = document.getElementById("timerDisplay");
-  if (el) el.textContent = "00:00";
+  if (el) { el.textContent = "00:00"; el.classList.remove("stopped"); }
 }
 
 function stopTimer() {
@@ -1215,6 +1216,8 @@ function stopTimer() {
   }
   timerPaused = false;
   startTime   = null;
+  const el = document.getElementById("timerDisplay");
+  if (el) el.classList.add("stopped");
 }
 
 function togglePause() {
@@ -1312,19 +1315,26 @@ function getCurrentElapsed() {
 
   const locks = { char1: false, char2: false, scenario: false };
 
+  const SVG_LOCK   = `<svg aria-hidden="true" width="12" height="14" viewBox="0 0 12 14" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="6" width="10" height="8" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M3 6V4a3 3 0 0 1 6 0v2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`;
+  const SVG_UNLOCK = `<svg aria-hidden="true" width="12" height="14" viewBox="0 0 12 14" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="6" width="10" height="8" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M3 6V4a3 3 0 0 1 6 0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`;
+
   function updateLockButtons() {
-    const btn1 = document.getElementById("lockChar1");
-    const btn2 = document.getElementById("lockChar2");
+    const btn1  = document.getElementById("lockChar1");
+    const btn2  = document.getElementById("lockChar2");
     const btnSc = document.getElementById("lockScenario");
-    btn1.textContent = locks.char1    ? "🔒" : "🔓";
-    btn2.textContent = locks.char2    ? "🔒" : "🔓";
-    btnSc.textContent = locks.scenario ? "🔒" : "🔓";
+    btn1.innerHTML  = locks.char1    ? SVG_LOCK : SVG_UNLOCK;
+    btn2.innerHTML  = locks.char2    ? SVG_LOCK : SVG_UNLOCK;
+    btnSc.innerHTML = locks.scenario ? SVG_LOCK : SVG_UNLOCK;
     btn1.classList.toggle("locked",  locks.char1);
     btn2.classList.toggle("locked",  locks.char2);
     btnSc.classList.toggle("locked", locks.scenario);
     btn1.setAttribute("aria-pressed",  String(locks.char1));
     btn2.setAttribute("aria-pressed",  String(locks.char2));
     btnSc.setAttribute("aria-pressed", String(locks.scenario));
+    const allLocked = locks.char1 && locks.char2 && locks.scenario;
+    const genBtn = document.getElementById("generateBtn");
+    genBtn.disabled      = allLocked;
+    genBtn.style.opacity = allLocked ? "0.45" : "";
   }
 
   function displayCombination(comb) {
@@ -1366,6 +1376,7 @@ function getCurrentElapsed() {
       timerEl.classList.add("paused");
     } else if (!timerInterval) {
       pauseB.disabled = true;
+      timerEl.classList.add("stopped");
     }
   }
 
@@ -1578,12 +1589,24 @@ function getCurrentElapsed() {
     buildActiveContent();
     saveEnabledPacks();
     populateSelectors();
+    if (currentCombination) {
+      const valid =
+        currentCombination.characters.every(c => characters.includes(c)) &&
+        scenarios.includes(currentCombination.scenario);
+      if (!valid) {
+        currentCombination = null;
+        stopTimer();
+        document.getElementById("combinationDisplay").innerHTML = "";
+        document.getElementById("annotationSection").classList.add("hidden");
+        document.getElementById("comboHistory").innerHTML = "";
+        toast("Active combination removed — pack disabled.", "error");
+      } else {
+        displayCombination(currentCombination);
+        displayComboHistory(currentCombination);
+      }
+    }
     displayHistory();
     displayUnplayed();
-    if (currentCombination) {
-      displayCombination(currentCombination);
-      displayComboHistory(currentCombination);
-    }
   }
 
   // ─── Actions ────────────────────────────────────────────────────────────────
@@ -1593,6 +1616,7 @@ function getCurrentElapsed() {
     displayCombination(comb);
     displayComboHistory(comb);
     document.getElementById("annotationSection").classList.remove("hidden");
+    document.getElementById("saveRecordBtn").disabled = false;
 
     // Sync manual selectors to reflect the loaded combination
     const c1 = document.getElementById("manualChar1");
@@ -1664,6 +1688,7 @@ function getCurrentElapsed() {
     });
     try { localStorage.setItem("lastResult", result); localStorage.setItem("lastDifficulty", difficulty); } catch(e) {}
     saveRecords();
+    document.getElementById("saveRecordBtn").disabled = true;
     displayCombination(currentCombination);
     displayComboHistory(currentCombination);
     toast("Record saved!");
@@ -1806,9 +1831,20 @@ function getCurrentElapsed() {
   document.getElementById("historyTab")     .addEventListener("click", () => showTab("history"));
   document.getElementById("settingsBtn")    .addEventListener("click", openSettings);
   document.getElementById("settingsClose")  .addEventListener("click", closeSettings);
-  document.getElementById("settingsModal")  .addEventListener("click", e => { if (e.target === e.currentTarget) closeSettings(); });
+  document.getElementById("settingsModal")     .addEventListener("click", e => { if (e.target === e.currentTarget) closeSettings(); });
+  document.getElementById("restartModal")     .addEventListener("click", e => { if (e.target === e.currentTarget) document.getElementById("restartModal").classList.remove("open"); });
+  document.getElementById("confirmModal")     .addEventListener("click", e => { if (e.target === e.currentTarget) document.getElementById("confirmModal").classList.remove("open"); });
+  document.getElementById("importConfirmModal").addEventListener("click", e => { if (e.target === e.currentTarget) { _pendingImport = null; document.getElementById("importConfirmModal").classList.remove("open"); } });
   document.getElementById("manualChar1")    .addEventListener("change", () => syncDropdown("manualChar1", "manualChar2"));
-  document.getElementById("manualChar2")    .addEventListener("change", () => syncDropdown("manualChar2", "manualChar1"));
+  document.getElementById("manualChar2")    .addEventListener("change", function() {
+    if (this.value === document.getElementById("manualChar1").value) {
+      toast("Select two different characters.", "error");
+      const fallback = Array.from(this.options).find(o => o.value !== document.getElementById("manualChar1").value);
+      if (fallback) this.value = fallback.value;
+      return;
+    }
+    syncDropdown("manualChar2", "manualChar1");
+  });
   document.getElementById("themeBtn")       .addEventListener("click", toggleTheme);
   document.getElementById("tipDismiss")     .addEventListener("click", dismissTip);
 
@@ -1825,7 +1861,19 @@ function getCurrentElapsed() {
 
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
-      navigator.serviceWorker.register("service-worker.js").catch(() => {});
+      navigator.serviceWorker.register("service-worker.js").then(reg => {
+        reg.addEventListener("updatefound", () => {
+          const newWorker = reg.installing;
+          newWorker.addEventListener("statechange", () => {
+            if (newWorker.state === "activated" && navigator.serviceWorker.controller) {
+              toast("App updated — reload for the latest version.");
+            }
+          });
+        });
+      }).catch(() => {});
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        toast("App updated — reload for the latest version.");
+      });
     });
   }
 </script>
