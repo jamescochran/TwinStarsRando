@@ -19,6 +19,11 @@
   <meta property="og:title" content="Twin Stars Randomizer">
   <meta property="og:description" content="Free PWA companion for Twin Stars Adventure Series — randomizes character pairs and scenarios, times sessions, and tracks play history across all content packs.">
   <meta property="og:image" content="https://jamescochran.github.io/TwinStarsRando/icon-512.png">
+  <link rel="canonical" href="https://jamescochran.github.io/TwinStarsRando/">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Twin Stars Randomizer">
+  <meta name="twitter:description" content="Free PWA companion for Twin Stars Adventure Series — randomizes character pairs and scenarios, times sessions, and tracks play history across all content packs.">
+  <meta name="twitter:image" content="https://jamescochran.github.io/TwinStarsRando/icon-512.png">
   <script async src="https://umami.1jc.in/script.js" data-website-id="726ddc74-d419-4856-a3c8-cd5ce54f7093" integrity="sha384-LTPPwaLbU0osA3KlbZu0gbKM+OX2/iNJYVcdtY6ZFUJfsuj7LJ+40McwiPCPpKad" crossorigin="anonymous"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -688,6 +693,7 @@
     @media (prefers-reduced-motion: reduce) {
       .combo-display { animation: none; }
       .toast         { animation: none; }
+      *, *::before, *::after { transition-duration: 0.01ms !important; }
     }
 
     /* Footer */
@@ -1005,6 +1011,17 @@
     <div class="modal-actions">
       <button class="btn btn-secondary" id="importCancel">Cancel</button>
       <button class="btn btn-danger"    id="importConfirm">Replace</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="deleteRecordModal">
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="deleteRecordModalTitle">
+    <h2 id="deleteRecordModalTitle">Delete Record</h2>
+    <p>Delete this mission record? This cannot be undone.</p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="deleteRecordCancel">Cancel</button>
+      <button class="btn btn-danger"    id="deleteRecordConfirm">Delete</button>
     </div>
   </div>
 </div>
@@ -1470,7 +1487,7 @@
     <div class="panel">
       <p class="panel-title">Mission Log</p>
       <div class="history-toolbar">
-        <button class="btn btn-secondary" id="exportBtn">Export</button>
+        <button class="btn btn-secondary" id="exportBtn" disabled>Export</button>
         <label class="import-label" for="importFile">Import</label>
         <input type="file" id="importFile" accept=".json">
         <button class="btn btn-danger" id="clearDataBtn">Clear All</button>
@@ -1504,7 +1521,7 @@
     <p class="footer-disclaimer">
       Twin Stars Adventure Series is designed by Jason Tagmire &amp; Mike Mullins and published by Button Shy Games. All characters, scenarios, and game content are the intellectual property of Button Shy Games and their creators. This is an unofficial, free, fan-made companion app made out of love for an incredible game — not affiliated with or endorsed by Button Shy Games. If you don't own Twin Stars yet, please go buy it. It's worth every penny.
     </p>
-    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-20 13:45 EST</p>
+    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-20 13:53 EST</p>
   </footer>
 
 </div>
@@ -1606,7 +1623,7 @@
   };
 
   function faqHelpBtn(anchor) {
-    return `<button class="btn-faq-inline" data-faq-anchor="${anchor}" title="Rules FAQ" aria-label="Rules FAQ">?</button>`;
+    return `<button class="btn-faq-inline" data-faq-anchor="${esc(anchor)}" title="Rules FAQ" aria-label="Rules FAQ">?</button>`;
   }
 
   function scenarioHTML(name) {
@@ -1695,9 +1712,14 @@
     console.warn("Could not load saved records:", e);
   }
 
+  function syncExportBtn() {
+    document.getElementById("exportBtn").disabled = !records.length;
+  }
+
   function saveRecords() {
     historyDirty = true;
     unplayedDirty = true;
+    syncExportBtn();
     try {
       localStorage.setItem("gameRecords", JSON.stringify(records));
     } catch (e) {
@@ -1932,6 +1954,7 @@ function getCurrentElapsed() {
     });
     document.getElementById("pauseBtn").addEventListener("click", togglePause);
     document.getElementById("restartBtn").addEventListener("click", () => {
+      _restartTrigger = document.activeElement;
       document.getElementById("restartModal").classList.add("open");
       setTimeout(() => document.getElementById("restartCancel").focus(), 0);
     });
@@ -1981,12 +2004,11 @@ function getCurrentElapsed() {
 
     div.querySelectorAll(".btn-delete-record").forEach(btn => {
       btn.addEventListener("click", () => {
-        if (!confirm("Delete this record?")) return;
-        const idx = parseInt(btn.dataset.idx, 10);
-        records.splice(idx, 1);
-        saveRecords();
-        displayCombination(currentCombination);
-        displayComboHistory(currentCombination);
+        _deleteTrigger    = btn;
+        _pendingDeleteIdx = parseInt(btn.dataset.idx, 10);
+        _deleteCallback   = () => { displayCombination(currentCombination); displayComboHistory(currentCombination); };
+        document.getElementById("deleteRecordModal").classList.add("open");
+        setTimeout(() => document.getElementById("deleteRecordCancel").focus(), 0);
       });
     });
   }
@@ -2086,13 +2108,11 @@ function getCurrentElapsed() {
 
     container.querySelectorAll(".btn-delete-record").forEach(btn => {
       btn.addEventListener("click", () => {
-        if (!confirm("Delete this record?")) return;
-        const idx = parseInt(btn.dataset.idx, 10);
-        records.splice(idx, 1);
-        saveRecords();
-        displayHistory();
-        displayUnplayed();
-        if (currentCombination) { displayCombination(currentCombination); displayComboHistory(currentCombination); }
+        _deleteTrigger    = btn;
+        _pendingDeleteIdx = parseInt(btn.dataset.idx, 10);
+        _deleteCallback   = () => { displayHistory(); displayUnplayed(); if (currentCombination) { displayCombination(currentCombination); displayComboHistory(currentCombination); } };
+        document.getElementById("deleteRecordModal").classList.add("open");
+        setTimeout(() => document.getElementById("deleteRecordCancel").focus(), 0);
       });
     });
   }
@@ -2122,6 +2142,7 @@ function getCurrentElapsed() {
   }
 
   function openSettings() {
+    _settingsTrigger = document.activeElement;
     const list = document.getElementById("packList");
     list.innerHTML = "";
     CONTENT_PACKS.forEach(pack => {
@@ -2187,24 +2208,58 @@ function getCurrentElapsed() {
     }
     displayHistory();
     displayUnplayed();
+    if (_settingsTrigger) { _settingsTrigger.focus(); _settingsTrigger = null; }
   }
 
-  // ─── FAQ modal ──────────────────────────────────────────────────────────────
-  let _faqTrigger = null;
+  // ─── Modal triggers & close helpers ─────────────────────────────────────────
+  let _faqTrigger      = null;
+  let _settingsTrigger = null;
+  let _restartTrigger  = null;
+  let _confirmTrigger  = null;
+  let _importTrigger   = null;
+  let _deleteTrigger   = null;
+  let _pendingDeleteIdx = null;
+  let _deleteCallback   = null;
+
+  function closeFaq() {
+    document.getElementById("faqModal").classList.remove("open");
+    if (_faqTrigger) { _faqTrigger.focus(); _faqTrigger = null; }
+  }
+
+  function closeRestartModal() {
+    document.getElementById("restartModal").classList.remove("open");
+    if (_restartTrigger) { _restartTrigger.focus(); _restartTrigger = null; }
+  }
+
+  function closeConfirmModal() {
+    document.getElementById("confirmModal").classList.remove("open");
+    if (_confirmTrigger) { _confirmTrigger.focus(); _confirmTrigger = null; }
+  }
+
+  function closeImportModal() {
+    _pendingImport = null;
+    document.getElementById("importConfirmModal").classList.remove("open");
+    if (_importTrigger) { _importTrigger.focus(); _importTrigger = null; }
+  }
+
+  function closeDeleteModal() {
+    _pendingDeleteIdx = null;
+    _deleteCallback   = null;
+    document.getElementById("deleteRecordModal").classList.remove("open");
+    if (_deleteTrigger) { _deleteTrigger.focus(); _deleteTrigger = null; }
+  }
 
   function openFaq(anchorId) {
     _faqTrigger = document.activeElement;
     document.getElementById("faqModal").classList.add("open");
     if (anchorId) {
       const target = document.getElementById(anchorId);
-      if (target) setTimeout(() => target.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+      if (target) {
+        const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        setTimeout(() => target.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" }), 50);
+      }
     }
     setTimeout(() => document.getElementById("faqClose").focus(), 0);
-  }
-
-  function closeFaq() {
-    document.getElementById("faqModal").classList.remove("open");
-    if (_faqTrigger) { _faqTrigger.focus(); _faqTrigger = null; }
   }
 
   // ─── Actions ────────────────────────────────────────────────────────────────
@@ -2322,6 +2377,7 @@ function getCurrentElapsed() {
   let _pendingImport = null;
 
   document.getElementById("importFile").addEventListener("change", function () {
+    _importTrigger = document.activeElement;
     const file = this.files[0];
     if (!file) return;
     const reader = new FileReader();
@@ -2344,16 +2400,12 @@ function getCurrentElapsed() {
     this.value = "";
   });
 
-  document.getElementById("importCancel").addEventListener("click", () => {
-    _pendingImport = null;
-    document.getElementById("importConfirmModal").classList.remove("open");
-  });
+  document.getElementById("importCancel").addEventListener("click", closeImportModal);
 
   document.getElementById("importConfirm").addEventListener("click", () => {
-    document.getElementById("importConfirmModal").classList.remove("open");
     if (!_pendingImport) return;
     const { valid, skipped } = _pendingImport;
-    _pendingImport = null;
+    closeImportModal();
     records = valid;
     saveRecords();
     displayHistory();
@@ -2365,29 +2417,37 @@ function getCurrentElapsed() {
     toast(msg);
   });
 
-  document.getElementById("restartCancel").addEventListener("click", () => {
-    document.getElementById("restartModal").classList.remove("open");
-  });
+  document.getElementById("restartCancel").addEventListener("click", closeRestartModal);
   document.getElementById("restartConfirm").addEventListener("click", () => {
-    document.getElementById("restartModal").classList.remove("open");
+    closeRestartModal();
     startTimer();
   });
 
   document.getElementById("clearDataBtn").addEventListener("click", () => {
+    _confirmTrigger = document.activeElement;
     document.getElementById("confirmModal").classList.add("open");
     setTimeout(() => document.getElementById("modalCancel").focus(), 0);
   });
-  document.getElementById("modalCancel").addEventListener("click", () => {
-    document.getElementById("confirmModal").classList.remove("open");
-  });
+  document.getElementById("modalCancel").addEventListener("click", closeConfirmModal);
   document.getElementById("modalConfirm").addEventListener("click", () => {
     records = [];
     saveRecords();
     displayHistory();
     displayUnplayed();
     if (currentCombination) { displayCombination(currentCombination); displayComboHistory(currentCombination); }
-    document.getElementById("confirmModal").classList.remove("open");
+    closeConfirmModal();
     toast("All records cleared.");
+  });
+
+  document.getElementById("deleteRecordCancel").addEventListener("click", closeDeleteModal);
+  document.getElementById("deleteRecordConfirm").addEventListener("click", () => {
+    const idx = _pendingDeleteIdx;
+    const cb  = _deleteCallback;
+    closeDeleteModal();
+    if (idx == null) return;
+    records.splice(idx, 1);
+    saveRecords();
+    if (cb) cb();
   });
 
   function showTab(tab) {
@@ -2419,8 +2479,12 @@ function getCurrentElapsed() {
     if (!overlay) return;
 
     if (e.key === "Escape") {
-      if (overlay.id === "settingsModal") { closeSettings(); return; }
-      if (overlay.id === "faqModal")      { closeFaq();       return; }
+      if (overlay.id === "settingsModal")      { closeSettings();    return; }
+      if (overlay.id === "faqModal")           { closeFaq();         return; }
+      if (overlay.id === "restartModal")       { closeRestartModal(); return; }
+      if (overlay.id === "confirmModal")       { closeConfirmModal(); return; }
+      if (overlay.id === "importConfirmModal") { closeImportModal();  return; }
+      if (overlay.id === "deleteRecordModal")  { closeDeleteModal();  return; }
       overlay.classList.remove("open");
       return;
     }
@@ -2459,10 +2523,11 @@ function getCurrentElapsed() {
   document.getElementById("faqModal")       .addEventListener("click", e => { if (e.target === e.currentTarget) closeFaq(); });
   document.getElementById("settingsBtn")    .addEventListener("click", openSettings);
   document.getElementById("settingsClose")  .addEventListener("click", closeSettings);
-  document.getElementById("settingsModal")     .addEventListener("click", e => { if (e.target === e.currentTarget) closeSettings(); });
-  document.getElementById("restartModal")     .addEventListener("click", e => { if (e.target === e.currentTarget) document.getElementById("restartModal").classList.remove("open"); });
-  document.getElementById("confirmModal")     .addEventListener("click", e => { if (e.target === e.currentTarget) document.getElementById("confirmModal").classList.remove("open"); });
-  document.getElementById("importConfirmModal").addEventListener("click", e => { if (e.target === e.currentTarget) { _pendingImport = null; document.getElementById("importConfirmModal").classList.remove("open"); } });
+  document.getElementById("settingsModal")      .addEventListener("click", e => { if (e.target === e.currentTarget) closeSettings(); });
+  document.getElementById("restartModal")      .addEventListener("click", e => { if (e.target === e.currentTarget) closeRestartModal(); });
+  document.getElementById("confirmModal")      .addEventListener("click", e => { if (e.target === e.currentTarget) closeConfirmModal(); });
+  document.getElementById("importConfirmModal").addEventListener("click", e => { if (e.target === e.currentTarget) closeImportModal(); });
+  document.getElementById("deleteRecordModal") .addEventListener("click", e => { if (e.target === e.currentTarget) closeDeleteModal(); });
   document.getElementById("manualChar1")    .addEventListener("change", () => syncDropdown("manualChar1", "manualChar2"));
   document.getElementById("manualChar2")    .addEventListener("change", function() {
     if (this.value === document.getElementById("manualChar1").value) {
@@ -2487,19 +2552,11 @@ function getCurrentElapsed() {
   populateSelectors();
   showEmptyComboState();
   initOnboardingTip();
+  syncExportBtn();
 
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
-      navigator.serviceWorker.register("service-worker.js").then(reg => {
-        reg.addEventListener("updatefound", () => {
-          const newWorker = reg.installing;
-          newWorker.addEventListener("statechange", () => {
-            if (newWorker.state === "activated" && navigator.serviceWorker.controller) {
-              toast("App updated — reload for the latest version.");
-            }
-          });
-        });
-      }).catch(() => {});
+      navigator.serviceWorker.register("service-worker.js").catch(() => {});
       navigator.serviceWorker.addEventListener("controllerchange", () => {
         toast("App updated — reload for the latest version.");
       });
