@@ -326,20 +326,32 @@
     .diff-badge.loss     .diff-dot { background: var(--loss-color); }
 
     /* Lock toggle buttons */
+    .form-row-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
     .btn-lock {
-      background: none;
-      border: 1px solid var(--border);
+      background: var(--bg-card);
+      border: 1px solid var(--border-glow);
       border-radius: 5px;
+      color: var(--text-muted);
       cursor: pointer;
       font-size: 12px;
       line-height: 1;
       padding: 3px 5px;
-      transition: border-color 0.15s, background 0.15s;
+      transition: border-color 0.15s, background 0.15s, color 0.15s;
       -webkit-tap-highlight-color: transparent;
       flex-shrink: 0;
     }
-    .btn-lock:hover  { border-color: var(--accent-teal); }
-    .btn-lock.locked { border-color: var(--accent-orange); background: rgba(255,107,53,0.1); }
+    .btn-lock:hover  { border-color: var(--accent-teal); color: var(--accent-teal); }
+    .btn-lock.locked { border-color: var(--accent-orange); background: rgba(255,107,53,0.15); color: var(--accent-orange); }
 
     /* Timer */
     .timer-row {
@@ -930,16 +942,16 @@
       <p class="panel-title">Manual Selection</p>
       <div class="form-row-inline">
         <div class="form-row form-row-flush">
-          <label style="display:flex;align-items:center;justify-content:space-between;">Character 1 <button class="btn-lock" id="lockChar1" title="Lock" aria-label="Lock Character 1" aria-pressed="false"><svg aria-hidden="true" width="12" height="14" viewBox="0 0 12 14" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="6" width="10" height="8" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M3 6V4a3 3 0 0 1 6 0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button></label>
+          <div class="form-row-label">Character 1 <button type="button" class="btn-lock" id="lockChar1" title="Lock" aria-label="Lock Character 1" aria-pressed="false"><svg aria-hidden="true" width="12" height="14" viewBox="0 0 12 14" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="6" width="10" height="8" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M3 6V4a3 3 0 0 1 6 0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button></div>
           <select id="manualChar1"></select>
         </div>
         <div class="form-row form-row-flush">
-          <label style="display:flex;align-items:center;justify-content:space-between;">Character 2 <button class="btn-lock" id="lockChar2" title="Lock" aria-label="Lock Character 2" aria-pressed="false"><svg aria-hidden="true" width="12" height="14" viewBox="0 0 12 14" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="6" width="10" height="8" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M3 6V4a3 3 0 0 1 6 0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button></label>
+          <div class="form-row-label">Character 2 <button type="button" class="btn-lock" id="lockChar2" title="Lock" aria-label="Lock Character 2" aria-pressed="false"><svg aria-hidden="true" width="12" height="14" viewBox="0 0 12 14" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="6" width="10" height="8" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M3 6V4a3 3 0 0 1 6 0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button></div>
           <select id="manualChar2"></select>
         </div>
       </div>
       <div class="form-row form-row-top">
-        <label style="display:flex;align-items:center;justify-content:space-between;">Scenario <button class="btn-lock" id="lockScenario" title="Lock" aria-label="Lock Scenario" aria-pressed="false"><svg aria-hidden="true" width="12" height="14" viewBox="0 0 12 14" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="6" width="10" height="8" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M3 6V4a3 3 0 0 1 6 0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button></label>
+        <div class="form-row-label">Scenario <button type="button" class="btn-lock" id="lockScenario" title="Lock" aria-label="Lock Scenario" aria-pressed="false"><svg aria-hidden="true" width="12" height="14" viewBox="0 0 12 14" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="6" width="10" height="8" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M3 6V4a3 3 0 0 1 6 0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button></div>
         <select id="manualScenario"></select>
       </div>
       <button class="btn btn-load" id="loadManualCombo">Load Mission</button>
@@ -1014,7 +1026,7 @@
     <p class="footer-disclaimer">
       Twin Stars Adventure Series is designed by Jason Tagmire &amp; Mike Mullins and published by Button Shy Games. All characters, scenarios, and game content are the intellectual property of Button Shy Games and their creators. This is an unofficial, free, fan-made companion app made out of love for an incredible game — not affiliated with or endorsed by Button Shy Games. If you don't own Twin Stars yet, please go buy it. It's worth every penny.
     </p>
-    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-20 11:48 EST</p>
+    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-20 12:01 EST</p>
   </footer>
 
 </div>
