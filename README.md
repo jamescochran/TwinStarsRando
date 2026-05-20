@@ -1,62 +1,64 @@
 # Twin Stars Adventure Series — Randomizer
 
-A free, unofficial fan-made companion app for the **Twin Stars Adventure Series** card games, designed by Jason Tagmire & Mike Mullins and published by Button Shy Games.
+> *"Bood and 'Mad' Anxy again? Really? You've played that combo eleven times."*
+> — this app, judging you gently
 
-**Live app:** https://jamescochran.github.io/TwinStarsRando
+A free, unofficial companion PWA for **Twin Stars Adventure Series** — the pocket-sized cooperative card game designed by Jason Tagmire & Mike Mullins and published by [Button Shy Games](https://buttonshygames.com/products/twin-stars).
+
+**➜ Play it now:** https://jamescochran.github.io/TwinStarsRando
+
+---
+
+## The Problem
+
+You sit down with your copy of Twin Stars. You stare at the character cards. You say "let's just do Bood and Stag Solar again" because that's the first two you grabbed. You play the same three combos on rotation for six months. Brenimov-X has never seen the table. Neither has Bippinnidip. They're right there. They have feelings.
+
+## The Solution
+
+Hit **Randomize**. The app picks two characters and a scenario at random from the content packs you own. The timer starts. You play. You log the result. The cycle continues until you've played every possible combination across every difficulty — at which point the app congratulates you and you reconsider your life choices.
 
 ---
 
 ## What It Does
 
-1. Configure which Twin Stars content you own
-2. Pick a random character combination and scenario — or choose manually
-3. Time the session automatically while you play
-4. Track results so you can see what you've played, how you did, and what's left unplayed
-5. Light and dark themes, defaulting to your OS preference
+- **Randomizes** character pairs and scenarios from your owned content — or lets you pick manually if you're that kind of person
+- **Times** your session automatically with pause, resume, and restart
+- **Logs** every result — Win/Loss, difficulty, elapsed time, timestamp
+- **Tracks** per-combination history and shows exactly which combos you've never touched (with a direct "Play" button so there are no excuses)
+- **Remembers** your last result and difficulty setting so you don't have to re-select them every time
+- **Works offline** once installed — no server, no account, no subscription, no data leaving your device, ever
+- **Installs as a PWA** — add it to your home screen and it feels like a native app
 
-*Not affiliated with or endorsed by Button Shy Games. All Twin Stars characters, scenarios, and game content are the intellectual property of Button Shy Games and their creators.*
-
----
-
-## Made By
-
-Made with love by *THE* James Dean Cochran.
-
-- Bluesky: https://bsky.app/profile/jamescochran.bsky.social
-- Tip jar: https://ko-fi.com/jamescochran
-- Community: https://discord.gg/aUBMvnu (Button Shy Discord)
+Light and dark themes. Defaults to your OS preference. Looks great in the dark while your play area is lit by a single dramatic lamp.
 
 ---
 
-## Architecture
+## Getting Started
 
-**Stack:** Plain HTML, CSS, vanilla JavaScript — no frameworks, no libraries, no build tools.
+1. Open the app on your phone or desktop
+2. Tap **My Collection** (top right) and check off which Twin Stars products you own
+3. Hit **Randomize Combination**
+4. Play the game
+5. Log your result
+6. Repeat until you've beaten every combination on every difficulty, or until your friends stage an intervention
 
-```
-TwinStarsRando/
-  index.html          ← the entire app (HTML + CSS + JS in one file)
-  service-worker.js   ← PWA offline caching
-  manifest.json       ← PWA install metadata
-  icon-192.png        ← PWA icon (192×192)
-  icon-512.png        ← PWA icon (512×512)
-```
-
-The entire app logic lives in `index.html`. The three extra files exist only because the PWA spec requires them to be separate. No build pipeline required.
-
-**Fonts:** Orbitron and Exo 2 fetched from Google Fonts. An internet connection is needed for correct styling; falls back to system fonts offline.
-
-**Storage:** `localStorage` only. Nothing is ever sent to a server.
+That's it. No tutorial. No onboarding flow. No email required.
 
 ---
 
 ## Content Packs
 
-| ID | Name | Characters | Scenarios |
-|---|---|---|---|
-| `series1` | Series 1 Wallet | 12 | 6 |
-| `series2` | Series 2 Wallet | 12 | 6 |
-| `scenario14` | Scenario 14: Save the Spacewhales! | 2 | 1 |
-| `captaincrag` | Captain Crag | 1 | 0 |
+| Pack | Characters | Scenarios |
+|------|-----------|-----------|
+| Series 1 Wallet *(base game)* | 12 | 6 |
+| Series 2 Wallet | 12 | 6 |
+| Scenario 14: Save the Spacewhales! | 2 | 1 |
+| Captain Crag *(promo)* | 1 | — |
+
+Any character can be paired with any scenario regardless of pack. With both Series wallets and all extras, that's **1,035 unique character-pair + scenario combinations**. At one per day you'd be done in under three years. Totally manageable.
+
+<details>
+<summary>Full character and scenario list</summary>
 
 **Series 1 characters:** Bood, Stag Solar, Fanoobia, Inpon Gol, Grant Rockgardner, Roux Jaezmina, Yanfred Jima, Saaze, Inzill Mey, Strezelsior, Kinglan, Brenimov-X
 
@@ -66,24 +68,44 @@ The entire app logic lives in `index.html`. The three extra files exist only bec
 
 **Series 2 scenarios:** Master the Trials!, Beat the Odds!, Control the Skies!, Sell the Junk!, Destroy the Order!, Serve the Rabble!
 
-**Scenario 14:** Characters: Striker, Bippinnidip — Scenario: Save the Spacewhales!
+**Scenario 14:** Striker, Bippinnidip — Save the Spacewhales!
 
-**Captain Crag:** Promo character, no new scenarios.
+**Captain Crag:** Promo character. No new scenarios. Tremendous hat.
 
-Any character can be paired with any scenario regardless of which pack they came from.
-
-**Minimum requirement:** At least 2 characters and 1 scenario must be active. The settings modal enforces this.
+</details>
 
 ---
 
-## Data Model
+## For Developers
 
-### Record
+This thing is aggressively simple. One HTML file. No framework. No build step. No `node_modules` folder haunting your dreams.
+
+### Stack
+
+```
+TwinStarsRando/
+  index.html          ← the entire app (HTML + CSS + JS in one file, ~1800 lines)
+  service-worker.js   ← PWA offline caching
+  manifest.json       ← PWA install metadata
+  icon-192.png        ← app icon (192×192)
+  icon-512.png        ← app icon (512×512)
+  rules/              ← bundled rulebook PDFs (served as static assets)
+```
+
+**Fonts:** Orbitron (headings) and Exo 2 (body) from Google Fonts. Both are cached by the service worker on first visit — offline looks correct from the second load onward. Falls back to system sans-serif on the first offline load.
+
+**Storage:** `localStorage` only. Nothing is ever sent to a server. There is no server.
+
+**Analytics:** Self-hosted [Umami](https://umami.is/) instance (`umami.1jc.in`) — page views only, no personal data, no third-party tracking.
+
+### Data Model
+
+Each saved record looks like this:
 
 ```json
 {
-  "characters": ["CharA", "CharB"],
-  "scenario":   "Scenario Name!",
+  "characters": ["Bood", "Stag Solar"],
+  "scenario":   "Escape The Brig!",
   "result":     "Win",
   "difficulty": "Medium",
   "playtime":   847,
@@ -92,74 +114,69 @@ Any character can be paired with any scenario regardless of which pack they came
 ```
 
 | Field | Type | Notes |
-|---|---|---|
+|-------|------|-------|
 | `characters` | `[string, string]` | Always two, always sorted alphabetically |
-| `scenario` | `string` | Must be a known scenario name |
+| `scenario` | `string` | Must match a known scenario name |
 | `result` | `"Win" \| "Loss"` | |
 | `difficulty` | `"Easy" \| "Medium" \| "Hard"` | |
-| `playtime` | `number \| null` | Elapsed seconds. `null` on pre-timer records |
-| `timestamp` | `string` | `new Date().toLocaleString()` |
+| `playtime` | `number \| null` | Elapsed seconds; `null` on pre-timer records |
+| `timestamp` | `string` | `new Date().toLocaleString()` — locale-dependent format |
 
 ### localStorage Keys
 
 | Key | Value |
-|---|---|
+|-----|-------|
 | `"gameRecords"` | JSON array of all saved records |
-| `"enabledPacks"` | JSON array of pack ID strings |
-| `"lastResult"` | `"Win"` or `"Loss"` |
-| `"lastDifficulty"` | `"Easy"`, `"Medium"`, or `"Hard"` |
+| `"enabledPacks"` | JSON array of active pack ID strings |
+| `"lastResult"` | `"Win"` or `"Loss"` — persisted across sessions |
+| `"lastDifficulty"` | `"Easy"`, `"Medium"`, or `"Hard"` — persisted across sessions |
 | `"theme"` | `"dark"` or `"light"` |
-| `"hasSeenTip"` | `"1"` after onboarding tooltip dismissed |
+| `"hasSeenTip"` | `"1"` once the onboarding tooltip has been dismissed |
 
-### Combo Key
+### Combo Key Format
 
-Combinations are identified by: `[char1]|[char2]-[scenario]`
+Combinations are keyed as: `[char1]|[char2]-[scenario]`
 
-Characters are always sorted alphabetically first. Example: `"Bood|Stag Solar-Escape The Brig!"`
+Characters are sorted alphabetically before joining. Example: `"Bood|Stag Solar-Escape The Brig!"`
 
-**Note for new content:** If any future character or scenario name contains `|` or `-`, the key logic must be updated. All current names have been verified safe.
-
----
-
-## Developer Notes
-
-### Service Worker Cache
-
-The cache name in `service-worker.js` is tied to the app version (e.g. `"twin-stars-2026-05-06-1128"`). **This must be updated on every deployment** or PWA users will receive stale content indefinitely.
+> ⚠️ **Known fragility:** the `|` and `-` delimiters are not validated out of character or scenario names. All current names are safe, but a future content pack entry containing either character would silently break key matching. See Issue #31.
 
 ### XSS / innerHTML
 
-All data is passed through `esc()` before being inserted via `innerHTML`. This uses a temporary DOM element's `textContent`/`innerHTML` round-trip to escape HTML. **Known gap:** `esc()` does not escape double quotes, which breaks `data-*` attributes for `"Mad" Anxy` — tracked in Issue #3.
+All user-visible data passes through `esc()` before insertion via `innerHTML`. This escapes `<`, `>`, and `&` via a `textContent`/`innerHTML` DOM round-trip. **Known gap:** `esc()` does not escape double quotes, which breaks `data-*` attribute injection for `"Mad" Anxy`. Tracked as Issue #3.
 
-### Import Validation
+### Service Worker Cache
 
-`isValidRecord()` validates all fields of every imported record against known-good values from `ALL_CHARACTERS_SET` and `ALL_SCENARIOS_SET`. Invalid records are silently skipped. The `timestamp` field is accepted as a free string (escaped on render, not validated for format).
-
-### Math.random()
-
-Used for shuffling and scenario selection. Not cryptographically secure — appropriate for a board game tool.
-
-### Timer Accuracy
-
-`setInterval` at 1000ms. Browser background throttling may cause minor drift over long sessions; acceptable for a game timer.
+The cache name in `service-worker.js` (`twin-stars-YYYY-MM-DD-HHMM`) **must be bumped on every deployment** or installed PWA users will receive stale content indefinitely. The fonts live in a separate persistent `FONTS_CACHE` that survives app cache rotations.
 
 ---
 
 ## Color Palette
 
-| Variable | Value | Used For |
-|---|---|---|
-| `--bg-deep` | `#07091a` | Page background |
-| `--bg-panel` | `#0e1228` | Panel backgrounds |
-| `--bg-card` | `#131830` | Card/input backgrounds |
-| `--border` | `#1e2d55` | Default borders |
-| `--border-glow` | `#2a4a8a` | Highlighted borders |
-| `--accent-orange` | `#ff6b35` | Primary actions, active tab |
-| `--accent-teal` | `#00d4aa` | Wins, secondary actions |
-| `--accent-yellow` | `#f0b429` | Button Shy brand color |
-| `--text-primary` | `#e8eaf6` | Main text |
-| `--text-muted` | `#7a88b0` | Secondary text |
-| `--text-dim` | `#3e4f78` | Hints, labels, disabled |
-| `--loss-color` | `#ff4455` | Losses, errors, danger |
+| Variable | Dark | Light | Used for |
+|----------|------|-------|----------|
+| `--bg-deep` | `#07091a` | `#f0f2fb` | Page background |
+| `--bg-panel` | `#0e1228` | `#e4e8f8` | Panel backgrounds |
+| `--bg-card` | `#131830` | `#dce0f4` | Card / input backgrounds |
+| `--accent-orange` | `#ff6b35` | *(same)* | Primary actions, active tab |
+| `--accent-teal` | `#00d4aa` | `#008f74` | Wins, secondary actions |
+| `--accent-yellow` | `#f0b429` | `#b07d00` | Button Shy brand color |
+| `--loss-color` | `#ff4455` | `#c8001e` | Losses, errors, danger |
 
-**Typography:** Orbitron (headings/UI) and Exo 2 (body) from Google Fonts; system sans-serif fallback.
+---
+
+## Contributing
+
+Issues and pull requests welcome. The tracker is [right here on GitHub](https://github.com/jamescochran/TwinStarsRando/issues). Known bugs and planned features are all logged there — pick something and go for it.
+
+---
+
+## Credits & Disclaimer
+
+**Twin Stars Adventure Series** is designed by Jason Tagmire & Mike Mullins and published by [Button Shy Games](https://buttonshygames.com). All characters, scenarios, and game content are their intellectual property.
+
+This is an unofficial, free, fan-made app. Not affiliated with or endorsed by Button Shy Games. If you don't own Twin Stars yet, [go buy it](https://buttonshygames.com/products/twin-stars). It fits in your wallet and it's wonderful.
+
+Made with love by [*THE* James Dean Cochran](https://bsky.app/profile/jamescochran.bsky.social).
+If it brings you joy, [buy me a coffee](https://ko-fi.com/jamescochran) or send me a copy of [Hot Dogs](https://boardgamegeek.com/boardgame/211988/hot-dogs).
+Come talk Button Shy with us on [Discord](https://discord.gg/aUBMvnu).
