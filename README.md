@@ -185,6 +185,8 @@ Issues and pull requests welcome. The tracker is [right here on GitHub](https://
 
 This is an unofficial, free, fan-made app. Not affiliated with or endorsed by Button Shy Games. If you don't own Twin Stars yet, [go buy it](https://buttonshygames.com/products/twin-stars). It fits in your wallet and it's wonderful.
 
+Ambient radio provided by [SomaFM](https://somafm.com/) — [Mission Control](https://somafm.com/missioncontrol/) channel. If you enjoy the stream, [support SomaFM](https://somafm.com/support/).
+
 Made with love by [*THE* James Dean Cochran](https://bsky.app/profile/jamescochran.bsky.social).
 If it brings you joy, [buy me a coffee](https://ko-fi.com/jamescochran) or send me a copy of [Hot Dogs](https://boardgamegeek.com/boardgame/211988/hot-dogs).
 Come talk Button Shy with us on [Discord](https://discord.gg/aUBMvnu).
