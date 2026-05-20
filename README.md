@@ -26,6 +26,7 @@ Hit **Randomize**. The app picks two characters and a scenario at random from th
 - **Logs** every result — Win/Loss, difficulty, elapsed time, timestamp
 - **Tracks** per-combination history and shows exactly which combos you've never touched (with a direct "Play" button so there are no excuses)
 - **Remembers** your last result and difficulty setting so you don't have to re-select them every time
+- **Plays ambient radio** — optional [SomaFM Mission Control](https://somafm.com/missioncontrol/) stream (online only); ♫ button in the header, volume popover, lock-screen controls via mediaSession API
 - **Works offline** once installed — no server, no account, no subscription, no data leaving your device, ever
 - **Installs as a PWA** — add it to your home screen and it feels like a native app
 
@@ -92,7 +93,7 @@ git config core.hooksPath .githooks
 
 ```
 TwinStarsRando/
-  index.html          ← the entire app (HTML + CSS + JS in one file, ~1800 lines)
+  index.html          ← the entire app (HTML + CSS + JS in one file, ~2700 lines)
   service-worker.js   ← PWA offline caching
   manifest.json       ← PWA install metadata
   icon-192.png        ← app icon (192×192)
@@ -140,6 +141,7 @@ Each saved record looks like this:
 | `"lastDifficulty"` | `"Easy"`, `"Medium"`, or `"Hard"` — persisted across sessions |
 | `"theme"` | `"dark"` or `"light"` |
 | `"hasSeenTip"` | `"1"` once the onboarding tooltip has been dismissed |
+| `"radioVolume"` | Float string `"0"`–`"1"` — ambient radio volume (default `"0.3"`) |
 
 ### Combo Key Format
 

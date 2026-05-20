@@ -790,6 +790,8 @@
     .btn-radio.is-loading { color: var(--accent-yellow); border-color: var(--accent-yellow); }
     .btn-radio.is-error   { color: var(--loss-color);    border-color: var(--loss-color); }
     .btn-radio:disabled   { opacity: 0.35; cursor: not-allowed; }
+    .btn-volume           { display: none; }
+    .btn-volume.visible   { display: flex; }
     .volume-popover {
       display: none;
       background: var(--bg-panel);
@@ -1451,7 +1453,7 @@
     <div class="header-actions">
       <div class="header-btn-row">
         <button class="btn-radio"  id="radioBtn"  title="SomaFM Mission Control" aria-label="Play ambient radio">♫</button>
-        <button class="btn-volume" id="volumeBtn" title="Volume" aria-label="Adjust volume" hidden>🔊</button>
+        <button class="btn-volume" id="volumeBtn" title="Volume" aria-label="Adjust volume">🔊</button>
         <button class="btn-theme"  id="themeBtn"  title="Toggle theme" aria-label="Toggle theme"></button>
         <button class="btn-settings" id="settingsBtn" title="My Collection">My Collection</button>
       </div>
@@ -1578,7 +1580,7 @@
     <p class="footer-disclaimer">
       Twin Stars Adventure Series is designed by Jason Tagmire &amp; Mike Mullins and published by Button Shy Games. All characters, scenarios, and game content are the intellectual property of Button Shy Games and their creators. This is an unofficial, free, fan-made companion app made out of love for an incredible game — not affiliated with or endorsed by Button Shy Games. If you don't own Twin Stars yet, please go buy it. It's worth every penny.
     </p>
-    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-20 15:04 EST</p>
+    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-20 15:07 EST</p>
   </footer>
 
 </div>
@@ -2596,26 +2598,26 @@ function getCurrentElapsed() {
     if (state === "stopped") {
       btn.textContent = "♫";
       btn.setAttribute("aria-label", "Play ambient radio");
-      volBtn.hidden = true;
+      volBtn.classList.remove("visible");
       label.hidden  = true;
       popover.classList.remove("open");
     } else if (state === "loading") {
       btn.classList.add("is-loading");
       btn.textContent = "…";
       btn.setAttribute("aria-label", "Connecting…");
-      volBtn.hidden = true;
+      volBtn.classList.remove("visible");
       label.hidden  = true;
     } else if (state === "playing") {
       btn.classList.add("is-playing");
       btn.textContent = "◼";
       btn.setAttribute("aria-label", "Stop ambient radio");
-      volBtn.hidden = false;
+      volBtn.classList.add("visible");
       label.hidden  = false;
     } else if (state === "error") {
       btn.classList.add("is-error");
       btn.textContent = "♫";
       btn.setAttribute("aria-label", "Stream unavailable");
-      volBtn.hidden = true;
+      volBtn.classList.remove("visible");
       label.hidden  = true;
       popover.classList.remove("open");
       setTimeout(() => setRadioState("stopped"), 3000);
