@@ -1039,7 +1039,7 @@
     <p class="footer-disclaimer">
       Twin Stars Adventure Series is designed by Jason Tagmire &amp; Mike Mullins and published by Button Shy Games. All characters, scenarios, and game content are the intellectual property of Button Shy Games and their creators. This is an unofficial, free, fan-made companion app made out of love for an incredible game — not affiliated with or endorsed by Button Shy Games. If you don't own Twin Stars yet, please go buy it. It's worth every penny.
     </p>
-    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-20 12:37 EST</p>
+    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-20 12:59 EST</p>
   </footer>
 
 </div>
@@ -1766,11 +1766,6 @@ function getCurrentElapsed() {
     if (locks.char1 && locks.char2) {
       toast("Characters locked — scenario re-rolled.");
     }
-
-    const char1    = c1El.value;
-    const char2    = c2El.value;
-    const scenario = scEl.value;
-    if (char1 !== char2) loadCombination({ characters: [char1, char2].sort(), scenario });
   }
 
   function handleLoadManualCombo() {
