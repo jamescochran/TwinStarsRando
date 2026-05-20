@@ -951,7 +951,6 @@
     .faq-content {
       overflow-y: auto;
       flex: 1;
-      scroll-padding-top: 44px;
     }
     .faq-section-header {
       font-family: 'Orbitron', sans-serif;
@@ -976,7 +975,6 @@
       text-transform: uppercase;
       color: var(--text-muted);
       padding: 10px 0 4px;
-      scroll-margin-top: 44px;
     }
     details.faq-item {
       border-bottom: 1px solid var(--border);
@@ -1580,7 +1578,7 @@
     <p class="footer-disclaimer">
       Twin Stars Adventure Series is designed by Jason Tagmire &amp; Mike Mullins and published by Button Shy Games. All characters, scenarios, and game content are the intellectual property of Button Shy Games and their creators. This is an unofficial, free, fan-made companion app made out of love for an incredible game — not affiliated with or endorsed by Button Shy Games. If you don't own Twin Stars yet, please go buy it. It's worth every penny.
     </p>
-    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-20 15:07 EST</p>
+    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-20 15:12 EST</p>
   </footer>
 
 </div>
@@ -2330,7 +2328,13 @@ function getCurrentElapsed() {
       const target = document.getElementById(anchorId);
       if (target) {
         const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-        setTimeout(() => target.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" }), 50);
+        setTimeout(() => {
+          const container = document.querySelector(".faq-content");
+          const stickyHeader = container.querySelector(".faq-section-header");
+          const clearance = (stickyHeader ? stickyHeader.offsetHeight : 0) + 8;
+          const scrollTop = target.getBoundingClientRect().top - container.getBoundingClientRect().top + container.scrollTop - clearance;
+          container.scrollTo({ top: Math.max(0, scrollTop), behavior: reduced ? "auto" : "smooth" });
+        }, 50);
       }
     }
     setTimeout(() => document.getElementById("faqClose").focus(), 0);
