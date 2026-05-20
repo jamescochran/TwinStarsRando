@@ -785,12 +785,15 @@
     .btn-radio.is-error   { color: var(--loss-color);    border-color: var(--loss-color); }
     .btn-radio:disabled   { opacity: 0.35; cursor: not-allowed; }
     .radio-bar {
-      display: flex;
+      display: none;
       align-items: center;
       gap: 12px;
       padding: 6px 16px;
       background: var(--bg-panel);
       border-bottom: 1px solid var(--border);
+    }
+    .radio-bar.open {
+      display: flex;
       animation: slideDown 0.2s ease;
     }
     @keyframes slideDown {
@@ -798,7 +801,7 @@
       to   { opacity: 1; transform: translateY(0); }
     }
     @media (prefers-reduced-motion: reduce) {
-      .radio-bar { animation: none; }
+      .radio-bar.open { animation: none; }
     }
     .radio-bar-label {
       font-family: 'Orbitron', sans-serif;
@@ -1465,7 +1468,7 @@
     <p class="active-packs-label" id="activePacksLabel"></p>
   </header>
 
-  <div class="radio-bar" id="radioBar" hidden>
+  <div class="radio-bar" id="radioBar">
     <span class="radio-bar-label">♫ MISSION CONTROL</span>
     <input type="range" id="radioVolume" class="radio-volume" min="0" max="1" step="0.05"
            value="0.5" aria-label="Volume">
@@ -1577,7 +1580,7 @@
     <p class="footer-disclaimer">
       Twin Stars Adventure Series is designed by Jason Tagmire &amp; Mike Mullins and published by Button Shy Games. All characters, scenarios, and game content are the intellectual property of Button Shy Games and their creators. This is an unofficial, free, fan-made companion app made out of love for an incredible game — not affiliated with or endorsed by Button Shy Games. If you don't own Twin Stars yet, please go buy it. It's worth every penny.
     </p>
-    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-20 14:38 EST</p>
+    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-20 14:44 EST</p>
   </footer>
 
 </div>
@@ -1685,6 +1688,9 @@
     "https://ice4.somafm.com/missioncontrol-128-aac",
     "https://ice5.somafm.com/missioncontrol-128-aac",
     "https://ice3.somafm.com/missioncontrol-128-aac",
+    "https://ice2.somafm.com/missioncontrol-128-mp3",
+    "https://ice6.somafm.com/missioncontrol-128-mp3",
+    "https://ice4.somafm.com/missioncontrol-128-mp3",
   ];
 
   function faqHelpBtn(anchor) {
@@ -2590,22 +2596,22 @@ function getCurrentElapsed() {
     if (state === "stopped") {
       btn.textContent = "♫";
       btn.setAttribute("aria-label", "Play ambient radio");
-      bar.hidden = true;
+      bar.classList.remove("open");
     } else if (state === "loading") {
       btn.classList.add("is-loading");
       btn.textContent = "…";
       btn.setAttribute("aria-label", "Connecting…");
-      bar.hidden = false;
+      bar.classList.add("open");
     } else if (state === "playing") {
       btn.classList.add("is-playing");
       btn.textContent = "◼";
       btn.setAttribute("aria-label", "Stop ambient radio");
-      bar.hidden = false;
+      bar.classList.add("open");
     } else if (state === "error") {
       btn.classList.add("is-error");
       btn.textContent = "♫";
       btn.setAttribute("aria-label", "Stream unavailable");
-      bar.hidden = true;
+      bar.classList.remove("open");
       setTimeout(() => setRadioState("stopped"), 3000);
     }
   }
@@ -2615,9 +2621,9 @@ function getCurrentElapsed() {
     _radioIndex = 0;
     setRadioState("loading");
     const audio = document.getElementById("radioAudio");
-    audio.src = RADIO_STREAMS[0];
     audio.volume = parseFloat(localStorage.getItem("radioVolume") || "0.5");
-    audio.play().catch(() => tryNextStream());
+    audio.src = RADIO_STREAMS[0];
+    audio.play();
   }
 
   function stopRadio() {
@@ -2637,7 +2643,7 @@ function getCurrentElapsed() {
     }
     const audio = document.getElementById("radioAudio");
     audio.src = RADIO_STREAMS[_radioIndex];
-    audio.play().catch(() => tryNextStream());
+    audio.play();
   }
 
   // ─── Init ───────────────────────────────────────────────────────────────────
@@ -2692,7 +2698,7 @@ function getCurrentElapsed() {
     }
   });
   _radioAudio.addEventListener("error", () => {
-    if (_radioState !== "stopped") tryNextStream();
+    if (_radioState === "loading" || _radioState === "playing") tryNextStream();
   });
   window.addEventListener("offline", () => {
     if (_radioState !== "stopped") { stopRadio(); toast("Stream stopped — you're offline."); }
