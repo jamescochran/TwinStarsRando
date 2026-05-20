@@ -365,6 +365,25 @@
     }
     .btn-lock:hover  { border-color: var(--accent-teal); color: var(--accent-teal); }
     .btn-lock.locked { border-color: var(--accent-orange); background: rgba(255,107,53,0.15); color: var(--accent-orange); }
+    .btn-faq-inline {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      color: var(--text-dim);
+      cursor: pointer;
+      font-size: 10px;
+      width: 18px; height: 18px;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      vertical-align: middle;
+      margin-left: 5px;
+      flex-shrink: 0;
+      transition: color 0.15s, border-color 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-faq-inline:hover { color: var(--accent-teal); border-color: var(--accent-teal); }
 
     /* Timer */
     .timer-row {
@@ -874,6 +893,7 @@
     .faq-content {
       overflow-y: auto;
       flex: 1;
+      scroll-padding-top: 32px;
     }
     .faq-section-header {
       font-family: 'Orbitron', sans-serif;
@@ -888,6 +908,8 @@
       position: sticky;
       top: 0;
       background: var(--bg-panel);
+      z-index: 1;
+      box-shadow: 0 6px 8px var(--bg-panel);
     }
     .faq-char-header, .faq-scenario-header {
       font-family: 'Orbitron', sans-serif;
@@ -1362,7 +1384,6 @@
   <header class="app-header">
     <div class="header-actions">
       <button class="btn-theme"    id="themeBtn"    title="Toggle theme" aria-label="Toggle theme"></button>
-      <button class="btn-settings" id="faqBtn"      title="Rules FAQ" aria-label="Rules FAQ">?</button>
       <button class="btn-settings" id="settingsBtn" title="My Collection">My Collection</button>
     </div>
     <div class="onboarding-tip hidden" id="onboardingTip">
@@ -1482,7 +1503,7 @@
     <p class="footer-disclaimer">
       Twin Stars Adventure Series is designed by Jason Tagmire &amp; Mike Mullins and published by Button Shy Games. All characters, scenarios, and game content are the intellectual property of Button Shy Games and their creators. This is an unofficial, free, fan-made companion app made out of love for an incredible game — not affiliated with or endorsed by Button Shy Games. If you don't own Twin Stars yet, please go buy it. It's worth every penny.
     </p>
-    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-20 13:16 EST</p>
+    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-20 13:28 EST</p>
   </footer>
 
 </div>
@@ -1566,6 +1587,26 @@
     "Topple the Giant!":     "13",
     "Save the Spacewhales!": "14"
   };
+
+  const CHAR_FAQ_ANCHOR = {
+    "Bood":              "faq-char-bood",
+    "Brenimov-X":        "faq-char-brenimov-x",
+    "Fanoobia":          "faq-char-fanoobia",
+    "Grant Rockgardner": "faq-char-grant",
+    "Inpon Gol":         "faq-char-inpon-gol",
+    "Inzill Mey":        "faq-char-inzill-mey",
+    "Kinglan":           "faq-char-kinglan",
+    "Phaeton":           "faq-char-phaeton",
+    "Roux Jaezmina":     "faq-char-roux",
+    "Smiff":             "faq-char-smiff",
+    "Strezelsior":       "faq-char-strezelsior",
+    "Yanfred Jima":      "faq-char-yanfred",
+    "Zoaze":             "faq-char-zoaze",
+  };
+
+  function faqHelpBtn(anchor) {
+    return `<button class="btn-faq-inline" data-faq-anchor="${anchor}" title="Rules FAQ" aria-label="Rules FAQ">?</button>`;
+  }
 
   function scenarioHTML(name) {
     const num = SCENARIO_NUMBER[name];
@@ -1869,9 +1910,9 @@ function getCurrentElapsed() {
     document.getElementById("combinationDisplay").innerHTML = `
       <div class="combo-display">
         <div class="combo-characters">
-          ${esc(comb.characters[0])}<span class="combo-vs">&amp;</span>${esc(comb.characters[1])}
+          <span class="combo-char-wrap">${esc(comb.characters[0])}${CHAR_FAQ_ANCHOR[comb.characters[0]] ? faqHelpBtn(CHAR_FAQ_ANCHOR[comb.characters[0]]) : ""}</span><span class="combo-vs">&amp;</span><span class="combo-char-wrap">${esc(comb.characters[1])}${CHAR_FAQ_ANCHOR[comb.characters[1]] ? faqHelpBtn(CHAR_FAQ_ANCHOR[comb.characters[1]]) : ""}</span>
         </div>
-        <div class="combo-scenario">${scenarioHTML(comb.scenario)}</div>
+        <div class="combo-scenario">${scenarioHTML(comb.scenario)}${SCENARIO_NUMBER[comb.scenario] && parseInt(SCENARIO_NUMBER[comb.scenario]) <= 12 ? faqHelpBtn("faq-sc-" + SCENARIO_NUMBER[comb.scenario]) : ""}</div>
         <div class="combo-play-count"><span>${esc(countText)}</span></div>
         <div class="difficulty-row">${renderDiffBadges(comb)}</div>
         <div class="timer-row">
@@ -1885,6 +1926,9 @@ function getCurrentElapsed() {
           </div>
         </div>
       </div>`;
+    document.querySelectorAll("#combinationDisplay .btn-faq-inline").forEach(btn => {
+      btn.addEventListener("click", () => openFaq(btn.dataset.faqAnchor));
+    });
     document.getElementById("pauseBtn").addEventListener("click", togglePause);
     document.getElementById("restartBtn").addEventListener("click", () => {
       document.getElementById("restartModal").classList.add("open");
@@ -2147,15 +2191,12 @@ function getCurrentElapsed() {
   // ─── FAQ modal ──────────────────────────────────────────────────────────────
   let _faqTrigger = null;
 
-  function openFaq() {
+  function openFaq(anchorId) {
     _faqTrigger = document.activeElement;
     document.getElementById("faqModal").classList.add("open");
-    if (currentCombination) {
-      const num = SCENARIO_NUMBER[currentCombination.scenario];
-      if (num) {
-        const target = document.getElementById("faq-sc-" + num);
-        if (target) setTimeout(() => target.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
-      }
+    if (anchorId) {
+      const target = document.getElementById(anchorId);
+      if (target) setTimeout(() => target.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
     }
     setTimeout(() => document.getElementById("faqClose").focus(), 0);
   }
@@ -2413,7 +2454,6 @@ function getCurrentElapsed() {
   document.getElementById("exportBtn")      .addEventListener("click", handleExport);
   document.getElementById("randomizerTab")  .addEventListener("click", () => showTab("randomizer"));
   document.getElementById("historyTab")     .addEventListener("click", () => showTab("history"));
-  document.getElementById("faqBtn")         .addEventListener("click", openFaq);
   document.getElementById("faqClose")       .addEventListener("click", closeFaq);
   document.getElementById("faqModal")       .addEventListener("click", e => { if (e.target === e.currentTarget) closeFaq(); });
   document.getElementById("settingsBtn")    .addEventListener("click", openSettings);
