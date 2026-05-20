@@ -849,6 +849,90 @@
       min-height: 16px;
     }
 
+    /* FAQ modal */
+    .faq-box {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-glow);
+      border-radius: 12px;
+      padding: 28px 24px 20px;
+      max-width: 480px;
+      width: 100%;
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .faq-box h2 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--accent-teal);
+      margin-bottom: 16px;
+      flex-shrink: 0;
+    }
+    .faq-content {
+      overflow-y: auto;
+      flex: 1;
+    }
+    .faq-section-header {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--accent-orange);
+      padding: 10px 0 6px;
+      margin-top: 8px;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      background: var(--bg-panel);
+    }
+    .faq-char-header, .faq-scenario-header {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      padding: 10px 0 4px;
+      scroll-margin-top: 32px;
+    }
+    details.faq-item {
+      border-bottom: 1px solid var(--border);
+      padding: 2px 0;
+    }
+    details.faq-item summary {
+      font-size: 13px;
+      color: var(--text-primary);
+      cursor: pointer;
+      padding: 8px 0;
+      line-height: 1.5;
+      list-style: none;
+      padding-right: 16px;
+      position: relative;
+    }
+    details.faq-item summary::-webkit-details-marker { display: none; }
+    details.faq-item summary::after {
+      content: '+';
+      position: absolute;
+      right: 0;
+      top: 8px;
+      color: var(--text-dim);
+      font-size: 16px;
+      line-height: 1;
+    }
+    details.faq-item[open] summary::after { content: '−'; color: var(--accent-teal); }
+    details.faq-item[open] summary { color: var(--accent-teal); }
+    details.faq-item p {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.6;
+      padding: 0 0 10px 0;
+      margin: 0;
+    }
+
     /* Footer element */
     footer {
       margin-top: 40px;
@@ -915,11 +999,370 @@
   </div>
 </div>
 
+<!-- FAQ MODAL -->
+<div class="modal-overlay" id="faqModal">
+  <div class="faq-box" role="dialog" aria-modal="true" aria-labelledby="faqModalTitle">
+    <h2 id="faqModalTitle">Rules FAQ</h2>
+    <div class="faq-content">
+
+      <p class="faq-section-header">General</p>
+
+      <details class="faq-item">
+        <summary>If you win by performing an action that requires a skill check, do you win immediately or perform the check first?</summary>
+        <p>You need to perform the skill check and suffer any consequences first.</p>
+      </details>
+      <details class="faq-item">
+        <summary>When a character has multiple symbols on the same row and two combos are possible simultaneously, how do you decide which to activate?</summary>
+        <p>You can choose which of the possible combos to activate.</p>
+      </details>
+      <details class="faq-item">
+        <summary>When multiple symbols on the same row form a combo, can you avoid it by choosing a symbol that wouldn't activate it?</summary>
+        <p>If a combo is formed, you must activate it — unless there's another combo that can be activated instead.</p>
+      </details>
+      <details class="faq-item">
+        <summary>When can you use the universal special ability to re-roll a die? Only when placing dice on characters, or also for skill checks and scenario rolls?</summary>
+        <p>Energy can be used to re-roll any die at any time, unless a special rule states otherwise (e.g., in Hunt the Bounty, search dice can only be re-rolled using resources rather than energy).</p>
+      </details>
+      <details class="faq-item">
+        <summary>What is the sequence of events when activating a reaction or fatigue ability?</summary>
+        <p>If no combo results from a roll, pick one die to reduce and one to re-roll. Reduce the die first. If there is a fatigue or reaction ability on the space you reduced to, resolve it. If no combo results from that, pick up the other die and re-roll it as usual.</p>
+      </details>
+      <details class="faq-item">
+        <summary>For a skill check, what happens if one die fits the range and the other doesn't?</summary>
+        <p>Unless both dice can fit, you fail the skill check.</p>
+      </details>
+      <details class="faq-item">
+        <summary>If a combo doesn't occur, one die is reduced and the other re-rolled. If a combo still doesn't occur, must the same die be reduced again?</summary>
+        <p>You can always choose which die to reduce and which to re-roll.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Can you place both character dice on the same character?</summary>
+        <p>No; you can only place one die on each character, unless a special rule states otherwise.</p>
+      </details>
+      <details class="faq-item">
+        <summary>When gaining or losing health, can you choose which character is affected?</summary>
+        <p>If the icon is on a character, that character must be affected. If the icon is on the scenario or part of a skill check, either character may be affected — unless stated otherwise.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Do all special abilities require energy to use?</summary>
+        <p>No. The universal special is to re-roll a die by spending energy, and many others require energy too. But if a special does not have an energy cost, it activates in some other way instead.</p>
+      </details>
+
+      <p class="faq-section-header">Characters</p>
+
+      <p class="faq-char-header" id="faq-char-bood">Bood</p>
+      <details class="faq-item">
+        <summary>Can Bood's special action be used to re-roll skill check dice, or only character dice?</summary>
+        <p>No; only energy can be used to re-roll skill check dice.</p>
+      </details>
+      <details class="faq-item">
+        <summary>When using Bood's special action to re-roll dice, can they be re-rolled one at a time or only together?</summary>
+        <p>Whenever both dice are rolled, they're always rolled together; Bood is no different.</p>
+      </details>
+
+      <p class="faq-char-header" id="faq-char-brenimov-x">Brenimov-X</p>
+      <details class="faq-item">
+        <summary>How do you get the star on Brenimov-X's 2-spot?</summary>
+        <p>If you roll a two, you need to re-roll the die. However, effects do not activate upon die reduction — so if you reduce the die to two, it stays there.</p>
+      </details>
+
+      <p class="faq-char-header" id="faq-char-fanoobia">Fanoobia</p>
+      <details class="faq-item">
+        <summary>When reducing to Fanoobia's one-spot, can you choose which character to heal?</summary>
+        <p>No; Fanoobia can only heal herself.</p>
+      </details>
+
+      <p class="faq-char-header" id="faq-char-grant">Grant Rockgardner</p>
+      <details class="faq-item">
+        <summary>Does Grant's special ability work for any die roll, or does he roll a special die after activating it?</summary>
+        <p>Grant can spend energy to call the number of a die rolled during regular gameplay — it's an excellent insurance policy against a roll that, if it fails, will sink you.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Can Grant's special ability be used to call two dice being rolled at once?</summary>
+        <p>No; when rolling two dice, they are always rolled together, and Grant's ability can only be activated when rolling "a die."</p>
+      </details>
+
+      <p class="faq-char-header" id="faq-char-inpon-gol">Inpon Gol</p>
+      <details class="faq-item">
+        <summary>Does Inpon Gol's token move every time the die is removed from his 3-spot?</summary>
+        <p>No; any time the die is on the 3-spot and is then re-rolled or reduced, the token moves to the other side of the spot.</p>
+      </details>
+      <details class="faq-item">
+        <summary>When does Inpon Gol lose health — when the die is moved to his 3-spot or when it's moved off?</summary>
+        <p>If the broken heart is uncovered and the die is placed on Inpon's 3-spot, he immediately loses health.</p>
+      </details>
+
+      <p class="faq-char-header" id="faq-char-inzill-mey">Inzill Mey</p>
+      <details class="faq-item">
+        <summary>When using Inzill Mey's instant action to place the other die on any number and re-roll this die, which die goes where?</summary>
+        <p>You can place Inzill's partner's die on any spot on Inzill's partner. Then pick up Inzill's die and re-roll it on her card.</p>
+      </details>
+      <details class="faq-item">
+        <summary>When using Inzill Mey's instant action to copy another character's instant action, which character actually uses it?</summary>
+        <p>Inzill Mey adopts the other character's instant action and uses it as if it were her own.</p>
+      </details>
+
+      <p class="faq-char-header" id="faq-char-kinglan">Kinglan</p>
+      <details class="faq-item">
+        <summary>After placing a coin heads-up on Kinglan's card, is the coin removed after it's used in place of a flip?</summary>
+        <p>Yes; it's a one-time effect. The next time a coin flip is needed, it must be flipped randomly as usual.</p>
+      </details>
+      <details class="faq-item">
+        <summary>If a coin is already on Kinglan's card heads-up when the effect is activated again, what happens?</summary>
+        <p>The effect is redundant and ignored. You only need one coin for the game.</p>
+      </details>
+
+      <p class="faq-char-header" id="faq-char-phaeton">Phaeton</p>
+      <details class="faq-item">
+        <summary>With Phaeton in play, !! counts as a combo but !!! does not. What about !!!!?</summary>
+        <p>Only !!! does not count as a combo; !!!! counts the same as a regular !!.</p>
+      </details>
+
+      <p class="faq-char-header" id="faq-char-roux">Roux Jaezmina</p>
+      <details class="faq-item">
+        <summary>When using Roux's instant action (re-roll both dice, add them, make two new dice with the same sum), must both new dice show the same number?</summary>
+        <p>No; get the sum and split it between the two dice any way you choose.</p>
+      </details>
+
+      <p class="faq-char-header" id="faq-char-smiff">Smiff</p>
+      <details class="faq-item">
+        <summary>How does Smiff's "Focus *" work?</summary>
+        <p>If a skill check succeeds and Smiff's die is a three, you gain a * icon; if the other die is already on a *, it counts as a ** combo. Otherwise, continue play as normal.</p>
+      </details>
+
+      <p class="faq-char-header" id="faq-char-strezelsior">Strezelsior</p>
+      <details class="faq-item">
+        <summary>When combining both dice, using the sum, and re-rolling the other die — which die uses the combined number and which is re-rolled?</summary>
+        <p>You can choose which character to place the set die on and which character to re-roll.</p>
+      </details>
+      <details class="faq-item">
+        <summary>What happens if the two dice add up to more than six when using Strezelsior's special action?</summary>
+        <p>You can only use this ability when the dice combine to a sum of six or less.</p>
+      </details>
+
+      <p class="faq-char-header" id="faq-char-yanfred">Yanfred Jima</p>
+      <details class="faq-item">
+        <summary>Do both dice need to be on !! to activate Yanfred's special?</summary>
+        <p>No; the special can be activated at any time. Take the effect of a !! combo as shown on the scenario card, then swap the positions of the dice. You may then activate any instants or combos achieved through the swap, after the !! has taken effect.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Doesn't activating a combo (including !!) normally return the dice to your hand?</summary>
+        <p>Normally yes; this ability, however, activates a combo and then allows the dice to be manipulated after as part of the action.</p>
+      </details>
+
+      <p class="faq-char-header" id="faq-char-zoaze">Zoaze</p>
+      <details class="faq-item">
+        <summary>What do the "re-rolls" in Zoaze's special action refer to?</summary>
+        <p>Anytime you use Zoaze's reaction abilities on her one- and two-spots, you may add one to the result of the die roll in exchange for conducting a skill check.</p>
+      </details>
+
+      <p class="faq-section-header">Scenarios</p>
+
+      <p class="faq-scenario-header" id="faq-sc-01">Scenario 01: Escape the Brig!</p>
+      <details class="faq-item">
+        <summary>Do you need to acquire the Pick (with a ** combo) before you can use it?</summary>
+        <p>Yes; the pick is covered at the start of the game. Use a ** combo to uncover it and then use it at will.</p>
+      </details>
+      <details class="faq-item">
+        <summary>If you get a *! combo without having acquired the pick, are you forced to perform the "Advance forward 1 space and [Skill -2 Health]" action?</summary>
+        <p>No; you can't use the pick in the first place, so *! does not count as a combo.</p>
+      </details>
+      <details class="faq-item">
+        <summary>If you acquire the pick and later choose to drop it, is it permanently removed from the game?</summary>
+        <p>No; it returns to its spot on the scenario card and can be reacquired with another ** combo.</p>
+      </details>
+
+      <p class="faq-scenario-header" id="faq-sc-02">Scenario 02: Confine the Quarks!</p>
+      <details class="faq-item">
+        <summary>Do base precision and precision begin at the same spot at the start of the scenario?</summary>
+        <p>Yes, they both share the first spot on the precision track.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Can precision ever be below base precision?</summary>
+        <p>No; it cannot be reduced below base precision. If it's at the same position as base precision when base precision increases, it increases as well.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Do the bonuses on the precision track apply during any die roll, or only when experimenting?</summary>
+        <p>The precision track applies only when experimenting.</p>
+      </details>
+      <details class="faq-item">
+        <summary>"May re-roll 1 if experimenting" — does this mean one die may be re-rolled, or a die showing "1"?</summary>
+        <p>All dice showing "1" may be re-rolled when experimenting. If no dice roll a one, no dice may be re-rolled through this ability.</p>
+      </details>
+      <details class="faq-item">
+        <summary>"May use 5 and 6 for +$1M" — does a five and a six each increase funding, or only the combination?</summary>
+        <p>Only a combo of one five and one six increases funding by $1M.</p>
+      </details>
+      <details class="faq-item">
+        <summary>When rolling a 5 and 6 grants additional funding, does that experiment still count as a failure?</summary>
+        <p>No; the funding is gained and that experiment action ends — neither a success nor a failure.</p>
+      </details>
+      <details class="faq-item">
+        <summary>"Evens = +1 at Pentaquark" — what rolls add a quark?</summary>
+        <p>Doubles are normally required. Once this track point is reached, a roll of two even numbers (e.g., 2 and 4) also yields one quark.</p>
+      </details>
+
+      <p class="faq-scenario-header" id="faq-sc-03">Scenario 03: Rule the World!</p>
+      <details class="faq-item">
+        <summary>Are the enemy ships covered at the start of the scenario?</summary>
+        <p>No; the enemy ships begin uncovered and ready to attack.</p>
+      </details>
+
+      <p class="faq-scenario-header" id="faq-sc-04">Scenario 04: Stop the Virus!</p>
+      <details class="faq-item">
+        <summary>When using the check-check combo to cover a virus, if you roll the number of the marked virus, can you cover the marked virus?</summary>
+        <p>Yes, you got a lucky roll.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Does the required roll for a healing attempt continue to scale beyond what's stated on the card?</summary>
+        <p>No; you get no additional bonuses for covering up more viruses than the card states.</p>
+      </details>
+      <details class="faq-item">
+        <summary>What does it mean to "treat" the marked virus?</summary>
+        <p>The marked virus is "treated" by being covered up — either through a ** combo or by a check-check combo roll.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Does a "healing attempt" let you cover up the marked virus?</summary>
+        <p>No. "Treating" the marked virus has nothing to do with healing attempts. Successful healing attempts either heal or restore stamina; they do not interact with the virus row.</p>
+      </details>
+
+      <p class="faq-scenario-header" id="faq-sc-05">Scenario 05: Steal the Plans!</p>
+      <details class="faq-item">
+        <summary>At the start of the scenario, how many guards begin at the Guard Start location?</summary>
+        <p>Just one; others may appear later.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Can player characters move only clockwise, or in any direction?</summary>
+        <p>Players can move in any direction.</p>
+      </details>
+      <details class="faq-item">
+        <summary>If a character moves on top of a guard (rather than a guard moving onto a character), does it still count as a capture?</summary>
+        <p>Yes; the scenario ends in failure.</p>
+      </details>
+      <details class="faq-item">
+        <summary>If there are already four guards and a fifth is summoned, what happens?</summary>
+        <p>Nothing; there can be a maximum of four guards in play at any time. If a guard is eliminated, that token can be re-used to spawn a new guard later.</p>
+      </details>
+      <details class="faq-item">
+        <summary>What does it mean that guards see "in a straight line"?</summary>
+        <p>Guards standing on the edges of the card can see to the ends of the same edge. They cannot look around corners or across the text on the card.</p>
+      </details>
+      <details class="faq-item">
+        <summary>If you move twice while carrying the plans and pass over a spot that generates guards without stopping, do guards still appear?</summary>
+        <p>Yes; the plans passed through that spot and new guards appear at their starting location.</p>
+      </details>
+
+      <p class="faq-scenario-header" id="faq-sc-06">Scenario 06: Hunt the Bounty!</p>
+      <details class="faq-item">
+        <summary>How many resources do you start with?</summary>
+        <p>Both characters start with full health. You choose how much energy to begin with (depending on your preferred difficulty). You start with five supplies (also the maximum).</p>
+      </details>
+      <details class="faq-item">
+        <summary>What do the "Inquiry" and "Restock" actions accomplish?</summary>
+        <p>After placing both characters, both dice are rolled. If the combined total matches the condition on the planet where a character performed an inquiry, the stated information is gained; otherwise the stated threat is gained. If either or both dice fit the restocking character's skill check range, you gain one resource of your choice; if neither fits, nothing happens.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Do you lose if you reach the end of the threat track?</summary>
+        <p>No; you can only lose by losing all health on one character. However, a full threat track reduces health so much for every !! combo that you probably won't last much longer.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Do you win if you reach the end of the information track?</summary>
+        <p>No; you can only win by capturing the bounty. However, it is highly unlikely you can do so without reaching near the end of the information track.</p>
+      </details>
+      <details class="faq-item">
+        <summary>How do you "spend resources" to attempt to capture on a ** combo?</summary>
+        <p>Resources — energy, health, and supplies — are expended to add to the capture die roll and the information track in any amount you choose. Each resource spent adds one to the roll and is then lost.</p>
+      </details>
+
+      <p class="faq-scenario-header" id="faq-sc-07">Scenario 07: Master the Trials!</p>
+      <details class="faq-item">
+        <summary>What does it mean that you must take a skill check "at each reduction"?</summary>
+        <p>Each time the die is reduced (due to not activating a combo), you must also take a skill check and lose a health point (on the character that reduced a die) in case of failure.</p>
+      </details>
+      <details class="faq-item">
+        <summary>How does the difference between the Master's and Apprentice's levels affect attempting a trial?</summary>
+        <p>To attempt a trial, roll one die — if it's equal to or greater than the number on the next trial spot, you succeed. If using the check-check combo, subtract the difference between the Master's and Apprentice's levels from your roll. (For example, if both are at their starting locations, subtract three.)</p>
+      </details>
+
+      <p class="faq-scenario-header" id="faq-sc-08">Scenario 08: Beat the Odds!</p>
+      <details class="faq-item">
+        <summary>The description says to use five coins, but the scenario side says six. How many?</summary>
+        <p>Five; the scenario side is incorrect. The scenario is a "best out of five" contest — the first to win three coins wins.</p>
+      </details>
+      <details class="faq-item">
+        <summary>When the thieves have moved a coin to their track, can it still be recovered?</summary>
+        <p>Yes; a ** combo lets you steal a coin back as long as it's still on the thieves' track. Once moved to the "X," it is permanently lost.</p>
+      </details>
+      <details class="faq-item">
+        <summary>What does it mean to "gain a re-roll" under the ** combo?</summary>
+        <p>Use a ** combo to mark one of the four positions on the "re-roll" track. Thereafter, when betting, if your combined roll equals that marked number, you may choose to re-roll (and take the skill check if necessary). The re-roll track only comes into play while betting.</p>
+      </details>
+
+      <p class="faq-scenario-header" id="faq-sc-09">Scenario 09: Control the Skies!</p>
+      <details class="faq-item">
+        <summary>When beginning, do you place your character token first or the enemy starfighter first?</summary>
+        <p>You must begin by placing a token for your characters, then place the enemy starfighter after.</p>
+      </details>
+      <details class="faq-item">
+        <summary>When a new wave of enemies hits, can you re-place your ship for free?</summary>
+        <p>No free move; if you'd like to move, you must activate a check-check combo first.</p>
+      </details>
+      <details class="faq-item">
+        <summary>If using a check-check combo to move onto a location where an enemy fighter is located, can you choose to move without attacking?</summary>
+        <p>No; if activating a check-check combo and you can destroy a fighter, you must do so.</p>
+      </details>
+      <details class="faq-item">
+        <summary>How do you use the upgrade track?</summary>
+        <p>Each ** combo lets you move the upgrade token forward. When you advance to the missile, take the missile token; when you advance to the shield, take the shield token. When you reach the end, you may move back to the beginning for free. Alternatively, a ** combo can deploy a missile or shield token you've already acquired instead of advancing.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Could you theoretically gain a shield on every spot or build up a limitless stock of missiles?</summary>
+        <p>No; there is only one shield token and one missile token. Once acquired, they cannot be re-acquired until used.</p>
+      </details>
+
+      <p class="faq-scenario-header" id="faq-sc-10">Scenario 10: Sell the Junk!</p>
+      <details class="faq-item">
+        <summary>At the very start, do you begin with $0 or $1?</summary>
+        <p>You begin with $1, and place the token on the money track accordingly.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Does the money track intentionally skip from $8 to $10, and from $10 to $12?</summary>
+        <p>Yes; you must gain $2 to make those jumps. A single dollar gained when you're already at $8 (or $10) is wasted.</p>
+      </details>
+
+      <p class="faq-scenario-header" id="faq-sc-11">Scenario 11: Destroy the Order!</p>
+      <details class="faq-item">
+        <summary>After passing a law, are you required to follow it in all cases or can you choose when it applies?</summary>
+        <p>If a law is in effect, it must be followed whenever applicable.</p>
+      </details>
+      <details class="faq-item">
+        <summary>What constitutes "using" a law?</summary>
+        <p>A law is "used" only when a combo is activated that is in some way modified by the law. An icon that does not result in a combo does not count as a use.</p>
+      </details>
+
+      <p class="faq-scenario-header" id="faq-sc-12">Scenario 12: Serve the Rabble!</p>
+      <details class="faq-item">
+        <summary>Do the primary and secondary character tokens placed on "bouncer" and "server" ever move or interact with the scenario?</summary>
+        <p>No; they are simply there to mark which character acts as which.</p>
+      </details>
+      <details class="faq-item">
+        <summary>What is the difference between the server and the bouncer?</summary>
+        <p>The bouncer begins with one additional health point on top of the character's usual maximum. The server can at any time sacrifice one health to gain one energy.</p>
+      </details>
+
+    </div>
+    <div class="modal-actions" style="margin-top:16px;flex-shrink:0;">
+      <button class="btn btn-secondary" id="faqClose">Close</button>
+    </div>
+  </div>
+</div>
+
 <div class="app-shell">
 
   <header class="app-header">
     <div class="header-actions">
       <button class="btn-theme"    id="themeBtn"    title="Toggle theme" aria-label="Toggle theme"></button>
+      <button class="btn-settings" id="faqBtn"      title="Rules FAQ" aria-label="Rules FAQ">?</button>
       <button class="btn-settings" id="settingsBtn" title="My Collection">My Collection</button>
     </div>
     <div class="onboarding-tip hidden" id="onboardingTip">
@@ -1039,7 +1482,7 @@
     <p class="footer-disclaimer">
       Twin Stars Adventure Series is designed by Jason Tagmire &amp; Mike Mullins and published by Button Shy Games. All characters, scenarios, and game content are the intellectual property of Button Shy Games and their creators. This is an unofficial, free, fan-made companion app made out of love for an incredible game — not affiliated with or endorsed by Button Shy Games. If you don't own Twin Stars yet, please go buy it. It's worth every penny.
     </p>
-    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-20 12:59 EST</p>
+    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-20 13:16 EST</p>
   </footer>
 
 </div>
@@ -1701,6 +2144,27 @@ function getCurrentElapsed() {
     displayUnplayed();
   }
 
+  // ─── FAQ modal ──────────────────────────────────────────────────────────────
+  let _faqTrigger = null;
+
+  function openFaq() {
+    _faqTrigger = document.activeElement;
+    document.getElementById("faqModal").classList.add("open");
+    if (currentCombination) {
+      const num = SCENARIO_NUMBER[currentCombination.scenario];
+      if (num) {
+        const target = document.getElementById("faq-sc-" + num);
+        if (target) setTimeout(() => target.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+      }
+    }
+    setTimeout(() => document.getElementById("faqClose").focus(), 0);
+  }
+
+  function closeFaq() {
+    document.getElementById("faqModal").classList.remove("open");
+    if (_faqTrigger) { _faqTrigger.focus(); _faqTrigger = null; }
+  }
+
   // ─── Actions ────────────────────────────────────────────────────────────────
   function showEmptyComboState() {
     document.getElementById("combinationDisplay").innerHTML = `
@@ -1914,12 +2378,13 @@ function getCurrentElapsed() {
 
     if (e.key === "Escape") {
       if (overlay.id === "settingsModal") { closeSettings(); return; }
+      if (overlay.id === "faqModal")      { closeFaq();       return; }
       overlay.classList.remove("open");
       return;
     }
 
     if (e.key === "Tab") {
-      const box = overlay.querySelector(".modal-box, .settings-box");
+      const box = overlay.querySelector(".modal-box, .settings-box, .faq-box");
       const focusable = [...(box || overlay).querySelectorAll(
         'button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
       )];
@@ -1948,6 +2413,9 @@ function getCurrentElapsed() {
   document.getElementById("exportBtn")      .addEventListener("click", handleExport);
   document.getElementById("randomizerTab")  .addEventListener("click", () => showTab("randomizer"));
   document.getElementById("historyTab")     .addEventListener("click", () => showTab("history"));
+  document.getElementById("faqBtn")         .addEventListener("click", openFaq);
+  document.getElementById("faqClose")       .addEventListener("click", closeFaq);
+  document.getElementById("faqModal")       .addEventListener("click", e => { if (e.target === e.currentTarget) closeFaq(); });
   document.getElementById("settingsBtn")    .addEventListener("click", openSettings);
   document.getElementById("settingsClose")  .addEventListener("click", closeSettings);
   document.getElementById("settingsModal")     .addEventListener("click", e => { if (e.target === e.currentTarget) closeSettings(); });
