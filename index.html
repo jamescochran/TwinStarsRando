@@ -20,7 +20,13 @@
   <script async src="https://umami.1jc.in/script.js" data-website-id="726ddc74-d419-4856-a3c8-cd5ce54f7093" integrity="sha384-LTPPwaLbU0osA3KlbZu0gbKM+OX2/iNJYVcdtY6ZFUJfsuj7LJ+40McwiPCPpKad" crossorigin="anonymous"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600&display=swap"
+        media="print" onload="this.media='all'">
+  <noscript>
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600&display=swap">
+  </noscript>
   <style>
     :root {
       --bg-deep:      #07091a;
@@ -1032,7 +1038,7 @@
     <p class="footer-disclaimer">
       Twin Stars Adventure Series is designed by Jason Tagmire &amp; Mike Mullins and published by Button Shy Games. All characters, scenarios, and game content are the intellectual property of Button Shy Games and their creators. This is an unofficial, free, fan-made companion app made out of love for an incredible game — not affiliated with or endorsed by Button Shy Games. If you don't own Twin Stars yet, please go buy it. It's worth every penny.
     </p>
-    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-20 12:20 EST</p>
+    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-20 12:26 EST</p>
   </footer>
 
 </div>
@@ -1484,7 +1490,7 @@ function getCurrentElapsed() {
   }
 
   // Build and display the list of combinations that haven't been played yet.
-  function displayUnplayed() {
+  function displayUnplayed(limit = 20) {
     const container = document.getElementById("unplayedContainer");
 
     const playedKeys = new Set(records.map(r => comboKey(r)));
@@ -1510,7 +1516,7 @@ function getCurrentElapsed() {
       <span style="color:var(--accent-teal);font-weight:700;">${played}</span> of <span style="font-weight:700;">${total}</span> combinations played
     </p><div class="unplayed-grid">`;
 
-    unplayed.slice(0, 20).forEach(comb => {
+    unplayed.slice(0, limit).forEach(comb => {
       html += `
         <div class="unplayed-item">
           <div class="unplayed-item-text">
@@ -1525,14 +1531,19 @@ function getCurrentElapsed() {
         </div>`;
     });
 
-    if (unplayed.length > 20) {
-      html += `<p style="font-size:12px;color:var(--text-dim);text-align:center;padding:8px 0;">
-        …and ${unplayed.length - 20} more
-      </p>`;
+    if (unplayed.length > limit) {
+      html += `<div style="text-align:center;padding:12px 0;">
+        <button class="btn btn-secondary" id="unplayedShowMore" style="font-size:10px;padding:10px 18px;min-height:40px;">
+          Show 20 more (${unplayed.length - limit} remaining)
+        </button>
+      </div>`;
     }
 
     html += "</div>";
     container.innerHTML = html;
+
+    const showMoreBtn = document.getElementById("unplayedShowMore");
+    if (showMoreBtn) showMoreBtn.addEventListener("click", () => displayUnplayed(limit + 20));
 
     container.querySelectorAll(".btn-load-unplayed").forEach(btn => {
       btn.addEventListener("click", () => {
@@ -1661,7 +1672,7 @@ function getCurrentElapsed() {
       if (!valid) {
         currentCombination = null;
         stopTimer();
-        document.getElementById("combinationDisplay").innerHTML = "";
+        showEmptyComboState();
         document.getElementById("annotationSection").classList.add("hidden");
         document.getElementById("comboHistory").innerHTML = "";
         toast("Active combination removed — pack disabled.", "error");
@@ -1675,6 +1686,15 @@ function getCurrentElapsed() {
   }
 
   // ─── Actions ────────────────────────────────────────────────────────────────
+  function showEmptyComboState() {
+    document.getElementById("combinationDisplay").innerHTML = `
+      <div class="empty-state" style="padding:28px 20px;">
+        <p style="font-size:14px;margin-bottom:8px;">No mission loaded</p>
+        <p>Click <strong>Randomize Combination</strong> above to get started,<br>
+           or pick characters and a scenario manually.</p>
+      </div>`;
+  }
+
   function loadCombination(comb) {
     currentCombination = comb;
     startTimer();
@@ -1725,9 +1745,16 @@ function getCurrentElapsed() {
 
     if (locks.char1 && locks.char2 && locks.scenario) {
       toast("All slots are locked — nothing to randomize.", "error");
-    } else if (locks.char1 && locks.char2) {
+      return;
+    }
+    if (locks.char1 && locks.char2) {
       toast("Characters locked — scenario re-rolled.");
     }
+
+    const char1    = c1El.value;
+    const char2    = c2El.value;
+    const scenario = scEl.value;
+    if (char1 !== char2) loadCombination({ characters: [char1, char2].sort(), scenario });
   }
 
   function handleLoadManualCombo() {
@@ -1935,6 +1962,7 @@ function getCurrentElapsed() {
 
   buildActiveContent();
   populateSelectors();
+  showEmptyComboState();
   initOnboardingTip();
 
   if ("serviceWorker" in navigator) {
