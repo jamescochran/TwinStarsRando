@@ -11,6 +11,12 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Twin Stars">
   <link rel="apple-touch-icon" href="icon-192.png">
+  <meta name="description" content="Free PWA companion for Twin Stars Adventure Series — randomizes character pairs and scenarios, times sessions, and tracks play history across all content packs.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://jamescochran.github.io/TwinStarsRando/">
+  <meta property="og:title" content="Twin Stars Randomizer">
+  <meta property="og:description" content="Free PWA companion for Twin Stars Adventure Series — randomizes character pairs and scenarios, times sessions, and tracks play history across all content packs.">
+  <meta property="og:image" content="https://jamescochran.github.io/TwinStarsRando/icon-512.png">
   <script async src="https://umami.1jc.in/script.js" data-website-id="726ddc74-d419-4856-a3c8-cd5ce54f7093" integrity="sha384-LTPPwaLbU0osA3KlbZu0gbKM+OX2/iNJYVcdtY6ZFUJfsuj7LJ+40McwiPCPpKad" crossorigin="anonymous"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1026,7 +1032,7 @@
     <p class="footer-disclaimer">
       Twin Stars Adventure Series is designed by Jason Tagmire &amp; Mike Mullins and published by Button Shy Games. All characters, scenarios, and game content are the intellectual property of Button Shy Games and their creators. This is an unofficial, free, fan-made companion app made out of love for an incredible game — not affiliated with or endorsed by Button Shy Games. If you don't own Twin Stars yet, please go buy it. It's worth every penny.
     </p>
-    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-20 12:01 EST</p>
+    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-20 12:20 EST</p>
   </footer>
 
 </div>
@@ -1085,6 +1091,33 @@
 
   const ALL_CHARACTERS_SET = new Set(CONTENT_PACKS.flatMap(p => p.characters));
   const ALL_SCENARIOS_SET  = new Set(CONTENT_PACKS.flatMap(p => p.scenarios));
+
+  const SCENARIO_NUMBER = {
+    "Escape The Brig!":      "01",
+    "Confine The Quarks!":   "02",
+    "Rule The World!":       "03",
+    "Stop The Virus!":       "04",
+    "Steal The Plans!":      "05",
+    "Hunt The Bounty!":      "06",
+    "Master the Trials!":    "07",
+    "Beat the Odds!":        "08",
+    "Control the Skies!":    "09",
+    "Sell the Junk!":        "10",
+    "Destroy the Order!":    "11",
+    "Serve the Rabble!":     "12",
+    "Save the Spacewhales!": "14"
+  };
+
+  function scenarioHTML(name) {
+    const num = SCENARIO_NUMBER[name];
+    if (!num) return esc(name);
+    return `<span style="color:var(--text-dim)">Scenario ${num}:</span> ${esc(name)}`;
+  }
+
+  function scenarioText(name) {
+    const num = SCENARIO_NUMBER[name];
+    return num ? `Scenario ${num}: ${name}` : name;
+  }
 
   let characters = [];
   let scenarios  = [];
@@ -1313,7 +1346,8 @@ function getCurrentElapsed() {
     });
     scenarios.forEach(s => {
       const opt = document.createElement("option");
-      opt.value = opt.textContent = s;
+      opt.value = s;
+      opt.textContent = scenarioText(s);
       sc.appendChild(opt);
     });
     syncDropdown("manualChar1", "manualChar2");
@@ -1374,7 +1408,7 @@ function getCurrentElapsed() {
         <div class="combo-characters">
           ${esc(comb.characters[0])}<span class="combo-vs">&amp;</span>${esc(comb.characters[1])}
         </div>
-        <div class="combo-scenario">${esc(comb.scenario)}</div>
+        <div class="combo-scenario">${scenarioHTML(comb.scenario)}</div>
         <div class="combo-play-count"><span>${esc(countText)}</span></div>
         <div class="difficulty-row">${renderDiffBadges(comb)}</div>
         <div class="timer-row">
@@ -1439,6 +1473,7 @@ function getCurrentElapsed() {
 
     div.querySelectorAll(".btn-delete-record").forEach(btn => {
       btn.addEventListener("click", () => {
+        if (!confirm("Delete this record?")) return;
         const idx = parseInt(btn.dataset.idx, 10);
         records.splice(idx, 1);
         saveRecords();
@@ -1480,7 +1515,7 @@ function getCurrentElapsed() {
         <div class="unplayed-item">
           <div class="unplayed-item-text">
             <div>${esc(comb.characters.join(" & "))}</div>
-            <div class="unplayed-item-scenario">${esc(comb.scenario)}</div>
+            <div class="unplayed-item-scenario">${scenarioHTML(comb.scenario)}</div>
           </div>
           <button class="btn-load-unplayed"
             data-chars="${esc(comb.characters.join("|"))}"
@@ -1519,7 +1554,7 @@ function getCurrentElapsed() {
       <tr>
         <td style="color:var(--text-muted);font-size:12px;white-space:nowrap;">${esc(rec.timestamp)}</td>
         <td style="white-space:nowrap;">${esc(rec.characters.join(" & "))}</td>
-        <td style="color:var(--accent-teal);font-size:12px;">${esc(rec.scenario)}</td>
+        <td style="color:var(--accent-teal);font-size:12px;">${scenarioHTML(rec.scenario)}</td>
         <td><span class="result-pill ${rec.result === "Win" ? "win" : "loss"}">${esc(rec.result)}</span></td>
         <td><span class="diff-pill">${esc(rec.difficulty)}</span></td>
         <td style="color:var(--text-muted);font-size:12px;white-space:nowrap;">${rec.playtime != null ? formatTime(rec.playtime) : "—"}</td>
@@ -1536,6 +1571,7 @@ function getCurrentElapsed() {
 
     container.querySelectorAll(".btn-delete-record").forEach(btn => {
       btn.addEventListener("click", () => {
+        if (!confirm("Delete this record?")) return;
         const idx = parseInt(btn.dataset.idx, 10);
         records.splice(idx, 1);
         saveRecords();
@@ -1562,7 +1598,9 @@ function getCurrentElapsed() {
   function buildActiveContent() {
     const active = CONTENT_PACKS.filter(p => enabledPacks.has(p.id));
     characters = [...new Set(active.flatMap(p => p.characters))];
-    scenarios  = [...new Set(active.flatMap(p => p.scenarios))];
+    scenarios  = [...new Set(active.flatMap(p => p.scenarios))].sort(
+      (a, b) => (parseInt(SCENARIO_NUMBER[a] || "99") - parseInt(SCENARIO_NUMBER[b] || "99"))
+    );
     // Update the label below the header so the user can always see what's active
     const label = document.getElementById("activePacksLabel");
     if (label) label.textContent = active.map(p => p.shortName).join(" · ");
