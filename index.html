@@ -761,6 +761,129 @@
       margin-top: 2px;
     }
 
+    /* Favorites star button */
+    .btn-favorite {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+      padding: 2px 4px;
+      line-height: 1;
+      color: var(--text-dim);
+      transition: color 0.15s;
+      flex-shrink: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-favorite.is-favorite { color: var(--accent-yellow); }
+    .btn-favorite:hover { opacity: 0.75; }
+
+    /* Combo action row (star + share) */
+    .combo-actions-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-bottom: 12px;
+    }
+    .combo-actions-row .combo-play-count { margin-bottom: 0; flex: 1; }
+    .btn-share-combo {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text-dim);
+      font-size: 9px;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 4px 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-share-combo:hover { border-color: var(--accent-teal); color: var(--accent-teal); }
+
+    /* Share modal */
+    .share-code-display {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 14px;
+      margin-bottom: 6px;
+    }
+    .share-code-value {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: 8px;
+      color: var(--accent-teal);
+      flex: 1;
+      text-align: center;
+    }
+    .btn-copy-code {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 5px 12px;
+      cursor: pointer;
+      color: var(--text-muted);
+      font-size: 11px;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      transition: all 0.15s;
+    }
+    .btn-copy-code:hover { border-color: var(--accent-teal); color: var(--accent-teal); }
+    .share-code-hint {
+      font-size: 11px;
+      color: var(--text-dim);
+      text-align: center;
+      margin-bottom: 0;
+    }
+    .share-code-input {
+      flex: 1;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 8px 12px;
+      color: var(--text-primary);
+      font-family: 'Orbitron', sans-serif;
+      font-size: 16px;
+      letter-spacing: 4px;
+      text-transform: lowercase;
+      outline: none;
+      transition: border-color 0.15s;
+      min-width: 0;
+    }
+    .share-code-input:focus { border-color: var(--accent-teal); }
+
+    /* Unplayed favorites filter */
+    .unplayed-filter-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .btn-fav-filter {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text-dim);
+      font-size: 10px;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      padding: 5px 10px;
+      cursor: pointer;
+      transition: all 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-fav-filter.active { border-color: var(--accent-yellow); color: var(--accent-yellow); background: rgba(240,180,41,0.1); }
+    .btn-fav-filter:hover:not(.active) { border-color: var(--text-muted); color: var(--text-muted); }
+
     /* Modal */
     .modal-overlay {
       display: none;
@@ -1551,6 +1674,29 @@
   </div>
 </div>
 
+<!-- SHARE MODAL -->
+<div class="modal-overlay" id="shareModal">
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="shareModalTitle">
+    <h2 id="shareModalTitle">Share Combination</h2>
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">Send this 3-character code to a friend.</p>
+    <div class="share-code-display">
+      <span id="shareCodeText" class="share-code-value"></span>
+      <button class="btn-copy-code" id="copyCodeBtn">Copy</button>
+    </div>
+    <p class="share-code-hint">Anyone can paste it in the box below to load the same combination.</p>
+    <hr style="border:none;border-top:1px solid var(--border);margin:16px 0 12px;">
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Load a combination from a code:</p>
+    <div style="display:flex;gap:8px;">
+      <input type="text" id="shareCodeInput" class="share-code-input" placeholder="abc" maxlength="3"
+             autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="text">
+      <button class="btn btn-secondary" id="loadCodeBtn">Load</button>
+    </div>
+    <div class="modal-actions" style="margin-top:16px;">
+      <button class="btn btn-secondary" id="shareClose">Close</button>
+    </div>
+  </div>
+</div>
+
 <!-- RULEBOOK MODAL -->
 <div class="modal-overlay" id="rulesModal">
   <div class="rules-box" role="dialog" aria-modal="true" aria-labelledby="rulesModalTitle">
@@ -2131,7 +2277,8 @@
       <p class="panel-title">Mission Log</p>
       <div class="history-toolbar">
         <div class="history-actions">
-          <button class="btn btn-secondary" id="exportBtn" disabled>Export</button>
+          <button class="btn btn-secondary" id="exportBtn" disabled>Export JSON</button>
+          <button class="btn btn-secondary" id="exportHtmlBtn" disabled>Export HTML</button>
           <label class="import-label" for="importFile">Import</label>
           <input type="file" id="importFile" accept=".json">
           <button class="btn btn-danger" id="clearDataBtn">Clear All</button>
@@ -2283,6 +2430,8 @@
 
   const ALL_CHARACTERS_SET = new Set(CONTENT_PACKS.flatMap(p => p.characters));
   const ALL_SCENARIOS_SET  = new Set(CONTENT_PACKS.flatMap(p => p.scenarios));
+  const ALL_CHARS_LIST     = CONTENT_PACKS.flatMap(p => p.characters);
+  const ALL_SCENS_LIST     = CONTENT_PACKS.flatMap(p => p.scenarios);
 
   const SCENARIO_NUMBER = {
     "Escape The Brig!":      "01",
@@ -2343,10 +2492,12 @@
     return num ? `Scenario ${num}: ${name}` : name;
   }
 
-  let characters    = [];
-  let scenarios     = [];
-  let droids        = [];
-  let _currentDroid = null;
+  let characters         = [];
+  let scenarios          = [];
+  let droids             = [];
+  let _currentDroid      = null;
+  let favorites          = new Set();
+  let _unplayedFavFilter = false;
 
   const VALID_RESULTS      = new Set(["Win", "Loss"]);
   const VALID_DIFFICULTIES = new Set(["Easy", "Medium", "Hard"]);
@@ -2427,6 +2578,11 @@
     console.warn("Could not load saved records:", e);
   }
 
+  try {
+    const rawFav = localStorage.getItem("favorites");
+    if (rawFav) favorites = new Set(JSON.parse(rawFav));
+  } catch(e) {}
+
   if (records.length > 0 && !localStorage.getItem("seenPrimarySecondaryNotice")) {
     try { localStorage.setItem("seenPrimarySecondaryNotice", "1"); } catch(e) {}
     setTimeout(() => toast("Roles added: Character 1 = Primary, Character 2 = Secondary. Older records show characters in their saved order.", "info"), 800);
@@ -2434,8 +2590,9 @@
 
   function syncExportBtn() {
     const empty = !records.length;
-    document.getElementById("exportBtn").disabled  = empty;
-    document.getElementById("clearDataBtn").disabled = empty;
+    document.getElementById("exportBtn").disabled     = empty;
+    document.getElementById("exportHtmlBtn").disabled = empty;
+    document.getElementById("clearDataBtn").disabled  = empty;
   }
 
   function saveRecords() {
@@ -2470,6 +2627,61 @@
     const m = String(Math.floor(secs / 60)).padStart(2, "0");
     const s = String(secs % 60).padStart(2, "0");
     return m + ":" + s;
+  }
+
+  // ─── Favorites ──────────────────────────────────────────────────────────────
+  function saveFavorites() {
+    try { localStorage.setItem("favorites", JSON.stringify([...favorites])); } catch(e) {}
+  }
+
+  function toggleFavorite(key) {
+    if (favorites.has(key)) favorites.delete(key);
+    else favorites.add(key);
+    saveFavorites();
+    unplayedDirty = true;
+    if (currentCombination && comboKey(currentCombination) === key) {
+      displayCombination(currentCombination);
+    }
+  }
+
+  // ─── Combo code encoding ────────────────────────────────────────────────────
+  function encodeCombination(comb) {
+    const c1 = ALL_CHARS_LIST.indexOf(comb.characters[0]);
+    const c2 = ALL_CHARS_LIST.indexOf(comb.characters[1]);
+    const sc = ALL_SCENS_LIST.indexOf(comb.scenario);
+    if (c1 < 0 || c2 < 0 || sc < 0) return null;
+    return c1.toString(36) + c2.toString(36) + sc.toString(36);
+  }
+
+  function decodeCombination(code) {
+    if (!code || code.length !== 3) return null;
+    const c1i = parseInt(code[0], 36);
+    const c2i = parseInt(code[1], 36);
+    const sci = parseInt(code[2], 36);
+    if (isNaN(c1i) || isNaN(c2i) || isNaN(sci)) return null;
+    const char1    = ALL_CHARS_LIST[c1i];
+    const char2    = ALL_CHARS_LIST[c2i];
+    const scenario = ALL_SCENS_LIST[sci];
+    if (!char1 || !char2 || !scenario || char1 === char2) return null;
+    return { characters: [char1, char2], scenario };
+  }
+
+  // ─── Share modal ────────────────────────────────────────────────────────────
+  let _shareTrigger = null;
+
+  function openShareModal(comb) {
+    const code = encodeCombination(comb);
+    if (!code) { toast("Cannot encode this combination.", "error"); return; }
+    document.getElementById("shareCodeText").textContent = code;
+    document.getElementById("shareCodeInput").value = "";
+    document.getElementById("shareModal").classList.add("open");
+    _shareTrigger = document.activeElement;
+    setTimeout(() => document.getElementById("copyCodeBtn").focus(), 0);
+  }
+
+  function closeShareModal() {
+    document.getElementById("shareModal").classList.remove("open");
+    if (_shareTrigger) { _shareTrigger.focus(); _shareTrigger = null; }
   }
 
   function shuffle(arr) {
@@ -2665,6 +2877,7 @@ function getCurrentElapsed() {
     const key       = comboKey(comb);
     const playCount = records.filter(r => comboKey(r) === key).length;
     const countText = playCount === 0 ? "Never played" : playCount === 1 ? "Played 1 time" : `Played ${playCount} times`;
+    const isFav     = favorites.has(key);
 
     const droidOptions = droids.length
       ? `<option value="">None</option>` + droids.map(d =>
@@ -2678,7 +2891,14 @@ function getCurrentElapsed() {
           <span class="combo-char-wrap"><span class="char-role primary-role">Primary</span>${esc(comb.characters[0])}${CHAR_FAQ_ANCHOR[comb.characters[0]] ? faqHelpBtn(CHAR_FAQ_ANCHOR[comb.characters[0]]) : ""}</span><span class="combo-vs">&amp;</span><span class="combo-char-wrap"><span class="char-role secondary-role">Secondary</span>${esc(comb.characters[1])}${CHAR_FAQ_ANCHOR[comb.characters[1]] ? faqHelpBtn(CHAR_FAQ_ANCHOR[comb.characters[1]]) : ""}</span>
         </div>
         <div class="combo-scenario">${scenarioHTML(comb.scenario)}${SCENARIO_NUMBER[comb.scenario] && parseInt(SCENARIO_NUMBER[comb.scenario]) <= 12 ? faqHelpBtn("faq-sc-" + SCENARIO_NUMBER[comb.scenario]) : ""}</div>
-        <div class="combo-play-count"><span>${esc(countText)}</span></div>
+        <div class="combo-actions-row">
+          <div class="combo-play-count"><span>${esc(countText)}</span></div>
+          <button class="btn-favorite${isFav ? " is-favorite" : ""}" id="favoriteBtn"
+            title="${isFav ? "Remove from favorites" : "Add to favorites"}"
+            aria-label="${isFav ? "Remove from favorites" : "Add to favorites"}"
+            aria-pressed="${isFav}">${isFav ? "★" : "☆"}</button>
+          <button class="btn-share-combo" id="shareComboBtn" title="Share this combination" aria-label="Share this combination">Share</button>
+        </div>
         ${droids.length ? `
         <div class="droid-row">
           <span class="droid-row-label">Droid</span>
@@ -2703,6 +2923,8 @@ function getCurrentElapsed() {
     document.querySelectorAll("#combinationDisplay .btn-faq-inline").forEach(btn => {
       btn.addEventListener("click", () => openFaq(btn.dataset.faqAnchor));
     });
+    document.getElementById("favoriteBtn").addEventListener("click", () => toggleFavorite(key));
+    document.getElementById("shareComboBtn").addEventListener("click", () => openShareModal(comb));
     const droidSel = document.getElementById("droidSelect");
     if (droidSel) {
       droidSel.addEventListener("change", () => { _currentDroid = droidSel.value || null; });
@@ -2791,6 +3013,16 @@ function getCurrentElapsed() {
       }
     }
 
+    // Sort favorites to top
+    unplayed.sort((a, b) => {
+      const af = favorites.has(comboKey(a)) ? 0 : 1;
+      const bf = favorites.has(comboKey(b)) ? 0 : 1;
+      return af - bf;
+    });
+
+    const favUnplayed = unplayed.filter(c => favorites.has(comboKey(c)));
+    const filtered    = _unplayedFavFilter ? favUnplayed : unplayed;
+
     if (!unplayed.length) {
       container.innerHTML = `<div class="empty-state"><p>You've played every combination. Incredible!</p></div>`;
       return;
@@ -2799,21 +3031,44 @@ function getCurrentElapsed() {
     const total  = characters.length * (characters.length - 1) * scenarios.length;
     const played = total - unplayed.length;
 
-    container.innerHTML = `
-      <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">
-        <span style="color:var(--accent-teal);font-weight:700;">${played}</span> of <span style="font-weight:700;">${total}</span> combinations played
-      </p>
-      <div class="unplayed-grid" id="unplayedGrid"></div>`;
+    let favFilterHtml = `<div class="unplayed-filter-row">
+      <button class="btn-fav-filter${_unplayedFavFilter ? " active" : ""}" id="unplayedFavFilter">
+        ★ Favorites${favUnplayed.length ? ` (${favUnplayed.length})` : ""}
+      </button>
+    </div>
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">
+      <span style="color:var(--accent-teal);font-weight:700;">${played}</span> of <span style="font-weight:700;">${total}</span> combinations played
+    </p>`;
+
+    if (!filtered.length && _unplayedFavFilter) {
+      favFilterHtml += `<div class="empty-state" style="padding:16px 0;">
+        <p>No favorited unplayed combos yet.</p>
+        <p style="margin-top:6px;">Use the ☆ on the Randomizer tab to mark combos you want to play.</p>
+      </div>`;
+      container.innerHTML = favFilterHtml;
+      document.getElementById("unplayedFavFilter").addEventListener("click", () => {
+        _unplayedFavFilter = false; displayUnplayed();
+      });
+      return;
+    }
+
+    container.innerHTML = favFilterHtml + `<div class="unplayed-grid" id="unplayedGrid"></div>`;
+
+    document.getElementById("unplayedFavFilter").addEventListener("click", () => {
+      _unplayedFavFilter = !_unplayedFavFilter;
+      displayUnplayed();
+    });
 
     const grid   = document.getElementById("unplayedGrid");
     const BATCH  = 30;
     let   offset = 0;
 
     function appendBatch() {
-      const slice = unplayed.slice(offset, offset + BATCH);
+      const slice = filtered.slice(offset, offset + BATCH);
       if (!slice.length) return;
       const frag = document.createDocumentFragment();
       slice.forEach(comb => {
+        const isFav = favorites.has(comboKey(comb));
         const div = document.createElement("div");
         div.className = "unplayed-item";
         div.innerHTML = `
@@ -2821,27 +3076,45 @@ function getCurrentElapsed() {
             <div>${esc(comb.characters.join(" & "))}</div>
             <div class="unplayed-item-scenario">${scenarioHTML(comb.scenario)}</div>
           </div>
+          <button class="btn-favorite${isFav ? " is-favorite" : ""}"
+            data-chars="${esc(comb.characters.join("|"))}"
+            data-scenario="${esc(comb.scenario)}"
+            title="${isFav ? "Remove from favorites" : "Add to favorites"}"
+            aria-pressed="${isFav}">${isFav ? "★" : "☆"}</button>
           <button class="btn-load-unplayed"
             data-char0="${esc(comb.characters[0])}"
             data-char1="${esc(comb.characters[1])}"
-            data-scenario="${esc(comb.scenario)}">Play</button>`;
+            data-scenario="${esc(comb.scenario)}">Play</button>
+        </div>`;
         frag.appendChild(div);
       });
       offset += slice.length;
       grid.appendChild(frag);
     }
 
-    // One delegated listener instead of one per row
+    // Delegated listener for load and favorites buttons
     grid.addEventListener("click", e => {
-      const btn = e.target.closest(".btn-load-unplayed");
-      if (!btn) return;
-      showTab("randomizer");
-      loadCombination({ characters: [btn.dataset.char0, btn.dataset.char1], scenario: btn.dataset.scenario });
+      const loadBtn = e.target.closest(".btn-load-unplayed");
+      if (loadBtn) {
+        showTab("randomizer");
+        loadCombination({ characters: [loadBtn.dataset.char0, loadBtn.dataset.char1], scenario: loadBtn.dataset.scenario });
+        return;
+      }
+      const favBtn = e.target.closest(".btn-favorite");
+      if (favBtn) {
+        const chars    = favBtn.dataset.chars.split("|");
+        const scenario = favBtn.dataset.scenario;
+        const key      = comboKey({ characters: chars, scenario });
+        if (favorites.has(key)) favorites.delete(key);
+        else favorites.add(key);
+        saveFavorites();
+        displayUnplayed();
+      }
     });
 
     // Append more rows as the user scrolls toward the bottom
     grid.addEventListener("scroll", () => {
-      if (offset < unplayed.length && grid.scrollTop + grid.clientHeight >= grid.scrollHeight - 100) {
+      if (offset < filtered.length && grid.scrollTop + grid.clientHeight >= grid.scrollHeight - 100) {
         appendBatch();
       }
     }, { passive: true });
@@ -3242,10 +3515,10 @@ function getCurrentElapsed() {
       </div>`;
   }
 
-  function loadCombination(comb) {
+  function loadCombination(comb, { silent = false } = {}) {
     currentCombination = comb;
     _currentDroid = null;
-    startTimer();
+    if (!silent) startTimer();
     displayCombination(comb);
     displayComboHistory(comb);
     document.getElementById("annotationSection").classList.remove("hidden");
@@ -3351,6 +3624,84 @@ function getCurrentElapsed() {
     document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(url), 1000);
     toast("Exported successfully!");
+  }
+
+  function handleExportHtml() {
+    if (!records.length) { toast("No records to export.", "error"); return; }
+    const dateStr = new Date().toLocaleString();
+    const wins    = records.filter(r => r.result === "Win").length;
+    const losses  = records.length - wins;
+    const winPct  = Math.round((wins / records.length) * 100);
+    const totalSecs = records.reduce((s, r) => s + (r.playtime || 0), 0);
+    const totalH  = Math.floor(totalSecs / 3600);
+    const totalM  = Math.floor((totalSecs % 3600) / 60);
+
+    const rows = [...records].reverse().map(r => {
+      const sc    = esc(scenarioText(r.scenario));
+      const t     = r.playtime != null ? formatTime(r.playtime) : "—";
+      const notesRow = r.notes
+        ? `<tr class="notes-r"><td colspan="6" style="padding-top:0;font-size:11px;color:#888;">${esc(r.notes)}</td></tr>`
+        : "";
+      return `<tr>
+        <td style="white-space:nowrap;font-size:11px;color:#999;">${esc(r.timestamp)}</td>
+        <td>${esc(r.characters[0])}</td>
+        <td>${esc(r.characters[1])}</td>
+        <td>${sc}</td>
+        <td style="font-weight:700;color:${r.result === "Win" ? "#008f74" : "#c8001e"};">${esc(r.result)}</td>
+        <td>${esc(r.difficulty)}</td>
+        <td style="font-size:11px;white-space:nowrap;">${t}</td>
+      </tr>${notesRow}`;
+    }).join("");
+
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Twin Stars Mission Log</title>
+<style>
+  *{box-sizing:border-box}
+  body{font-family:system-ui,-apple-system,sans-serif;font-size:13px;max-width:960px;margin:40px auto;padding:0 20px;color:#222}
+  h1{font-size:22px;margin-bottom:2px}
+  .meta{font-size:12px;color:#888;margin-bottom:24px}
+  .stats{display:flex;gap:16px;margin-bottom:28px;flex-wrap:wrap}
+  .stat{background:#f5f5f5;padding:10px 18px;border-radius:8px}
+  .stat-val{font-size:22px;font-weight:700}
+  .stat-lbl{font-size:11px;color:#888;margin-top:1px}
+  table{width:100%;border-collapse:collapse}
+  th{text-align:left;border-bottom:2px solid #ddd;padding:6px 10px;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:#888}
+  td{padding:7px 10px;border-bottom:1px solid #eee;vertical-align:top}
+  tr:hover td{background:#fafafa}
+  tr.notes-r td{border-bottom:1px solid #eee;padding-top:0}
+  @media print{.meta{color:#222}.stat{background:#eee}}
+</style>
+</head>
+<body>
+<h1>Twin Stars Mission Log</h1>
+<div class="meta">Generated ${esc(dateStr)} &mdash; ${records.length} records</div>
+<div class="stats">
+  <div class="stat"><div class="stat-val">${records.length}</div><div class="stat-lbl">Games Played</div></div>
+  <div class="stat"><div class="stat-val" style="color:#008f74;">${wins}</div><div class="stat-lbl">Wins</div></div>
+  <div class="stat"><div class="stat-val" style="color:#c8001e;">${losses}</div><div class="stat-lbl">Losses</div></div>
+  <div class="stat"><div class="stat-val">${winPct}%</div><div class="stat-lbl">Win Rate</div></div>
+  <div class="stat"><div class="stat-val">${totalH}h ${totalM}m</div><div class="stat-lbl">Total Playtime</div></div>
+</div>
+<table>
+<thead><tr><th>Date</th><th>Character 1</th><th>Character 2</th><th>Scenario</th><th>Result</th><th>Difficulty</th><th>Time</th></tr></thead>
+<tbody>${rows}</tbody>
+</table>
+</body>
+</html>`;
+
+    const blob = new Blob([html], { type: "text/html" });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href     = url;
+    a.download = `twin_stars_log_${new Date().toISOString().slice(0, 10)}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    toast("HTML log exported!");
   }
 
   let _pendingImport = null;
@@ -3745,6 +4096,32 @@ function getCurrentElapsed() {
   document.getElementById("loadManualCombo").addEventListener("click", handleLoadManualCombo);
   document.getElementById("saveRecordBtn")  .addEventListener("click", handleSaveRecord);
   document.getElementById("exportBtn")      .addEventListener("click", handleExport);
+  document.getElementById("exportHtmlBtn")  .addEventListener("click", handleExportHtml);
+  document.getElementById("shareClose")     .addEventListener("click", closeShareModal);
+  document.getElementById("shareModal")     .addEventListener("click", e => { if (e.target === e.currentTarget) closeShareModal(); });
+  document.getElementById("copyCodeBtn")    .addEventListener("click", () => {
+    const code = document.getElementById("shareCodeText").textContent;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(code).then(() => {
+        const btn = document.getElementById("copyCodeBtn");
+        btn.textContent = "Copied!";
+        setTimeout(() => { btn.textContent = "Copy"; }, 1500);
+      });
+    } else {
+      toast("Copy not available — select the code manually.", "error");
+    }
+  });
+  document.getElementById("loadCodeBtn")    .addEventListener("click", () => {
+    const code = document.getElementById("shareCodeInput").value.trim().toLowerCase();
+    const comb = decodeCombination(code);
+    if (!comb) { toast("Invalid code — check the 3-character code and try again.", "error"); return; }
+    closeShareModal();
+    showTab("randomizer");
+    loadCombination(comb);
+  });
+  document.getElementById("shareCodeInput").addEventListener("keydown", e => {
+    if (e.key === "Enter") document.getElementById("loadCodeBtn").click();
+  });
   document.getElementById("randomizerTab")  .addEventListener("click", () => showTab("randomizer"));
   document.getElementById("historyTab")     .addEventListener("click", () => showTab("history"));
   document.getElementById("historySortBy").addEventListener("change", () => { historyDirty = true; displayHistory(); });
@@ -3890,7 +4267,7 @@ function getCurrentElapsed() {
     if (lc) {
       const parsed = JSON.parse(lc);
       if (parsed && Array.isArray(parsed.characters) && parsed.characters.length === 2 && typeof parsed.scenario === "string") {
-        loadCombination(parsed);
+        loadCombination(parsed, { silent: true });
         document.getElementById("playAgainBtn").hidden = false;
       }
     }
