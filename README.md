@@ -57,7 +57,7 @@ That's it. No tutorial. No onboarding flow. No email required.
 | Scenario 14: Save the Spacewhales! | 2 | 1 |
 | Captain Crag *(promo)* | 1 | — |
 
-Any character can be paired with any scenario regardless of pack. With all five packs, that's **5,684 unique character-pair + scenario combinations** (406 pairs × 14 scenarios). At one per day you'd be done in just under 16 years. Totally manageable.
+Any character can be paired with any scenario regardless of pack. Character 1 is **Primary**; Character 2 is **Secondary** — so order matters. With all five packs, that's **11,368 unique ordered character-pair + scenario combinations** (29 × 28 × 14). At one per day you'd be done in just over 31 years. Totally manageable.
 
 <details>
 <summary>Full character and scenario list</summary>
@@ -127,7 +127,7 @@ Each saved record looks like this:
 
 | Field | Type | Notes |
 |-------|------|-------|
-| `characters` | `[string, string]` | Always two, always sorted alphabetically |
+| `characters` | `[string, string]` | Always two; index 0 = Primary (Character 1), index 1 = Secondary (Character 2) |
 | `scenario` | `string` | Must match a known scenario name |
 | `result` | `"Win" \| "Loss"` | |
 | `difficulty` | `"Easy" \| "Medium" \| "Hard"` | |
@@ -145,12 +145,13 @@ Each saved record looks like this:
 | `"theme"` | `"dark"` or `"light"` |
 | `"hasSeenTip"` | `"1"` once the onboarding tooltip has been dismissed |
 | `"radioVolume"` | Float string `"0"`–`"1"` — ambient radio volume (default `"0.3"`) |
+| `"seenPrimarySecondaryNotice"` | `"1"` once the Primary/Secondary migration notice has been shown |
 
 ### Combo Key Format
 
 Combinations are keyed as: `[char1]\x1F[char2]\x1E[scenario]`
 
-Characters are sorted alphabetically before joining. The delimiters are ASCII control characters — unit separator (`\x1F`) between characters and record separator (`\x1E`) before the scenario — so they can never appear in a character or scenario name.
+Characters are joined in order (Primary first, Secondary second). The delimiters are ASCII control characters — unit separator (`\x1F`) between characters and record separator (`\x1E`) before the scenario — so they can never appear in a character or scenario name.
 
 ### XSS / innerHTML
 

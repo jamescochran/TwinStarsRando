@@ -312,7 +312,18 @@
       margin-bottom: 6px;
       line-height: 1.4;
     }
-    .combo-vs { color: var(--accent-orange); font-size: 12px; margin: 0 6px; }
+    .combo-vs { color: var(--accent-orange); font-size: 12px; margin: 0 14px; }
+    .char-role {
+      display: block;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 7px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+    .primary-role   { color: var(--accent-orange); }
+    .secondary-role { color: var(--accent-teal); }
     .combo-scenario {
       font-size: 12px;
       color: var(--accent-teal);
@@ -1703,7 +1714,7 @@
     <p class="footer-disclaimer">
       Twin Stars Adventure Series is designed by Jason Tagmire &amp; Mike Mullins and published by Button Shy Games. All characters, scenarios, and game content are the intellectual property of Button Shy Games and their creators. This is an unofficial, free, fan-made companion app made out of love for an incredible game — not affiliated with or endorsed by Button Shy Games. If you don't own Twin Stars yet, please go buy it. It's worth every penny.
     </p>
-    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-21 00:02 EST</p>
+    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-21 00:15 EST</p>
   </footer>
 
 </div>
@@ -1911,6 +1922,11 @@
     console.warn("Could not load saved records:", e);
   }
 
+  if (records.length > 0 && !localStorage.getItem("seenPrimarySecondaryNotice")) {
+    try { localStorage.setItem("seenPrimarySecondaryNotice", "1"); } catch(e) {}
+    setTimeout(() => toast("Roles added: Character 1 = Primary, Character 2 = Secondary. Older records show characters in their saved order.", "info"), 800);
+  }
+
   function syncExportBtn() {
     const empty = !records.length;
     document.getElementById("exportBtn").disabled  = empty;
@@ -1931,7 +1947,7 @@
 
   // ─── Helpers ────────────────────────────────────────────────────────────────
   function comboKey(comb) {
-    return comb.characters.slice().sort().join("\x1F") + "\x1E" + comb.scenario;
+    return comb.characters.join("\x1F") + "\x1E" + comb.scenario;
   }
 
   const _escEl = document.createElement("div");
@@ -2135,7 +2151,7 @@ function getCurrentElapsed() {
     document.getElementById("combinationDisplay").innerHTML = `
       <div class="combo-display">
         <div class="combo-characters">
-          <span class="combo-char-wrap">${esc(comb.characters[0])}${CHAR_FAQ_ANCHOR[comb.characters[0]] ? faqHelpBtn(CHAR_FAQ_ANCHOR[comb.characters[0]]) : ""}</span><span class="combo-vs">&amp;</span><span class="combo-char-wrap">${esc(comb.characters[1])}${CHAR_FAQ_ANCHOR[comb.characters[1]] ? faqHelpBtn(CHAR_FAQ_ANCHOR[comb.characters[1]]) : ""}</span>
+          <span class="combo-char-wrap"><span class="char-role primary-role">Primary</span>${esc(comb.characters[0])}${CHAR_FAQ_ANCHOR[comb.characters[0]] ? faqHelpBtn(CHAR_FAQ_ANCHOR[comb.characters[0]]) : ""}</span><span class="combo-vs">&amp;</span><span class="combo-char-wrap"><span class="char-role secondary-role">Secondary</span>${esc(comb.characters[1])}${CHAR_FAQ_ANCHOR[comb.characters[1]] ? faqHelpBtn(CHAR_FAQ_ANCHOR[comb.characters[1]]) : ""}</span>
         </div>
         <div class="combo-scenario">${scenarioHTML(comb.scenario)}${SCENARIO_NUMBER[comb.scenario] && parseInt(SCENARIO_NUMBER[comb.scenario]) <= 12 ? faqHelpBtn("faq-sc-" + SCENARIO_NUMBER[comb.scenario]) : ""}</div>
         <div class="combo-play-count"><span>${esc(countText)}</span></div>
@@ -2223,7 +2239,8 @@ function getCurrentElapsed() {
     const playedKeys = new Set(records.map(r => comboKey(r)));
     const unplayed = [];
     for (let i = 0; i < characters.length; i++) {
-      for (let j = i + 1; j < characters.length; j++) {
+      for (let j = 0; j < characters.length; j++) {
+        if (i === j) continue;
         for (const scenario of scenarios) {
           const comb = { characters: [characters[i], characters[j]], scenario };
           if (!playedKeys.has(comboKey(comb))) unplayed.push(comb);
@@ -2236,7 +2253,7 @@ function getCurrentElapsed() {
       return;
     }
 
-    const total = characters.length * (characters.length - 1) / 2 * scenarios.length;
+    const total = characters.length * (characters.length - 1) * scenarios.length;
     const played = total - unplayed.length;
 
     let html = `<p style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">
@@ -2643,7 +2660,7 @@ function getCurrentElapsed() {
     const char2    = document.getElementById("manualChar2").value;
     const scenario = document.getElementById("manualScenario").value;
     if (char1 === char2) { toast("Select two different characters.", "error"); return; }
-    loadCombination({ characters: [char1, char2].sort(), scenario });
+    loadCombination({ characters: [char1, char2], scenario });
   }
 
   function handleSaveRecord() {
