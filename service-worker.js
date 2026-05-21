@@ -1,4 +1,4 @@
-const CACHE = "twin-stars-2026-05-21-1820";
+const CACHE = "twin-stars-2026-05-21-1910";
 const FONTS_CACHE = "twin-stars-fonts-v1";
 const BASE = self.registration.scope;
 const ASSETS = [
@@ -29,9 +29,23 @@ self.addEventListener("activate", e => {
   self.clients.claim();
 });
 
-// Fetch — cache-first for app assets; cache-first with network fallback for fonts
+// Fetch — cache-first for app assets; cache-first with network fallback for fonts and rules images
 self.addEventListener("fetch", e => {
   const url = e.request.url;
+  if (url.includes("/rules/")) {
+    e.respondWith(
+      caches.open(CACHE).then(cache =>
+        cache.match(e.request).then(cached => {
+          if (cached) return cached;
+          return fetch(e.request).then(response => {
+            if (response.ok) cache.put(e.request, response.clone());
+            return response;
+          });
+        })
+      )
+    );
+    return;
+  }
   if (url.startsWith("https://fonts.googleapis.com") || url.startsWith("https://fonts.gstatic.com")) {
     e.respondWith(
       caches.open(FONTS_CACHE).then(cache =>

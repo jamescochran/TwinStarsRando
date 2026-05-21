@@ -159,7 +159,7 @@ Characters are joined in order (Primary first, Secondary second). The delimiters
 
 ### XSS / innerHTML
 
-All user-visible data passes through `esc()` before insertion via `innerHTML`. This escapes `<`, `>`, and `&` via a `textContent`/`innerHTML` DOM round-trip. **Known gap:** `esc()` does not escape double quotes, which breaks `data-*` attribute injection for `"Mad" Anxy`. Tracked as Issue #3.
+All user-visible data passes through `esc()` before insertion via `innerHTML`. This escapes `<`, `>`, `&`, and `"` — the last via a `.replace(/"/g, '&quot;')` pass after the `textContent`/`innerHTML` round-trip, which handles names like `"Mad" Anxy` in `data-*` attributes.
 
 ### Service Worker Cache
 

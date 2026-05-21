@@ -19,8 +19,10 @@
   <meta property="og:title" content="Twin Stars Randomizer">
   <meta property="og:description" content="Free PWA companion for Twin Stars Adventure Series — randomizes character pairs and scenarios, times sessions, and tracks play history across all content packs.">
   <meta property="og:image" content="https://jamescochran.github.io/TwinStarsRando/icon-512.png">
+  <meta property="og:image:width"  content="512">
+  <meta property="og:image:height" content="512">
   <link rel="canonical" href="https://jamescochran.github.io/TwinStarsRando/">
-  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Twin Stars Randomizer">
   <meta name="twitter:description" content="Free PWA companion for Twin Stars Adventure Series — randomizes character pairs and scenarios, times sessions, and tracks play history across all content packs.">
   <meta name="twitter:image" content="https://jamescochran.github.io/TwinStarsRando/icon-512.png">
@@ -244,6 +246,8 @@
     }
     .btn-save:hover  { background: #00edc0; }
     .btn-save:active { opacity: 0.85; }
+    .btn:disabled,
+    .btn-pause:disabled { opacity: 0.4; pointer-events: none; }
 
     /* Forms */
     .form-row { margin-bottom: 12px; }
@@ -571,7 +575,7 @@
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: 6px;
-      color: var(--text-main);
+      color: var(--text-primary);
       font-family: 'Orbitron', sans-serif;
       font-size: 9px;
       font-weight: 700;
@@ -719,7 +723,7 @@
       background: var(--bg-panel);
       border: 1px solid var(--border);
       border-radius: 4px;
-      color: var(--text-main);
+      color: var(--text-primary);
       font-size: 13px;
       padding: 5px 8px;
       cursor: pointer;
@@ -1067,7 +1071,6 @@
       overflow: auto;
       flex: 1;
       padding: 0 24px 20px;
-      -webkit-overflow-scrolling: touch;
     }
     #rulesImage { max-width: 100%; height: auto; display: block; border-radius: 6px; }
 
@@ -1411,6 +1414,9 @@
       text-align: center;
     }
 
+    /* Keyboard focus ring — consistent across all interactive elements */
+    :focus-visible { outline: 2px solid var(--accent-teal); outline-offset: 2px; }
+
     /* Utility — suppress default form-row bottom margin */
     .form-row-flush { margin-bottom: 0; }
     /* Utility — add top spacing to a form row */
@@ -1529,7 +1535,7 @@
     </div>
     <div class="form-row">
       <label for="editNotes">Notes <span style="font-weight:400;color:var(--text-muted)">(optional)</span></label>
-      <textarea id="editNotes" rows="3" style="width:100%;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;color:var(--text-main);padding:8px 10px;font-size:13px;resize:vertical;font-family:inherit;" placeholder="e.g. Close game, used advanced variant…"></textarea>
+      <textarea id="editNotes" rows="3" style="width:100%;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);padding:8px 10px;font-size:13px;resize:vertical;font-family:inherit;" placeholder="e.g. Close game, used advanced variant…"></textarea>
     </div>
     <div class="modal-actions">
       <button class="btn btn-secondary" id="editRecordCancel">Cancel</button>
@@ -2023,7 +2029,7 @@
       </div>
       <div class="volume-popover" id="volumePopover">
         <input type="range" id="radioVolume" class="radio-volume" min="0" max="1" step="0.05"
-               value="0.1" aria-label="Volume">
+               value="0.3" aria-label="Volume">
       </div>
       <a class="radio-status-label" id="radioStatusLabel" href="https://somafm.com/missioncontrol/" target="_blank" rel="noopener noreferrer" hidden>♫ MISSION CONTROL</a>
     </div>
@@ -2040,13 +2046,13 @@
     <p class="active-packs-label" id="activePacksLabel"></p>
   </header>
 
-  <nav class="tab-nav">
-    <button class="tab-btn active" id="randomizerTab">Randomizer</button>
-    <button class="tab-btn"        id="historyTab">Mission Log</button>
+  <nav class="tab-nav" role="tablist" aria-label="App sections">
+    <button class="tab-btn active" id="randomizerTab" role="tab" aria-selected="true"  aria-controls="randomizerPage">Randomizer</button>
+    <button class="tab-btn"        id="historyTab"    role="tab" aria-selected="false" aria-controls="historyPage">Mission Log</button>
   </nav>
 
   <!-- RANDOMIZER PAGE -->
-  <div id="randomizerPage">
+  <div id="randomizerPage" role="tabpanel" aria-labelledby="randomizerTab" tabindex="0">
 
     <div class="panel">
       <p class="panel-title">Random Mission</p>
@@ -2108,7 +2114,7 @@
   </div>
 
   <!-- HISTORY PAGE -->
-  <div id="historyPage" class="hidden">
+  <div id="historyPage" role="tabpanel" aria-labelledby="historyTab" tabindex="0" class="hidden">
     <div class="panel" id="statsPanel">
       <p class="panel-title">Statistics</p>
       <div id="statsContent"></div>
@@ -2183,7 +2189,7 @@
     <p class="footer-disclaimer">
       Twin Stars Adventure Series is designed by Jason Tagmire &amp; Mike Mullins and published by Button Shy Games. All characters, scenarios, and game content are the intellectual property of Button Shy Games and their creators. This is an unofficial, free, fan-made companion app made out of love for an incredible game — not affiliated with or endorsed by Button Shy Games. If you don't own Twin Stars yet, please go buy it. It's worth every penny.
     </p>
-    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-21 18:20 EST</p>
+    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-21 19:10 EST</p>
   </footer>
 
 </div>
@@ -2224,20 +2230,20 @@
       ]
     },
     {
-      id: "scenario14",
-      name: "Scenario 14: Save the Spacewhales!",
-      shortName: "Scenario 14",
-      desc: "2 characters · 1 scenario",
-      characters: ["Striker", "Bippinnidip"],
-      scenarios: ["Save the Spacewhales!"]
-    },
-    {
       id: "scenario13",
       name: "Scenario 13: Topple the Giant!",
       shortName: "Scenario 13",
       desc: "2 characters · 1 scenario",
       characters: ["Feth Doriet", "Pummtoggs"],
       scenarios: ["Topple the Giant!"]
+    },
+    {
+      id: "scenario14",
+      name: "Scenario 14: Save the Spacewhales!",
+      shortName: "Scenario 14",
+      desc: "2 characters · 1 scenario",
+      characters: ["Striker", "Bippinnidip"],
+      scenarios: ["Save the Spacewhales!"]
     },
     {
       id: "captaincrag",
@@ -2481,7 +2487,8 @@
       VALID_RESULTS.has(r.result) &&
       VALID_DIFFICULTIES.has(r.difficulty) &&
       typeof r.timestamp === "string" &&
-      (r.playtime == null || (Number.isInteger(r.playtime) && r.playtime >= 0))
+      (r.playtime == null || (Number.isInteger(r.playtime) && r.playtime >= 0)) &&
+      (r.notes   == null || (typeof r.notes === "string"  && r.notes.length <= 2000))
     );
   }
 
@@ -2628,8 +2635,7 @@ function getCurrentElapsed() {
     btnSc.setAttribute("aria-pressed", String(locks.scenario));
     const allLocked = locks.char1 && locks.char2 && locks.scenario;
     const genBtn = document.getElementById("generateBtn");
-    genBtn.disabled      = allLocked;
-    genBtn.style.opacity = allLocked ? "0.45" : "";
+    genBtn.disabled = allLocked;
   }
 
   function displayCombination(comb) {
@@ -2796,7 +2802,8 @@ function getCurrentElapsed() {
             <div class="unplayed-item-scenario">${scenarioHTML(comb.scenario)}</div>
           </div>
           <button class="btn-load-unplayed"
-            data-chars="${esc(comb.characters.join("|"))}"
+            data-char0="${esc(comb.characters[0])}"
+            data-char1="${esc(comb.characters[1])}"
             data-scenario="${esc(comb.scenario)}">Play</button>`;
         frag.appendChild(div);
       });
@@ -2809,7 +2816,7 @@ function getCurrentElapsed() {
       const btn = e.target.closest(".btn-load-unplayed");
       if (!btn) return;
       showTab("randomizer");
-      loadCombination({ characters: btn.dataset.chars.split("|"), scenario: btn.dataset.scenario });
+      loadCombination({ characters: [btn.dataset.char0, btn.dataset.char1], scenario: btn.dataset.scenario });
     });
 
     // Append more rows as the user scrolls toward the bottom
@@ -3089,6 +3096,8 @@ function getCurrentElapsed() {
   let _deleteCallback   = null;
   let _editTrigger     = null;
   let _editIdx         = null;
+  let _diceTrigger     = null;
+  let _tipsTrigger     = null;
 
   function openEditModal(idx) {
     _editIdx     = idx;
@@ -3259,6 +3268,7 @@ function getCurrentElapsed() {
     if (locks.char1 && locks.char2) {
       toast("Characters locked — scenario re-rolled.");
     }
+    loadCombination({ characters: [c1El.value, c2El.value], scenario: scEl.value });
   }
 
   function handleLoadManualCombo() {
@@ -3390,6 +3400,7 @@ function getCurrentElapsed() {
     saveRecords();
     displayHistory();
     displayUnplayed();
+    displayStats();
     if (currentCombination) { displayCombination(currentCombination); displayComboHistory(currentCombination); }
     closeConfirmModal();
     toast("All records cleared.");
@@ -3430,6 +3441,8 @@ function getCurrentElapsed() {
     document.getElementById("historyPage")   .classList.toggle("hidden", tab !== "history");
     document.getElementById("randomizerTab") .classList.toggle("active", tab === "randomizer");
     document.getElementById("historyTab")    .classList.toggle("active", tab === "history");
+    document.getElementById("randomizerTab") .setAttribute("aria-selected", String(tab === "randomizer"));
+    document.getElementById("historyTab")    .setAttribute("aria-selected", String(tab === "history"));
     if (tab === "history") {
       if (statsDirty)    displayStats();
       if (historyDirty)  displayHistory();
@@ -3542,6 +3555,7 @@ function getCurrentElapsed() {
   }
 
   function openDiceModal() {
+    _diceTrigger = document.activeElement;
     if (_diceInterval) { clearInterval(_diceInterval); _diceInterval = null; _diceRolling = false; }
     _diceMode   = "normal";
     _diceLocked = [false, false];
@@ -3561,14 +3575,17 @@ function getCurrentElapsed() {
     dm.classList.remove("open");
     dm.classList.remove("dice-modal-skill");
     _diceMode = "normal";
+    if (_diceTrigger) { _diceTrigger.focus(); _diceTrigger = null; }
   }
 
   function openTipsModal() {
+    _tipsTrigger = document.activeElement;
     document.getElementById("tipsModal").classList.add("open");
     setTimeout(() => document.getElementById("tipsModalClose").focus(), 50);
   }
   function closeTipsModal() {
     document.getElementById("tipsModal").classList.remove("open");
+    if (_tipsTrigger) { _tipsTrigger.focus(); _tipsTrigger = null; }
   }
 
   // ─── Keyboard: Escape closes modals and tooltip, Tab traps focus ─────────────
@@ -3576,6 +3593,14 @@ function getCurrentElapsed() {
     if (e.key === "Escape") {
       const tip = document.getElementById("onboardingTip");
       if (tip && !tip.classList.contains("hidden")) { dismissTip(); return; }
+
+      const popover = document.getElementById("volumePopover");
+      if (popover && popover.classList.contains("open")) {
+        popover.classList.remove("open");
+        document.getElementById("volumeBtn").setAttribute("aria-expanded", "false");
+        document.getElementById("volumeBtn").focus();
+        return;
+      }
     }
 
     const overlay = document.querySelector(".modal-overlay.open");
@@ -3598,7 +3623,8 @@ function getCurrentElapsed() {
 
     if (e.key === "Tab") {
       const box = overlay.querySelector(".modal-box, .settings-box, .faq-box, .rules-box, .dice-box");
-      const focusable = [...(box || overlay).querySelectorAll(
+      if (!box) return;
+      const focusable = [...box.querySelectorAll(
         'button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
       )];
       if (!focusable.length) return;
@@ -3661,7 +3687,7 @@ function getCurrentElapsed() {
     _radioIndex = 0;
     setRadioState("loading");
     const audio = document.getElementById("radioAudio");
-    audio.volume = parseFloat(localStorage.getItem("radioVolume") || "0.1");
+    audio.volume = parseFloat(localStorage.getItem("radioVolume") || "0.3");
     audio.src = RADIO_STREAMS[0];
     audio.play().catch(() => {});
   }
@@ -3827,7 +3853,7 @@ function getCurrentElapsed() {
     if (lastDifficulty) document.getElementById("difficulty").value = lastDifficulty;
   } catch(e) {}
 
-  document.getElementById("radioVolume").value = parseFloat(localStorage.getItem("radioVolume") || "0.1");
+  document.getElementById("radioVolume").value = parseFloat(localStorage.getItem("radioVolume") || "0.3");
   if (!navigator.onLine) document.getElementById("radioBtn").disabled = true;
 
   buildActiveContent();
