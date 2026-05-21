@@ -547,10 +547,21 @@
     /* History toolbar */
     .history-toolbar {
       display: flex;
+      flex-direction: column;
       gap: 10px;
+      margin-bottom: 18px;
+    }
+    .history-actions {
+      display: flex;
+      gap: 8px;
       flex-wrap: wrap;
       align-items: center;
-      margin-bottom: 18px;
+    }
+    .history-filters {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
     }
     .history-select {
       background: var(--bg-card);
@@ -1803,35 +1814,39 @@
     <div class="panel">
       <p class="panel-title">Mission Log</p>
       <div class="history-toolbar">
-        <button class="btn btn-secondary" id="exportBtn" disabled>Export</button>
-        <label class="import-label" for="importFile">Import</label>
-        <input type="file" id="importFile" accept=".json">
-        <button class="btn btn-danger" id="clearDataBtn">Clear All</button>
-        <select id="historySortBy" class="history-select" aria-label="Sort by">
-          <option value="date-desc">Newest first</option>
-          <option value="date-asc">Oldest first</option>
-          <option value="result">Result</option>
-          <option value="difficulty">Difficulty</option>
-          <option value="characters">Characters</option>
-          <option value="scenario">Scenario</option>
-        </select>
-        <select id="historyFilterResult" class="history-select" aria-label="Filter by result">
-          <option value="">All results</option>
-          <option value="Win">Win</option>
-          <option value="Loss">Loss</option>
-        </select>
-        <select id="historyFilterDifficulty" class="history-select" aria-label="Filter by difficulty">
-          <option value="">All difficulties</option>
-          <option value="Easy">Easy</option>
-          <option value="Medium">Medium</option>
-          <option value="Hard">Hard</option>
-        </select>
-        <select id="historyFilterChar" class="history-select" aria-label="Filter by character">
-          <option value="">All characters</option>
-        </select>
-        <select id="historyFilterScenario" class="history-select" aria-label="Filter by scenario">
-          <option value="">All scenarios</option>
-        </select>
+        <div class="history-actions">
+          <button class="btn btn-secondary" id="exportBtn" disabled>Export</button>
+          <label class="import-label" for="importFile">Import</label>
+          <input type="file" id="importFile" accept=".json">
+          <button class="btn btn-danger" id="clearDataBtn">Clear All</button>
+        </div>
+        <div class="history-filters">
+          <select id="historySortBy" class="history-select" aria-label="Sort by">
+            <option value="date-desc">Newest first</option>
+            <option value="date-asc">Oldest first</option>
+            <option value="result">Result</option>
+            <option value="difficulty">Difficulty</option>
+            <option value="characters">Characters</option>
+            <option value="scenario">Scenario</option>
+          </select>
+          <select id="historyFilterResult" class="history-select" aria-label="Filter by result">
+            <option value="">All results</option>
+            <option value="Win">Win</option>
+            <option value="Loss">Loss</option>
+          </select>
+          <select id="historyFilterDifficulty" class="history-select" aria-label="Filter by difficulty">
+            <option value="">All difficulties</option>
+            <option value="Easy">Easy</option>
+            <option value="Medium">Medium</option>
+            <option value="Hard">Hard</option>
+          </select>
+          <select id="historyFilterChar" class="history-select" aria-label="Filter by character">
+            <option value="">All characters</option>
+          </select>
+          <select id="historyFilterScenario" class="history-select" aria-label="Filter by scenario">
+            <option value="">All scenarios</option>
+          </select>
+        </div>
       </div>
       <div id="historyTableContainer"></div>
     </div>
@@ -1866,7 +1881,7 @@
     <p class="footer-disclaimer">
       Twin Stars Adventure Series is designed by Jason Tagmire &amp; Mike Mullins and published by Button Shy Games. All characters, scenarios, and game content are the intellectual property of Button Shy Games and their creators. This is an unofficial, free, fan-made companion app made out of love for an incredible game — not affiliated with or endorsed by Button Shy Games. If you don't own Twin Stars yet, please go buy it. It's worth every penny.
     </p>
-    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-21 07:09 EST</p>
+    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-21 07:20 EST</p>
   </footer>
 
 </div>
@@ -2606,7 +2621,7 @@ function getCurrentElapsed() {
     const wins   = records.filter(r => r.result === "Win").length;
     const winPct = Math.round(wins / total * 100);
 
-    const totalPossible = characters.length * (characters.length - 1) / 2 * scenarios.length;
+    const totalPossible = characters.length * (characters.length - 1) * scenarios.length;
     const playedKeys    = new Set(records.map(r => comboKey(r)));
     const completedPct  = totalPossible > 0 ? Math.round(playedKeys.size / totalPossible * 100) : 0;
 
