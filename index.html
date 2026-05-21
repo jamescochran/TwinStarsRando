@@ -548,9 +548,11 @@
       text-transform: uppercase;
       color: var(--text-dim);
       text-decoration: none;
+      background: none;
       border: 1px solid var(--border);
       padding: 8px 14px;
       border-radius: 6px;
+      cursor: pointer;
       transition: all 0.18s;
     }
     .footer-link:hover { color: var(--accent-teal); border-color: var(--accent-teal); }
@@ -1084,6 +1086,47 @@
     .form-row-top { margin-top: 12px; }
     /* Visually hidden but readable by screen readers */
     .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
+
+    /* Stats panel */
+    .stats-summary {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+    @media (max-width: 380px) {
+      .stats-summary { grid-template-columns: 1fr 1fr; }
+    }
+    .stats-summary-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      text-align: center;
+    }
+    .stats-summary-value {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--accent-teal);
+      line-height: 1.2;
+    }
+    .stats-summary-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-top: 4px;
+    }
+    .stats-playtime {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+    @media (max-width: 380px) {
+      .stats-playtime { grid-template-columns: 1fr 1fr; }
+    }
   </style>
 </head>
 <body>
@@ -1615,6 +1658,10 @@
 
   <!-- HISTORY PAGE -->
   <div id="historyPage" class="hidden">
+    <div class="panel" id="statsPanel">
+      <p class="panel-title">Statistics</p>
+      <div id="statsContent"></div>
+    </div>
     <div class="panel">
       <p class="panel-title">Mission Log</p>
       <div class="history-toolbar">
@@ -1656,7 +1703,7 @@
     <p class="footer-disclaimer">
       Twin Stars Adventure Series is designed by Jason Tagmire &amp; Mike Mullins and published by Button Shy Games. All characters, scenarios, and game content are the intellectual property of Button Shy Games and their creators. This is an unofficial, free, fan-made companion app made out of love for an incredible game — not affiliated with or endorsed by Button Shy Games. If you don't own Twin Stars yet, please go buy it. It's worth every penny.
     </p>
-    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-20 20:24 EST</p>
+    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-21 00:02 EST</p>
   </footer>
 
 </div>
@@ -1848,6 +1895,7 @@
   let records = [];
   let historyDirty  = true;
   let unplayedDirty = true;
+  let statsDirty    = true;
   try {
     const raw = localStorage.getItem("gameRecords");
     if (raw) {
@@ -1870,8 +1918,9 @@
   }
 
   function saveRecords() {
-    historyDirty = true;
+    historyDirty  = true;
     unplayedDirty = true;
+    statsDirty    = true;
     syncExportBtn();
     try {
       localStorage.setItem("gameRecords", JSON.stringify(records));
@@ -2270,6 +2319,67 @@ function getCurrentElapsed() {
     });
   }
 
+  function displayStats() {
+    statsDirty = false;
+    const el = document.getElementById("statsContent");
+    if (!el) return;
+
+    if (!records.length) {
+      el.innerHTML = `<div class="empty-state"><p>No mission records yet — save some games to see stats!</p></div>`;
+      return;
+    }
+
+    const total  = records.length;
+    const wins   = records.filter(r => r.result === "Win").length;
+    const winPct = Math.round(wins / total * 100);
+
+    const totalPossible = characters.length * (characters.length - 1) / 2 * scenarios.length;
+    const playedKeys    = new Set(records.map(r => comboKey(r)));
+    const completedPct  = totalPossible > 0 ? Math.round(playedKeys.size / totalPossible * 100) : 0;
+
+    // ── Summary row ──
+    let html = `<div class="stats-summary">
+      <div class="stats-summary-card">
+        <div class="stats-summary-value">${total}</div>
+        <div class="stats-summary-label">Games</div>
+      </div>
+      <div class="stats-summary-card">
+        <div class="stats-summary-value">${winPct}%</div>
+        <div class="stats-summary-label">Win Rate</div>
+      </div>
+      <div class="stats-summary-card">
+        <div class="stats-summary-value">${completedPct}%</div>
+        <div class="stats-summary-label">Completed</div>
+      </div>
+    </div>`;
+
+    // ── Playtime ──
+    const timed = records.filter(r => r.playtime != null && r.playtime > 0);
+    if (timed.length) {
+      const times    = timed.map(r => r.playtime);
+      const avg      = Math.round(times.reduce((a, b) => a + b, 0) / times.length);
+      const longest  = Math.max(...times);
+      const shortest = Math.min(...times);
+      html += `<p class="section-heading">Playtime</p>
+      <div class="stats-playtime">
+        <div class="stats-summary-card">
+          <div class="stats-summary-value" style="font-size:14px;">${formatTime(avg)}</div>
+          <div class="stats-summary-label">Average</div>
+        </div>
+        <div class="stats-summary-card">
+          <div class="stats-summary-value" style="font-size:14px;">${formatTime(longest)}</div>
+          <div class="stats-summary-label">Longest</div>
+        </div>
+        <div class="stats-summary-card">
+          <div class="stats-summary-value" style="font-size:14px;">${formatTime(shortest)}</div>
+          <div class="stats-summary-label">Shortest</div>
+        </div>
+      </div>`;
+    }
+
+    el.innerHTML = html;
+  }
+
   // ─── Content packs ──────────────────────────────────────────────────────────
   let enabledPacks;
   try {
@@ -2656,6 +2766,7 @@ function getCurrentElapsed() {
     document.getElementById("randomizerTab") .classList.toggle("active", tab === "randomizer");
     document.getElementById("historyTab")    .classList.toggle("active", tab === "history");
     if (tab === "history") {
+      if (statsDirty)    displayStats();
       if (historyDirty)  displayHistory();
       if (unplayedDirty) displayUnplayed();
     }
