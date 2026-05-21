@@ -1,11 +1,12 @@
-const CACHE = "twin-stars-2026-05-20-2347";
+const CACHE = "twin-stars-2026-05-21-0019";
 const FONTS_CACHE = "twin-stars-fonts-v1";
+const BASE = self.registration.scope;
 const ASSETS = [
-  "/TwinStarsRando/",
-  "/TwinStarsRando/index.html",
-  "/TwinStarsRando/manifest.json",
-  "/TwinStarsRando/icon-192.png",
-  "/TwinStarsRando/icon-512.png"
+  BASE,
+  BASE + "index.html",
+  BASE + "manifest.json",
+  BASE + "icon-192.png",
+  BASE + "icon-512.png"
 ];
 
 // Install — cache all assets
