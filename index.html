@@ -1889,7 +1889,7 @@
     <p class="footer-disclaimer">
       Twin Stars Adventure Series is designed by Jason Tagmire &amp; Mike Mullins and published by Button Shy Games. All characters, scenarios, and game content are the intellectual property of Button Shy Games and their creators. This is an unofficial, free, fan-made companion app made out of love for an incredible game — not affiliated with or endorsed by Button Shy Games. If you don't own Twin Stars yet, please go buy it. It's worth every penny.
     </p>
-    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-21 07:36 EST</p>
+    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-21 07:44 EST</p>
   </footer>
 
 </div>
@@ -2472,39 +2472,56 @@ function getCurrentElapsed() {
       return;
     }
 
-    const total = characters.length * (characters.length - 1) * scenarios.length;
+    const total  = characters.length * (characters.length - 1) * scenarios.length;
     const played = total - unplayed.length;
 
-    let html = `<p style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">
-      <span style="color:var(--accent-teal);font-weight:700;">${played}</span> of <span style="font-weight:700;">${total}</span> combinations played
-    </p><div class="unplayed-grid">`;
+    container.innerHTML = `
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">
+        <span style="color:var(--accent-teal);font-weight:700;">${played}</span> of <span style="font-weight:700;">${total}</span> combinations played
+      </p>
+      <div class="unplayed-grid" id="unplayedGrid"></div>`;
 
-    unplayed.forEach(comb => {
-      html += `
-        <div class="unplayed-item">
+    const grid   = document.getElementById("unplayedGrid");
+    const BATCH  = 30;
+    let   offset = 0;
+
+    function appendBatch() {
+      const slice = unplayed.slice(offset, offset + BATCH);
+      if (!slice.length) return;
+      const frag = document.createDocumentFragment();
+      slice.forEach(comb => {
+        const div = document.createElement("div");
+        div.className = "unplayed-item";
+        div.innerHTML = `
           <div class="unplayed-item-text">
             <div>${esc(comb.characters.join(" & "))}</div>
             <div class="unplayed-item-scenario">${scenarioHTML(comb.scenario)}</div>
           </div>
           <button class="btn-load-unplayed"
             data-chars="${esc(comb.characters.join("|"))}"
-            data-scenario="${esc(comb.scenario)}">
-            Play
-          </button>
-        </div>`;
-    });
-
-    html += "</div>";
-    container.innerHTML = html;
-
-    container.querySelectorAll(".btn-load-unplayed").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const chars    = btn.dataset.chars.split("|");
-        const scenario = btn.dataset.scenario;
-        showTab("randomizer");
-        loadCombination({ characters: chars, scenario });
+            data-scenario="${esc(comb.scenario)}">Play</button>`;
+        frag.appendChild(div);
       });
+      offset += slice.length;
+      grid.appendChild(frag);
+    }
+
+    // One delegated listener instead of one per row
+    grid.addEventListener("click", e => {
+      const btn = e.target.closest(".btn-load-unplayed");
+      if (!btn) return;
+      showTab("randomizer");
+      loadCombination({ characters: btn.dataset.chars.split("|"), scenario: btn.dataset.scenario });
     });
+
+    // Append more rows as the user scrolls toward the bottom
+    grid.addEventListener("scroll", () => {
+      if (offset < unplayed.length && grid.scrollTop + grid.clientHeight >= grid.scrollHeight - 100) {
+        appendBatch();
+      }
+    }, { passive: true });
+
+    appendBatch();
   }
 
   function displayHistory() {
