@@ -166,7 +166,7 @@
       -webkit-tap-highlight-color: transparent;
       min-height: 48px;
     }
-    .tab-btn:first-child { border-right: 1px solid var(--border); }
+    .tab-btn:not(:last-child) { border-right: 1px solid var(--border); }
     .tab-btn.active { background: var(--accent-orange); color: #fff; }
     .tab-btn:not(.active):hover { color: var(--text-primary); background: rgba(255,107,53,0.1); }
 
@@ -1508,6 +1508,365 @@
     @media (max-width: 380px) {
       .stats-playtime { grid-template-columns: 1fr 1fr; }
     }
+
+    /* ─── SYZYGY Campaign ────────────────────────────────────────────────── */
+    .syzygy-mode-cards {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    @media (max-width: 420px) { .syzygy-mode-cards { grid-template-columns: 1fr; } }
+    .syzygy-mode-card {
+      background: var(--bg-card);
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      text-align: center;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .syzygy-mode-card:hover { border-color: var(--accent-teal); }
+    .syzygy-mode-card.selected { border-color: var(--accent-orange); background: rgba(255,107,53,0.1); }
+    .syzygy-mode-card.disabled { opacity: 0.38; cursor: not-allowed; pointer-events: none; }
+    .syzygy-mode-card-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-primary);
+      margin-bottom: 6px;
+    }
+    .syzygy-mode-card-desc { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+
+    .syzygy-char-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    @media (max-width: 400px) { .syzygy-char-grid { grid-template-columns: 1fr 1fr; } }
+    .syzygy-char-btn {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 6px;
+      font-size: 12px;
+      color: var(--text-muted);
+      cursor: pointer;
+      text-align: center;
+      line-height: 1.3;
+      transition: border-color 0.15s, background 0.15s, color 0.15s;
+      -webkit-tap-highlight-color: transparent;
+      min-height: 44px;
+    }
+    .syzygy-char-btn:hover { border-color: var(--accent-teal); color: var(--text-primary); }
+    .syzygy-char-btn.sel-1 { border-color: var(--accent-orange); background: rgba(255,107,53,0.12); color: var(--text-primary); }
+    .syzygy-char-btn.sel-2 { border-color: var(--accent-teal);   background: rgba(0,212,170,0.1);  color: var(--text-primary); }
+    .syzygy-char-btn.sel-3 { border-color: var(--accent-yellow);  background: rgba(240,180,41,0.1); color: var(--text-primary); }
+
+    .syzygy-campaign-header {
+      background: linear-gradient(135deg, rgba(255,107,53,0.07), rgba(0,212,170,0.07));
+      border: 1px solid var(--border-glow);
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .syzygy-campaign-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--accent-orange);
+    }
+    .syzygy-campaign-meta { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+    .syzygy-path {
+      display: flex;
+      align-items: flex-start;
+      gap: 4px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+    .syzygy-path-node {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      min-width: 60px;
+    }
+    .syzygy-path-stage {
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      border: 2px solid var(--border);
+      color: var(--text-dim);
+      background: var(--bg-card);
+      flex-shrink: 0;
+    }
+    .syzygy-path-stage.current { border-color: var(--accent-orange); color: var(--accent-orange); background: rgba(255,107,53,0.1); }
+    .syzygy-path-stage.win     { border-color: var(--accent-teal);   color: var(--accent-teal);   background: rgba(0,212,170,0.1); }
+    .syzygy-path-stage.loss    { border-color: var(--loss-color);    color: var(--loss-color);    background: rgba(255,68,85,0.1); }
+    .syzygy-path-label {
+      font-size: 8px;
+      color: var(--text-dim);
+      letter-spacing: 0.5px;
+      text-align: center;
+      max-width: 58px;
+      line-height: 1.3;
+      word-break: break-word;
+    }
+    .syzygy-path-arrow { color: var(--text-dim); font-size: 16px; flex-shrink: 0; padding-top: 10px; }
+
+    .syzygy-roster {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    @media (max-width: 380px) { .syzygy-roster { grid-template-columns: 1fr; } }
+    .syzygy-char-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 10px;
+      text-align: center;
+    }
+    .syzygy-char-card.playing { border-color: var(--accent-orange); }
+    .syzygy-char-card.benched { opacity: 0.6; }
+    .syzygy-char-card.removed { opacity: 0.3; }
+    .syzygy-char-name {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+      line-height: 1.3;
+    }
+    .syzygy-char-role { font-size: 10px; margin-bottom: 4px; }
+    .role-playing { color: var(--accent-orange); }
+    .role-benched { color: var(--text-dim); }
+    .role-removed { color: var(--loss-color); text-decoration: line-through; }
+    .syzygy-char-carryover { font-size: 10px; color: var(--text-muted); line-height: 1.6; }
+
+    .syzygy-resource-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+    .syzygy-resource-row:last-of-type { border-bottom: none; }
+    .syzygy-resource-char { flex: 1; min-width: 80px; font-size: 13px; color: var(--text-primary); }
+    .syzygy-resource-controls { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .syzygy-resource-label { font-size: 14px; }
+    .syzygy-stepper { display: flex; align-items: center; gap: 4px; }
+    .btn-sz-step {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      border: 1px solid var(--border-glow);
+      background: var(--bg-card);
+      color: var(--text-muted);
+      font-size: 16px;
+      line-height: 1;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+      -webkit-tap-highlight-color: transparent;
+      flex-shrink: 0;
+    }
+    .btn-sz-step:hover:not(:disabled) { border-color: var(--accent-teal); color: var(--accent-teal); }
+    .btn-sz-step:disabled { opacity: 0.3; cursor: not-allowed; }
+    .sz-step-val {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-primary);
+      min-width: 22px;
+      text-align: center;
+    }
+    .syzygy-pool-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 0 0;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent-yellow);
+    }
+
+    .syzygy-scenario-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-glow);
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+    .syzygy-scenario-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent-orange), var(--accent-teal));
+    }
+    .syzygy-stage-label {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 5px;
+    }
+    .syzygy-stage-scenario {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--accent-teal);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .syzygy-branch-cards {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .syzygy-branch-card {
+      background: var(--bg-card);
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .syzygy-branch-card:hover { border-color: var(--accent-teal); }
+    .syzygy-branch-card.chosen { border-color: var(--accent-orange); background: rgba(255,107,53,0.1); }
+    .syzygy-branch-tag {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      margin-bottom: 5px;
+    }
+    .syzygy-branch-name { font-size: 12px; color: var(--accent-teal); line-height: 1.4; }
+
+    .syzygy-outcome-btns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .btn-sz-win {
+      background: var(--accent-teal);
+      color: var(--bg-deep);
+      border: none;
+      border-radius: 6px;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 14px;
+      cursor: pointer;
+      min-height: 48px;
+      transition: background 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-sz-win:hover { background: #00edc0; }
+    .btn-sz-loss {
+      background: transparent;
+      color: var(--loss-color);
+      border: 1px solid #3a1a1a;
+      border-radius: 6px;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 14px;
+      cursor: pointer;
+      min-height: 48px;
+      transition: all 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-sz-loss:hover { border-color: var(--loss-color); background: rgba(255,68,85,0.1); }
+
+    .syzygy-rank-card {
+      text-align: center;
+      padding: 28px 20px;
+      background: linear-gradient(135deg, rgba(255,107,53,0.07), rgba(0,212,170,0.07));
+      border: 1px solid var(--border-glow);
+      border-radius: 12px;
+      margin-bottom: 16px;
+    }
+    .syzygy-rank-eyebrow {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 8px;
+      letter-spacing: 3px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .syzygy-rank-value {
+      font-family: 'Orbitron', sans-serif;
+      font-size: clamp(18px, 5vw, 28px);
+      font-weight: 900;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .syzygy-rank-desc { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+    .syzygy-rank-stats {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      margin-top: 16px;
+      flex-wrap: wrap;
+    }
+    .syzygy-rank-stat-val {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--accent-teal);
+    }
+    .syzygy-rank-stat-label { font-size: 10px; color: var(--text-dim); letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
+
+    .syzygy-carryover-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 0;
+      font-size: 12px;
+      color: var(--text-muted);
+      flex-wrap: wrap;
+    }
+    .syzygy-carryover-name { min-width: 90px; font-weight: 600; color: var(--text-primary); }
   </style>
 </head>
 <body>
@@ -2091,8 +2450,9 @@
   </header>
 
   <nav class="tab-nav" role="tablist" aria-label="App sections">
-    <button class="tab-btn active" id="randomizerTab" role="tab" aria-selected="true"  aria-controls="randomizerPage">Randomizer</button>
-    <button class="tab-btn"        id="historyTab"    role="tab" aria-selected="false" aria-controls="historyPage">Mission Log</button>
+    <button class="tab-btn active" id="randomizerTab"    role="tab" aria-selected="true"  aria-controls="randomizerPage">Randomizer</button>
+    <button class="tab-btn"        id="historyTab"       role="tab" aria-selected="false" aria-controls="historyPage">Mission Log</button>
+    <button class="tab-btn"        id="syzygyCampaignTab" role="tab" aria-selected="false" aria-controls="syzygyCampaignPage">SYZYGY</button>
   </nav>
 
   <!-- RANDOMIZER PAGE -->
@@ -2155,6 +2515,11 @@
 
     <div id="comboHistory"></div>
 
+  </div>
+
+  <!-- SYZYGY CAMPAIGN PAGE -->
+  <div id="syzygyCampaignPage" class="hidden">
+    <div id="syzygyCampaignContent"></div>
   </div>
 
   <!-- HISTORY PAGE -->
@@ -3554,17 +3919,21 @@ function getCurrentElapsed() {
   });
 
   function showTab(tab) {
-    document.getElementById("randomizerPage").classList.toggle("hidden", tab !== "randomizer");
-    document.getElementById("historyPage")   .classList.toggle("hidden", tab !== "history");
-    document.getElementById("randomizerTab") .classList.toggle("active", tab === "randomizer");
-    document.getElementById("historyTab")    .classList.toggle("active", tab === "history");
-    document.getElementById("randomizerTab") .setAttribute("aria-selected", String(tab === "randomizer"));
-    document.getElementById("historyTab")    .setAttribute("aria-selected", String(tab === "history"));
+    document.getElementById("randomizerPage")       .classList.toggle("hidden", tab !== "randomizer");
+    document.getElementById("historyPage")          .classList.toggle("hidden", tab !== "history");
+    document.getElementById("syzygyCampaignPage")   .classList.toggle("hidden", tab !== "syzygy");
+    document.getElementById("randomizerTab")        .classList.toggle("active", tab === "randomizer");
+    document.getElementById("historyTab")           .classList.toggle("active", tab === "history");
+    document.getElementById("syzygyCampaignTab")    .classList.toggle("active", tab === "syzygy");
+    document.getElementById("randomizerTab")        .setAttribute("aria-selected", String(tab === "randomizer"));
+    document.getElementById("historyTab")           .setAttribute("aria-selected", String(tab === "history"));
+    document.getElementById("syzygyCampaignTab")    .setAttribute("aria-selected", String(tab === "syzygy"));
     if (tab === "history") {
       if (statsDirty)    displayStats();
       if (historyDirty)  displayHistory();
       if (unplayedDirty) displayUnplayed();
     }
+    if (tab === "syzygy") renderSz();
   }
 
   // ─── Onboarding tip: dismiss on outside click ───────────────────────────────
@@ -3814,6 +4183,474 @@ function getCurrentElapsed() {
     audio.play().catch(() => {});
   }
 
+  // ─── SYZYGY Campaign ────────────────────────────────────────────────────────
+
+  const SYZYGY1_RANKS = [
+    { rank: "LEGENDS",   desc: "Word spreads across the galaxy. There's apparently a song.",        wins: 3, maxLosses: 0 },
+    { rank: "FREE",      desc: "Debt paid off. Where's your next adventure?",                       wins: 3, maxLosses: 1 },
+    { rank: "ALIVE",     desc: "The Grosksh aren't about to waste a perfectly good servant.",        wins: 2 },
+    { rank: "GROSKSH'D", desc: "Not the best outcome, all things considered." }
+  ];
+  const SYZYGY2_RANKS = [
+    { rank: "LOADED",            desc: "The only thing that slowed you down was all the loot you brought home.", wins: 3, maxLosses: 0 },
+    { rank: "SAFE",              desc: "Home with one nifty new scar.",                                          wins: 3, maxLosses: 1 },
+    { rank: "BACK TO SQUARE ONE",desc: "Home, broken, and broke, but home.",                                     wins: 3, maxLosses: 2 },
+    { rank: "LOST IN THE UNIVERSE", desc: "The universe is a big place. Someone will find you eventually." }
+  ];
+
+  let _sz = null;           // active campaign object
+  let _szMode   = null;     // setup: "syzygy1" | "syzygy2"
+  let _szChars  = [];       // setup: selected character names
+
+  (function loadSzCampaign() {
+    try {
+      const raw = localStorage.getItem("syzygyCampaign");
+      _sz = raw ? JSON.parse(raw) : null;
+    } catch(e) { _sz = null; }
+  })();
+
+  function saveSz() {
+    try {
+      if (_sz) localStorage.setItem("syzygyCampaign", JSON.stringify(_sz));
+      else     localStorage.removeItem("syzygyCampaign");
+    } catch(e) {}
+  }
+
+  function szActivePlayers() {
+    const alive = [0,1,2].filter(i => !_sz.removed[i]);
+    if (alive.length < 2) return alive;
+    const benchSlot = _sz.stage % alive.length;
+    return alive.filter((_, i) => i !== benchSlot);
+  }
+
+  function szBenchedPlayer() {
+    const alive = [0,1,2].filter(i => !_sz.removed[i]);
+    if (alive.length < 2) return null;
+    return alive[_sz.stage % alive.length];
+  }
+
+  function szCurrentScenario() {
+    if (!_sz) return null;
+    const { mode, stage, branchChosen, scenarios } = _sz;
+    if (mode === "syzygy1") {
+      if (stage === 0) return scenarios[0];
+      if (stage === 1) return branchChosen === null ? null : (branchChosen === 0 ? scenarios[1] : scenarios[2]);
+      if (stage === 2) return scenarios[3];
+    }
+    return scenarios[stage] || null;
+  }
+
+  function szCalcRank() {
+    const c = _sz;
+    const wins   = c.stageResults.filter(r => r.result === "Win").length;
+    const losses = c.losses;
+    const table  = c.mode === "syzygy1" ? SYZYGY1_RANKS : SYZYGY2_RANKS;
+    for (const entry of table) {
+      if (entry.wins    !== undefined && wins < entry.wins)          continue;
+      if (entry.maxLosses !== undefined && losses > entry.maxLosses) continue;
+      return { rank: entry.rank, desc: entry.desc };
+    }
+    return table[table.length - 1];
+  }
+
+  function szStart(mode, chars) {
+    const s1Scenarios = shuffle([...CONTENT_PACKS.find(p => p.id === "series1").scenarios]);
+    let picked;
+    if (mode === "syzygy1") {
+      picked = s1Scenarios.slice(0, 4); // A, B, C, D
+    } else {
+      picked = shuffle([...scenarios]).slice(0, 3);
+    }
+    _sz = {
+      mode,
+      characters: chars,
+      removed:   [false, false, false],
+      stage:      0,
+      branchChosen: null,
+      scenarios:  picked,
+      carryover:  [{energy:0,health:0},{energy:0,health:0},{energy:0,health:0}],
+      alloc:      null,
+      stageResults: [],
+      losses:     0,
+      retrying:   false,
+      started:    new Date().toLocaleString(),
+      completed:  false,
+      finalRank:  null
+    };
+    saveSz();
+    renderSz();
+  }
+
+  function szRecordOutcome(result) {
+    const c   = _sz;
+    const sc  = szCurrentScenario();
+    const playing = szActivePlayers();
+    c.stageResults.push({ stage: c.stage, scenario: sc, chars: playing, result, ts: new Date().toLocaleString() });
+
+    if (result === "Win") {
+      c.retrying = false;
+      if (c.mode === "syzygy1") {
+        c.stage = c.stage === 1 ? 2 : c.stage + 1;
+      } else {
+        c.stage++;
+      }
+    } else {
+      c.losses++;
+      if (c.mode === "syzygy2") c.stage++; // red-arrow path still advances
+      c.retrying = true;
+    }
+
+    c.alloc = null;
+
+    const totalStages = c.mode === "syzygy1" ? 3 : 3;
+    const tooManyLosses = c.losses >= 2;
+    if (c.stage >= totalStages || tooManyLosses) {
+      c.completed  = true;
+      c.finalRank  = szCalcRank();
+      c.retrying   = false;
+    }
+    saveSz();
+    renderSz();
+  }
+
+  function szAbandon() {
+    _sz = null;
+    saveSz();
+    renderSz();
+  }
+
+  // ─── SYZYGY Render ──────────────────────────────────────────────────────────
+
+  function renderSz() {
+    const el = document.getElementById("syzygyCampaignContent");
+    if (!el) return;
+    if (!_sz)             szRenderSetup(el);
+    else if (_sz.completed) szRenderComplete(el);
+    else                  szRenderActive(el);
+  }
+
+  function szRenderSetup(el) {
+    const hasSeries1 = enabledPacks.has("series1");
+    const hasSeries2 = enabledPacks.has("series1") || enabledPacks.has("series2");
+    const allChars   = characters;
+
+    const modeHTML = `
+      <div class="syzygy-mode-cards">
+        <div class="syzygy-mode-card${!hasSeries1 ? " disabled" : ""}${_szMode === "syzygy1" ? " selected" : ""}" id="szSel1" role="button" tabindex="${hasSeries1 ? "0" : "-1"}">
+          <div class="syzygy-mode-card-title">SYZYGY I</div>
+          <div class="syzygy-mode-card-desc">4-scenario campaign. Pay off your debt to the Grosksh.${!hasSeries1 ? "<br><em>Requires Series 1</em>" : ""}</div>
+        </div>
+        <div class="syzygy-mode-card${!hasSeries2 ? " disabled" : ""}${_szMode === "syzygy2" ? " selected" : ""}" id="szSel2" role="button" tabindex="${hasSeries2 ? "0" : "-1"}">
+          <div class="syzygy-mode-card-title">SYZYGY II</div>
+          <div class="syzygy-mode-card-desc">3-scenario campaign. Stranded across the universe — find your way home.</div>
+        </div>
+      </div>`;
+
+    let charHTML = "";
+    if (_szMode) {
+      const selClasses = ["", "sel-1", "sel-2", "sel-3"];
+      charHTML = `
+        <p class="section-heading">Choose 3 Characters</p>
+        <div class="syzygy-char-grid">
+          ${allChars.map(c => {
+            const si = _szChars.indexOf(c);
+            const cls = si >= 0 ? " " + selClasses[si + 1] : "";
+            const num = si >= 0 ? `<span style="display:block;font-size:9px;color:var(--accent-orange);margin-top:2px;">${si + 1}</span>` : "";
+            return `<button class="syzygy-char-btn${cls}" data-char="${esc(c)}">${esc(c)}${num}</button>`;
+          }).join("")}
+        </div>
+        <p style="font-size:12px;color:var(--text-muted);text-align:center;margin-bottom:16px;">${_szChars.length}/3 selected</p>`;
+    }
+
+    const canStart = _szMode && _szChars.length === 3;
+    el.innerHTML = `
+      <div class="panel">
+        <p class="panel-title">SYZYGY Mode</p>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;line-height:1.6;">A multi-scenario cooperative campaign. Three characters work together across linked missions with health and resources carrying over between scenarios.</p>
+        ${modeHTML}
+        ${charHTML}
+        <button class="btn btn-primary" id="szStartBtn"${canStart ? "" : " disabled"} style="${canStart ? "" : "opacity:0.4;"}">Begin Campaign</button>
+      </div>`;
+
+    const sel1 = document.getElementById("szSel1");
+    const sel2 = document.getElementById("szSel2");
+    function pickMode(m) { _szMode = m; _szChars = []; renderSz(); }
+    if (sel1 && hasSeries1) { sel1.addEventListener("click", () => pickMode("syzygy1")); sel1.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); sel1.click(); } }); }
+    if (sel2 && hasSeries2) { sel2.addEventListener("click", () => pickMode("syzygy2")); sel2.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); sel2.click(); } }); }
+
+    el.querySelectorAll(".syzygy-char-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const ch  = btn.dataset.char;
+        const idx = _szChars.indexOf(ch);
+        if (idx >= 0) { _szChars.splice(idx, 1); }
+        else if (_szChars.length < 3) { _szChars.push(ch); }
+        else { toast("3 characters already selected — tap one to remove it.", "error"); return; }
+        renderSz();
+      });
+    });
+
+    const startBtn = document.getElementById("szStartBtn");
+    if (startBtn && canStart) startBtn.addEventListener("click", () => szStart(_szMode, [..._szChars]));
+  }
+
+  function szRenderActive(el) {
+    const c = _sz;
+    const pool  = c.retrying ? 3 : 5;
+    const alloc = c.alloc || { chars: szActivePlayers().map(() => ({energy:0, health:0})) };
+    if (!c.alloc) c.alloc = alloc;
+    const totalAlloced = alloc.chars.reduce((s, a) => s + a.energy + a.health, 0);
+    const remaining    = pool - totalAlloced;
+    const playing      = szActivePlayers();
+    const benched      = szBenchedPlayer();
+    const sc           = szCurrentScenario();
+    const modeLabel    = c.mode === "syzygy1" ? "SYZYGY Mode I" : "SYZYGY Mode II: Waypoint";
+
+    // Campaign header
+    let html = `
+      <div class="syzygy-campaign-header">
+        <div>
+          <div class="syzygy-campaign-title">${modeLabel}</div>
+          <div class="syzygy-campaign-meta">Started ${esc(c.started)} · ${c.losses} loss${c.losses !== 1 ? "es" : ""}</div>
+        </div>
+        <button class="btn btn-danger" id="szAbandonBtn" style="min-height:36px;padding:8px 14px;font-size:9px;">Abandon</button>
+      </div>`;
+
+    // Path
+    html += `<div class="panel"><p class="panel-title">Campaign Path</p><div class="syzygy-path">`;
+    if (c.mode === "syzygy1") {
+      const stageDefs = [
+        { key: 0, label: "A",   sc: c.scenarios[0] },
+        { key: 1, label: "B/C", sc: c.branchChosen === null ? "Choose…" : (c.branchChosen === 0 ? c.scenarios[1] : c.scenarios[2]) },
+        { key: 2, label: "D",   sc: c.scenarios[3] }
+      ];
+      stageDefs.forEach((s, i) => {
+        const res        = c.stageResults.filter(r => r.stage === s.key).slice(-1)[0];
+        const stateClass = !res ? (c.stage === s.key ? "current" : "") : (res.result === "Win" ? "win" : "loss");
+        const arrow      = i < stageDefs.length - 1 ? `<div class="syzygy-path-arrow">→</div>` : "";
+        html += `<div class="syzygy-path-node"><div class="syzygy-path-stage ${stateClass}">${esc(s.label)}</div><div class="syzygy-path-label">${esc(s.sc.replace(/!$/,""))}</div></div>${arrow}`;
+      });
+    } else {
+      c.scenarios.forEach((scenName, i) => {
+        const res        = c.stageResults.filter(r => r.stage === i).slice(-1)[0];
+        const stateClass = !res ? (c.stage === i ? "current" : "") : (res.result === "Win" ? "win" : "loss");
+        const arrow      = i < c.scenarios.length - 1 ? `<div class="syzygy-path-arrow">→</div>` : "";
+        html += `<div class="syzygy-path-node"><div class="syzygy-path-stage ${stateClass}">${i+1}</div><div class="syzygy-path-label">${esc(scenName.replace(/!$/,""))}</div></div>${arrow}`;
+      });
+    }
+    html += `</div></div>`;
+
+    // Roster
+    html += `<div class="panel"><p class="panel-title">Roster</p><div class="syzygy-roster">`;
+    c.characters.forEach((name, i) => {
+      const isPlaying = playing.includes(i);
+      const isBenched = benched === i;
+      const isRemoved = c.removed[i];
+      const cardClass  = isRemoved ? "removed" : (isPlaying ? "playing" : "benched");
+      const roleClass  = isRemoved ? "role-removed" : (isPlaying ? "role-playing" : "role-benched");
+      const roleText   = isRemoved ? "Eliminated" : (isPlaying ? "Playing" : "Benched · heals");
+      const co = c.carryover[i];
+      const coText = (co.energy > 0 || co.health > 0) ? `❤️ ${co.health} ⚡ ${co.energy} carry` : "";
+      html += `<div class="syzygy-char-card ${cardClass}"><div class="syzygy-char-name">${esc(name)}</div><div class="syzygy-char-role ${roleClass}">${esc(roleText)}</div>${coText ? `<div class="syzygy-char-carryover">${esc(coText)}</div>` : ""}</div>`;
+    });
+    html += `</div></div>`;
+
+    // Branch choice (SYZYGY I stage 1 only, before branch is picked)
+    if (c.mode === "syzygy1" && c.stage === 1 && c.branchChosen === null) {
+      html += `
+        <div class="panel">
+          <p class="panel-title">Choose Your Path</p>
+          <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">Pick one scenario for Stage B/C. You play only the one you choose.</p>
+          <div class="syzygy-branch-cards">
+            <div class="syzygy-branch-card" id="szBranchL">
+              <div class="syzygy-branch-tag">Option B</div>
+              <div class="syzygy-branch-name">${scenarioHTML(c.scenarios[1])}</div>
+            </div>
+            <div class="syzygy-branch-card" id="szBranchR">
+              <div class="syzygy-branch-tag">Option C</div>
+              <div class="syzygy-branch-name">${scenarioHTML(c.scenarios[2])}</div>
+            </div>
+          </div>
+        </div>`;
+    } else if (sc) {
+      // Stage label
+      const stageLabel = c.mode === "syzygy1"
+        ? ["Stage A — First Mission", "Stage B/C — Branch", "Stage D — Final"][c.stage] || "Stage"
+        : `Scenario ${c.stage + 1} of 3`;
+
+      const playingNames  = playing.map(i => c.characters[i]);
+      const benchedName   = benched !== null ? c.characters[benched] : null;
+
+      // Scenario card
+      html += `
+        <div class="syzygy-scenario-card">
+          <div class="syzygy-stage-label">${esc(stageLabel)}</div>
+          <div class="syzygy-stage-scenario">${scenarioHTML(sc)}</div>
+          <div style="font-size:12px;color:var(--text-muted);">Playing: <strong>${esc(playingNames.join(" &amp; "))}</strong>${benchedName ? ` · Benched: ${esc(benchedName)} (heals)` : ""}</div>
+          ${c.retrying ? `<div class="notice" style="margin-top:10px;color:var(--loss-color);border-color:rgba(255,68,85,0.3);">Retry — only 3 resource points this attempt</div>` : ""}
+        </div>`;
+
+      // Pre-scenario resources
+      const resRows = playing.map((ci, i) => {
+        const name = c.characters[ci];
+        const a    = alloc.chars[i];
+        const co   = c.carryover[ci];
+        return `
+          <div class="syzygy-resource-row">
+            <div class="syzygy-resource-char">
+              <div style="font-weight:600;">${esc(name)}</div>
+              ${co.energy > 0 || co.health > 0 ? `<div style="font-size:11px;color:var(--text-dim);">Carryover: ❤️ ${co.health} ⚡ ${co.energy}</div>` : ""}
+            </div>
+            <div class="syzygy-resource-controls">
+              <span class="syzygy-resource-label">❤️</span>
+              <div class="syzygy-stepper">
+                <button class="btn-sz-step" data-ai="${i}" data-t="health" data-d="-1"${a.health <= 0 ? " disabled" : ""}>−</button>
+                <span class="sz-step-val">${a.health}</span>
+                <button class="btn-sz-step" data-ai="${i}" data-t="health" data-d="1"${remaining <= 0 ? " disabled" : ""}>+</button>
+              </div>
+              <span class="syzygy-resource-label">⚡</span>
+              <div class="syzygy-stepper">
+                <button class="btn-sz-step" data-ai="${i}" data-t="energy" data-d="-1"${a.energy <= 0 ? " disabled" : ""}>−</button>
+                <span class="sz-step-val">${a.energy}</span>
+                <button class="btn-sz-step" data-ai="${i}" data-t="energy" data-d="1"${remaining <= 0 ? " disabled" : ""}>+</button>
+              </div>
+            </div>
+          </div>`;
+      }).join("");
+
+      html += `
+        <div class="panel">
+          <p class="panel-title">Pre-Scenario Resources</p>
+          <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">Distribute <strong>${pool}</strong> points as ❤️ Health or ⚡ Energy. Cannot exceed the max ⚡ shown on the scenario card.</p>
+          ${resRows}
+          <div class="syzygy-pool-bar">${remaining} point${remaining !== 1 ? "s" : ""} remaining</div>
+        </div>`;
+
+      // Carryover tracking
+      const coRows = playing.map(ci => {
+        const name = c.characters[ci];
+        const co   = c.carryover[ci];
+        return `
+          <div class="syzygy-carryover-row">
+            <span class="syzygy-carryover-name">${esc(name)}</span>
+            <span>❤️</span>
+            <div class="syzygy-stepper" style="gap:3px;">
+              <button class="btn-sz-step" data-ci="${ci}" data-ct="health" data-cd="-1" style="width:24px;height:24px;font-size:13px;"${co.health <= 0 ? " disabled" : ""}>−</button>
+              <span class="sz-step-val" style="font-size:13px;min-width:18px;">${co.health}</span>
+              <button class="btn-sz-step" data-ci="${ci}" data-ct="health" data-cd="1" style="width:24px;height:24px;font-size:13px;">+</button>
+            </div>
+            <span>⚡</span>
+            <div class="syzygy-stepper" style="gap:3px;">
+              <button class="btn-sz-step" data-ci="${ci}" data-ct="energy" data-cd="-1" style="width:24px;height:24px;font-size:13px;"${co.energy <= 0 ? " disabled" : ""}>−</button>
+              <span class="sz-step-val" style="font-size:13px;min-width:18px;">${co.energy}</span>
+              <button class="btn-sz-step" data-ci="${ci}" data-ct="energy" data-cd="1" style="width:24px;height:24px;font-size:13px;">+</button>
+            </div>
+          </div>`;
+      }).join("");
+
+      html += `
+        <div class="panel">
+          <p class="panel-title">Outcome</p>
+          <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">After the scenario, note any unused ❤️ and ⚡ — both carry over to the next stage.</p>
+          ${coRows}
+          <div class="syzygy-outcome-btns">
+            <button class="btn-sz-win"  id="szWinBtn">✓ Victory</button>
+            <button class="btn-sz-loss" id="szLossBtn">✗ Defeat</button>
+          </div>
+        </div>`;
+    }
+
+    el.innerHTML = html;
+
+    // Events
+    document.getElementById("szAbandonBtn").addEventListener("click", () => {
+      if (confirm("Abandon this campaign? All progress will be lost.")) szAbandon();
+    });
+
+    const branchL = document.getElementById("szBranchL");
+    const branchR = document.getElementById("szBranchR");
+    if (branchL) branchL.addEventListener("click", () => { c.branchChosen = 0; saveSz(); renderSz(); });
+    if (branchR) branchR.addEventListener("click", () => { c.branchChosen = 1; saveSz(); renderSz(); });
+
+    // Allocation steppers (data-ai, data-t, data-d)
+    el.querySelectorAll("[data-ai]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const ai  = parseInt(btn.dataset.ai);
+        const t   = btn.dataset.t;
+        const dir = parseInt(btn.dataset.d);
+        const tot = c.alloc.chars.reduce((s, a) => s + a.energy + a.health, 0);
+        if (dir > 0 && (pool - tot) <= 0) return;
+        if (dir < 0 && c.alloc.chars[ai][t] <= 0) return;
+        c.alloc.chars[ai][t] += dir;
+        saveSz(); renderSz();
+      });
+    });
+
+    // Carryover steppers (data-ci, data-ct, data-cd)
+    el.querySelectorAll("[data-ci]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const ci  = parseInt(btn.dataset.ci);
+        const t   = btn.dataset.ct;
+        const dir = parseInt(btn.dataset.cd);
+        if (dir < 0 && c.carryover[ci][t] <= 0) return;
+        c.carryover[ci][t] = Math.max(0, c.carryover[ci][t] + dir);
+        saveSz(); renderSz();
+      });
+    });
+
+    const winBtn  = document.getElementById("szWinBtn");
+    const lossBtn = document.getElementById("szLossBtn");
+    if (winBtn)  winBtn .addEventListener("click", () => szRecordOutcome("Win"));
+    if (lossBtn) lossBtn.addEventListener("click", () => szRecordOutcome("Loss"));
+  }
+
+  function szRenderComplete(el) {
+    const c     = _sz;
+    const rank  = c.finalRank || szCalcRank();
+    const wins  = c.stageResults.filter(r => r.result === "Win").length;
+    const modeLabel = c.mode === "syzygy1" ? "SYZYGY Mode I" : "SYZYGY Mode II: Waypoint";
+    const goodRanks = new Set(["LEGENDS","FREE","LOADED","SAFE"]);
+    const rankColor = goodRanks.has(rank.rank) ? (rank.rank === "LEGENDS" || rank.rank === "LOADED" ? "var(--accent-yellow)" : "var(--accent-teal)") : "var(--loss-color)";
+
+    const histRows = c.stageResults.map(r =>
+      `<tr>
+        <td style="font-size:12px;color:var(--text-muted);">${esc(r.scenario)}</td>
+        <td style="font-size:12px;color:var(--text-muted);">${esc(r.chars.map(i => c.characters[i]).join(" &amp; "))}</td>
+        <td><span class="result-pill ${r.result === "Win" ? "win" : "loss"}">${esc(r.result)}</span></td>
+      </tr>`
+    ).join("");
+
+    el.innerHTML = `
+      <div class="panel">
+        <p class="panel-title">${modeLabel} — Complete</p>
+        <div class="syzygy-rank-card">
+          <div class="syzygy-rank-eyebrow">Final Rank</div>
+          <div class="syzygy-rank-value" style="color:${rankColor};">${esc(rank.rank)}</div>
+          <div class="syzygy-rank-desc">${esc(rank.desc)}</div>
+          <div class="syzygy-rank-stats">
+            <div><div class="syzygy-rank-stat-val">${wins}</div><div class="syzygy-rank-stat-label">Wins</div></div>
+            <div><div class="syzygy-rank-stat-val">${c.losses}</div><div class="syzygy-rank-stat-label">Losses</div></div>
+            <div><div class="syzygy-rank-stat-val">${c.stageResults.length}</div><div class="syzygy-rank-stat-label">Scenarios</div></div>
+          </div>
+        </div>
+        <p class="panel-title" style="margin-bottom:10px;">Characters</p>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">${esc(c.characters.join(" · "))}</p>
+        ${histRows ? `
+        <p class="section-heading">Campaign Log</p>
+        <div class="history-table-wrap">
+          <table>
+            <thead><tr><th>Scenario</th><th>Characters</th><th>Result</th></tr></thead>
+            <tbody>${histRows}</tbody>
+          </table>
+        </div>` : ""}
+        <button class="btn btn-primary" id="szNewCampaignBtn" style="margin-top:16px;">Start New Campaign</button>
+      </div>`;
+
+    document.getElementById("szNewCampaignBtn").addEventListener("click", () => {
+      _sz = null; _szMode = null; _szChars = [];
+      saveSz(); renderSz();
+    });
+  }
+
   // ─── Init ───────────────────────────────────────────────────────────────────
   document.getElementById("generateBtn")    .addEventListener("click", handleGenerate);
   document.getElementById("lockChar1")      .addEventListener("click", () => { locks.char1    = !locks.char1;    updateLockButtons(); });
@@ -3822,8 +4659,9 @@ function getCurrentElapsed() {
   document.getElementById("loadManualCombo").addEventListener("click", handleLoadManualCombo);
   document.getElementById("saveRecordBtn")  .addEventListener("click", handleSaveRecord);
   document.getElementById("exportBtn")      .addEventListener("click", handleExport);
-  document.getElementById("randomizerTab")  .addEventListener("click", () => showTab("randomizer"));
-  document.getElementById("historyTab")     .addEventListener("click", () => showTab("history"));
+  document.getElementById("randomizerTab")     .addEventListener("click", () => showTab("randomizer"));
+  document.getElementById("historyTab")        .addEventListener("click", () => showTab("history"));
+  document.getElementById("syzygyCampaignTab") .addEventListener("click", () => showTab("syzygy"));
 
   // Arrow key navigation between tabs (ARIA tablist pattern)
   document.querySelector(".tab-nav[role='tablist']").addEventListener("keydown", e => {
