@@ -547,11 +547,26 @@
     /* History toolbar */
     .history-toolbar {
       display: flex;
+      flex-direction: column;
       gap: 10px;
-      flex-wrap: wrap;
-      align-items: center;
       margin-bottom: 18px;
     }
+    .history-actions {
+      display: flex;
+      gap: 8px;
+    }
+    .history-actions > * {
+      flex: 1;
+      justify-content: center;
+      text-align: center;
+      min-width: 0;
+    }
+    .history-filters {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    #historySortBy { grid-column: 1 / -1; }
     .history-select {
       background: var(--bg-card);
       border: 1px solid var(--border);
@@ -564,11 +579,12 @@
       text-transform: uppercase;
       padding: 8px 10px;
       cursor: pointer;
-      min-height: 48px;
+      min-height: 40px;
+      width: 100%;
       -webkit-tap-highlight-color: transparent;
     }
     .history-select:focus { outline: 2px solid var(--accent-teal); outline-offset: 2px; }
-    #historyFilterChar, #historyFilterScenario { max-width: 160px; }
+    #historyFilterChar, #historyFilterScenario { max-width: none; }
     .import-label {
       display: inline-flex;
       align-items: center;
@@ -643,6 +659,9 @@
       flex-direction: column;
       gap: 8px;
       margin-top: 12px;
+      max-height: 420px;
+      overflow-y: auto;
+      padding-right: 2px;
     }
     .unplayed-item {
       display: flex;
@@ -674,6 +693,63 @@
       -webkit-tap-highlight-color: transparent;
     }
     .btn-load-unplayed:hover { background: rgba(0,212,170,0.1); border-color: var(--accent-teal); }
+
+    /* Droid Assistant row on combo card */
+    .droid-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      padding: 8px 12px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+    .droid-row-label {
+      font-size: 9px;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      white-space: nowrap;
+    }
+    .droid-select {
+      flex: 1;
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text-main);
+      font-size: 13px;
+      padding: 5px 8px;
+      cursor: pointer;
+      min-width: 0;
+    }
+    .btn-droid-rand {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text-dim);
+      font-size: 9px;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 5px 10px;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-droid-rand:hover { border-color: var(--accent-teal); color: var(--accent-teal); }
+    .droid-tag {
+      display: block;
+      font-size: 10px;
+      color: var(--accent-teal);
+      font-style: italic;
+      white-space: nowrap;
+      margin-top: 2px;
+    }
 
     /* Modal */
     .modal-overlay {
@@ -1746,35 +1822,39 @@
     <div class="panel">
       <p class="panel-title">Mission Log</p>
       <div class="history-toolbar">
-        <button class="btn btn-secondary" id="exportBtn" disabled>Export</button>
-        <label class="import-label" for="importFile">Import</label>
-        <input type="file" id="importFile" accept=".json">
-        <button class="btn btn-danger" id="clearDataBtn">Clear All</button>
-        <select id="historySortBy" class="history-select" aria-label="Sort by">
-          <option value="date-desc">Newest first</option>
-          <option value="date-asc">Oldest first</option>
-          <option value="result">Result</option>
-          <option value="difficulty">Difficulty</option>
-          <option value="characters">Characters</option>
-          <option value="scenario">Scenario</option>
-        </select>
-        <select id="historyFilterResult" class="history-select" aria-label="Filter by result">
-          <option value="">All results</option>
-          <option value="Win">Win</option>
-          <option value="Loss">Loss</option>
-        </select>
-        <select id="historyFilterDifficulty" class="history-select" aria-label="Filter by difficulty">
-          <option value="">All difficulties</option>
-          <option value="Easy">Easy</option>
-          <option value="Medium">Medium</option>
-          <option value="Hard">Hard</option>
-        </select>
-        <select id="historyFilterChar" class="history-select" aria-label="Filter by character">
-          <option value="">All characters</option>
-        </select>
-        <select id="historyFilterScenario" class="history-select" aria-label="Filter by scenario">
-          <option value="">All scenarios</option>
-        </select>
+        <div class="history-actions">
+          <button class="btn btn-secondary" id="exportBtn" disabled>Export</button>
+          <label class="import-label" for="importFile">Import</label>
+          <input type="file" id="importFile" accept=".json">
+          <button class="btn btn-danger" id="clearDataBtn">Clear All</button>
+        </div>
+        <div class="history-filters">
+          <select id="historySortBy" class="history-select" aria-label="Sort by">
+            <option value="date-desc">Newest first</option>
+            <option value="date-asc">Oldest first</option>
+            <option value="result">Result</option>
+            <option value="difficulty">Difficulty</option>
+            <option value="characters">Characters</option>
+            <option value="scenario">Scenario</option>
+          </select>
+          <select id="historyFilterResult" class="history-select" aria-label="Filter by result">
+            <option value="">All results</option>
+            <option value="Win">Win</option>
+            <option value="Loss">Loss</option>
+          </select>
+          <select id="historyFilterDifficulty" class="history-select" aria-label="Filter by difficulty">
+            <option value="">All difficulties</option>
+            <option value="Easy">Easy</option>
+            <option value="Medium">Medium</option>
+            <option value="Hard">Hard</option>
+          </select>
+          <select id="historyFilterChar" class="history-select" aria-label="Filter by character">
+            <option value="">All characters</option>
+          </select>
+          <select id="historyFilterScenario" class="history-select" aria-label="Filter by scenario">
+            <option value="">All scenarios</option>
+          </select>
+        </div>
       </div>
       <div id="historyTableContainer"></div>
     </div>
@@ -1809,7 +1889,7 @@
     <p class="footer-disclaimer">
       Twin Stars Adventure Series is designed by Jason Tagmire &amp; Mike Mullins and published by Button Shy Games. All characters, scenarios, and game content are the intellectual property of Button Shy Games and their creators. This is an unofficial, free, fan-made companion app made out of love for an incredible game — not affiliated with or endorsed by Button Shy Games. If you don't own Twin Stars yet, please go buy it. It's worth every penny.
     </p>
-    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-21 00:41 EST</p>
+    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-21 07:44 EST</p>
   </footer>
 
 </div>
@@ -1872,6 +1952,24 @@
       desc: "1 character · no new scenarios",
       characters: ["Captain Crag"],
       scenarios: []
+    },
+    {
+      id: "droids1",
+      name: "Series I Droid Assistants",
+      shortName: "Droids I",
+      desc: "3 droids — C.R.A.N.K., MC-CY, Domino 2-5",
+      characters: [],
+      scenarios: [],
+      droids: ["C.R.A.N.K.", "MC-CY", "Domino 2-5"]
+    },
+    {
+      id: "droids2",
+      name: "Series II Droid Assistants",
+      shortName: "Droids II",
+      desc: "3 droids — F1D0, T.R.IX, MANTIS",
+      characters: [],
+      scenarios: [],
+      droids: ["F1D0", "T.R.IX", "MANTIS"]
     }
   ];
 
@@ -1937,8 +2035,10 @@
     return num ? `Scenario ${num}: ${name}` : name;
   }
 
-  let characters = [];
-  let scenarios  = [];
+  let characters    = [];
+  let scenarios     = [];
+  let droids        = [];
+  let _currentDroid = null;
 
   const VALID_RESULTS      = new Set(["Win", "Loss"]);
   const VALID_DIFFICULTIES = new Set(["Easy", "Medium", "Hard"]);
@@ -2243,6 +2343,12 @@ function getCurrentElapsed() {
     const playCount = records.filter(r => comboKey(r) === key).length;
     const countText = playCount === 0 ? "Never played" : playCount === 1 ? "Played 1 time" : `Played ${playCount} times`;
 
+    const droidOptions = droids.length
+      ? `<option value="">None</option>` + droids.map(d =>
+          `<option value="${esc(d)}"${_currentDroid === d ? " selected" : ""}>${esc(d)}</option>`
+        ).join("")
+      : "";
+
     document.getElementById("combinationDisplay").innerHTML = `
       <div class="combo-display">
         <div class="combo-characters">
@@ -2250,6 +2356,12 @@ function getCurrentElapsed() {
         </div>
         <div class="combo-scenario">${scenarioHTML(comb.scenario)}${SCENARIO_NUMBER[comb.scenario] && parseInt(SCENARIO_NUMBER[comb.scenario]) <= 12 ? faqHelpBtn("faq-sc-" + SCENARIO_NUMBER[comb.scenario]) : ""}</div>
         <div class="combo-play-count"><span>${esc(countText)}</span></div>
+        ${droids.length ? `
+        <div class="droid-row">
+          <span class="droid-row-label">Droid</span>
+          <select class="droid-select" id="droidSelect">${droidOptions}</select>
+          <button class="btn-droid-rand" id="droidRandBtn">Random</button>
+        </div>` : ""}
         <div class="difficulty-row">${renderDiffBadges(comb)}</div>
         <div class="timer-row">
           <div>
@@ -2265,6 +2377,15 @@ function getCurrentElapsed() {
     document.querySelectorAll("#combinationDisplay .btn-faq-inline").forEach(btn => {
       btn.addEventListener("click", () => openFaq(btn.dataset.faqAnchor));
     });
+    const droidSel = document.getElementById("droidSelect");
+    if (droidSel) {
+      droidSel.addEventListener("change", () => { _currentDroid = droidSel.value || null; });
+      document.getElementById("droidRandBtn").addEventListener("click", () => {
+        const pool = droids.filter(d => d !== _currentDroid);
+        _currentDroid = (pool.length ? pool : droids)[Math.floor(Math.random() * (pool.length || droids.length))];
+        droidSel.value = _currentDroid;
+      });
+    }
     document.getElementById("pauseBtn").addEventListener("click", togglePause);
     document.getElementById("restartBtn").addEventListener("click", () => {
       _restartTrigger = document.activeElement;
@@ -2297,7 +2418,10 @@ function getCurrentElapsed() {
       const globalIdx = records.indexOf(rec);
       return `
       <tr>
-        <td style="color:var(--text-muted);font-size:12px;white-space:nowrap;">${esc(rec.timestamp)}</td>
+        <td style="color:var(--text-muted);font-size:12px;">
+          <div style="white-space:nowrap;">${esc(rec.timestamp)}</div>
+          ${rec.droid ? `<span class="droid-tag">${esc(rec.droid)}</span>` : ""}
+        </td>
         <td><span class="result-pill ${rec.result === "Win" ? "win" : "loss"}">${esc(rec.result)}</span></td>
         <td><span class="diff-pill">${esc(rec.difficulty)}</span></td>
         <td style="color:var(--text-muted);font-size:12px;white-space:nowrap;">${rec.playtime != null ? formatTime(rec.playtime) : "—"}</td>
@@ -2327,7 +2451,7 @@ function getCurrentElapsed() {
   }
 
   // Build and display the list of combinations that haven't been played yet.
-  function displayUnplayed(limit = 20) {
+  function displayUnplayed() {
     unplayedDirty = false;
     const container = document.getElementById("unplayedContainer");
 
@@ -2348,50 +2472,56 @@ function getCurrentElapsed() {
       return;
     }
 
-    const total = characters.length * (characters.length - 1) * scenarios.length;
+    const total  = characters.length * (characters.length - 1) * scenarios.length;
     const played = total - unplayed.length;
 
-    let html = `<p style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">
-      <span style="color:var(--accent-teal);font-weight:700;">${played}</span> of <span style="font-weight:700;">${total}</span> combinations played
-    </p><div class="unplayed-grid">`;
+    container.innerHTML = `
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">
+        <span style="color:var(--accent-teal);font-weight:700;">${played}</span> of <span style="font-weight:700;">${total}</span> combinations played
+      </p>
+      <div class="unplayed-grid" id="unplayedGrid"></div>`;
 
-    unplayed.slice(0, limit).forEach(comb => {
-      html += `
-        <div class="unplayed-item">
+    const grid   = document.getElementById("unplayedGrid");
+    const BATCH  = 30;
+    let   offset = 0;
+
+    function appendBatch() {
+      const slice = unplayed.slice(offset, offset + BATCH);
+      if (!slice.length) return;
+      const frag = document.createDocumentFragment();
+      slice.forEach(comb => {
+        const div = document.createElement("div");
+        div.className = "unplayed-item";
+        div.innerHTML = `
           <div class="unplayed-item-text">
             <div>${esc(comb.characters.join(" & "))}</div>
             <div class="unplayed-item-scenario">${scenarioHTML(comb.scenario)}</div>
           </div>
           <button class="btn-load-unplayed"
             data-chars="${esc(comb.characters.join("|"))}"
-            data-scenario="${esc(comb.scenario)}">
-            Play
-          </button>
-        </div>`;
-    });
-
-    if (unplayed.length > limit) {
-      html += `<div style="text-align:center;padding:12px 0;">
-        <button class="btn btn-secondary" id="unplayedShowMore" style="font-size:10px;padding:10px 18px;min-height:40px;">
-          Show 20 more (${unplayed.length - limit} remaining)
-        </button>
-      </div>`;
+            data-scenario="${esc(comb.scenario)}">Play</button>`;
+        frag.appendChild(div);
+      });
+      offset += slice.length;
+      grid.appendChild(frag);
     }
 
-    html += "</div>";
-    container.innerHTML = html;
-
-    const showMoreBtn = document.getElementById("unplayedShowMore");
-    if (showMoreBtn) showMoreBtn.addEventListener("click", () => displayUnplayed(limit + 20));
-
-    container.querySelectorAll(".btn-load-unplayed").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const chars    = btn.dataset.chars.split("|");
-        const scenario = btn.dataset.scenario;
-        showTab("randomizer");
-        loadCombination({ characters: chars, scenario });
-      });
+    // One delegated listener instead of one per row
+    grid.addEventListener("click", e => {
+      const btn = e.target.closest(".btn-load-unplayed");
+      if (!btn) return;
+      showTab("randomizer");
+      loadCombination({ characters: btn.dataset.chars.split("|"), scenario: btn.dataset.scenario });
     });
+
+    // Append more rows as the user scrolls toward the bottom
+    grid.addEventListener("scroll", () => {
+      if (offset < unplayed.length && grid.scrollTop + grid.clientHeight >= grid.scrollHeight - 100) {
+        appendBatch();
+      }
+    }, { passive: true });
+
+    appendBatch();
   }
 
   function displayHistory() {
@@ -2456,7 +2586,7 @@ function getCurrentElapsed() {
       return `
         <tr>
           <td style="color:var(--text-muted);font-size:12px;white-space:nowrap;">${esc(rec.timestamp)}</td>
-          <td style="white-space:nowrap;">${esc(rec.characters.join(" & "))}</td>
+          <td style="white-space:nowrap;">${esc(rec.characters.join(" & "))}${rec.droid ? `<span class="droid-tag">${esc(rec.droid)}</span>` : ""}</td>
           <td style="color:var(--accent-teal);font-size:12px;">${scenarioHTML(rec.scenario)}</td>
           <td><span class="result-pill ${rec.result === "Win" ? "win" : "loss"}">${esc(rec.result)}</span></td>
           <td><span class="diff-pill">${esc(rec.difficulty)}</span></td>
@@ -2505,7 +2635,7 @@ function getCurrentElapsed() {
     const wins   = records.filter(r => r.result === "Win").length;
     const winPct = Math.round(wins / total * 100);
 
-    const totalPossible = characters.length * (characters.length - 1) / 2 * scenarios.length;
+    const totalPossible = characters.length * (characters.length - 1) * scenarios.length;
     const playedKeys    = new Set(records.map(r => comboKey(r)));
     const completedPct  = totalPossible > 0 ? Math.round(playedKeys.size / totalPossible * 100) : 0;
 
@@ -2571,6 +2701,9 @@ function getCurrentElapsed() {
     scenarios  = [...new Set(active.flatMap(p => p.scenarios))].sort(
       (a, b) => (parseInt(SCENARIO_NUMBER[a] || "99") - parseInt(SCENARIO_NUMBER[b] || "99"))
     );
+    droids = [...new Set(active.flatMap(p => p.droids || []))];
+    // Reset current droid if it's no longer available
+    if (_currentDroid && !droids.includes(_currentDroid)) _currentDroid = null;
     // Update the label below the header so the user can always see what's active
     const label = document.getElementById("activePacksLabel");
     if (label) label.textContent = active.map(p => p.shortName).join(" · ");
@@ -2771,6 +2904,7 @@ function getCurrentElapsed() {
 
   function loadCombination(comb) {
     currentCombination = comb;
+    _currentDroid = null;
     startTimer();
     displayCombination(comb);
     displayComboHistory(comb);
@@ -2849,7 +2983,8 @@ function getCurrentElapsed() {
       result,
       difficulty,
       playtime,
-      timestamp: new Date().toLocaleString()
+      timestamp: new Date().toLocaleString(),
+      ...(_currentDroid ? { droid: _currentDroid } : {})
     });
     try { localStorage.setItem("lastResult", result); localStorage.setItem("lastDifficulty", difficulty); } catch(e) {}
     saveRecords();
