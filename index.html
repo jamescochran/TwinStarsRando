@@ -947,10 +947,23 @@
     }
     .die.rolling { animation: diceShake 0.12s ease-in-out infinite; }
     .dice-hint { font-size: 12px; color: var(--text-muted); margin: 0 0 16px; line-height: 1.5; }
-    .dice-special-row,
-    .dice-skill-row { margin-top: 10px; }
-    .dice-special-btn,
-    .dice-skill-btn  { width: 100%; }
+    .dice-swap-mid {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      font-size: 16px;
+      cursor: pointer;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      align-self: center;
+      transition: opacity 0.15s;
+    }
+    .dice-swap-mid:disabled { opacity: 0.25; cursor: default; }
     .dice-row { display: flex; justify-content: center; margin-top: 10px; }
     .btn-dice { font-size: 14px; }
     @media (prefers-reduced-motion: reduce) { .die.rolling { animation: none; } }
@@ -1866,10 +1879,11 @@
         </div>
         <div class="die-adj-row" id="dieAdjRow0" hidden>
           <button class="die-adj adj-minus" id="dieMinus0" aria-label="Decrease die 1">−</button>
-          <button class="die-adj adj-flip"  id="dieFlip0"  hidden aria-label="Flip die 1">Flip</button>
+          <button class="die-adj adj-flip"  id="dieFlip0"  hidden aria-label="Flip die 1" title="Hebolt Rom: flip to opposite face">Flip</button>
           <button class="die-adj adj-plus"  id="diePlus0"  aria-label="Increase die 1">+</button>
         </div>
       </div>
+      <button class="dice-swap-mid" id="diceSwapBtn" title="Swap dice">⇄</button>
       <div class="die-wrap" id="dieWrap1">
         <span class="die-char-label" id="dieLabel1"></span>
         <div class="die" id="die1" data-val="1" aria-label="Die 2, value 1, unlocked">
@@ -1879,21 +1893,18 @@
         </div>
         <div class="die-adj-row" id="dieAdjRow1" hidden>
           <button class="die-adj adj-minus" id="dieMinus1" aria-label="Decrease die 2">−</button>
-          <button class="die-adj adj-flip"  id="dieFlip1"  hidden aria-label="Flip die 2">Flip</button>
+          <button class="die-adj adj-flip"  id="dieFlip1"  hidden aria-label="Flip die 2" title="Hebolt Rom: flip to opposite face">Flip</button>
           <button class="die-adj adj-plus"  id="diePlus1"  aria-label="Increase die 2">+</button>
         </div>
       </div>
     </div>
     <p class="dice-hint" id="diceHint">Tap a die to lock it — locked dice keep their value on the next roll.</p>
     <div class="modal-actions">
-      <button class="btn btn-primary" id="rollBtn">Roll</button>
+      <button class="btn btn-primary"   id="rollBtn">Roll</button>
+      <button class="btn btn-secondary" id="skillCheckBtn">Skill Check</button>
     </div>
-    <div class="dice-special-row" id="diceSwapRow">
-      <button class="btn btn-secondary dice-special-btn" id="diceSwapBtn">⇄ Swap</button>
-    </div>
-    <div class="dice-skill-row">
-      <button class="btn btn-secondary dice-skill-btn" id="skillCheckBtn">Skill Check</button>
-      <button class="btn btn-secondary dice-skill-btn" id="skillDoneBtn" hidden>Done</button>
+    <div class="modal-actions" id="skillDoneRow" hidden>
+      <button class="btn btn-primary" id="skillDoneBtn">Done</button>
     </div>
   </div>
 </div>
@@ -2068,7 +2079,7 @@
     <p class="footer-disclaimer">
       Twin Stars Adventure Series is designed by Jason Tagmire &amp; Mike Mullins and published by Button Shy Games. All characters, scenarios, and game content are the intellectual property of Button Shy Games and their creators. This is an unofficial, free, fan-made companion app made out of love for an incredible game — not affiliated with or endorsed by Button Shy Games. If you don't own Twin Stars yet, please go buy it. It's worth every penny.
     </p>
-    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-21 10:45 EST</p>
+    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-21 10:53 EST</p>
   </footer>
 
 </div>
@@ -3330,20 +3341,28 @@ function getCurrentElapsed() {
   });
 
   // ─── Dice Roller ──────────────────────────────────────────────────────────────
-  let _diceValues  = [1, 1];
-  let _diceLocked  = [false, false];
-  let _diceRolling = false;
-  let _diceMode    = "normal"; // "normal" | "skill"
-  let _savedDiceState = null;
+  let _diceValues   = [1, 1];
+  let _diceLocked   = [false, false];
+  let _diceRolling  = false;
+  let _diceMode     = "normal"; // "normal" | "skill"
+  let _diceInterval = null;
 
-  function _diceUpdateSpecialButtons() {
+  function _diceUpdateSwapBtn() {
+    const btn = document.getElementById("diceSwapBtn");
+    btn.disabled = _diceMode === "skill" || _diceLocked[0] || _diceLocked[1];
+  }
+
+  function _diceSetLock(i, locked) {
+    _diceLocked[i] = locked;
+    const die = document.getElementById(`die${i}`);
+    die.classList.toggle("locked", locked);
+    document.getElementById(`dieAdjRow${i}`).hidden = !locked;
     const chars = (currentCombination && currentCombination.characters) || [];
-    const hasHebolt = chars.some(c => c === "Hebolt Rom");
-    document.getElementById("diceSwapRow").hidden = false;
-    [0, 1].forEach(i => {
-      const flipBtn = document.getElementById(`dieFlip${i}`);
-      if (flipBtn) flipBtn.hidden = !(hasHebolt && _diceLocked[i]);
-    });
+    document.getElementById(`dieFlip${i}`).hidden =
+      !(locked && chars.some(c => c === "Hebolt Rom"));
+    die.setAttribute("aria-label",
+      `Die ${i + 1}, value ${_diceValues[i]}, ${locked ? "locked" : "unlocked"}`);
+    _diceUpdateSwapBtn();
   }
 
   function _dicePopulateLabels() {
@@ -3355,32 +3374,21 @@ function getCurrentElapsed() {
   function _diceApplyMode() {
     const isSkill = _diceMode === "skill";
     document.getElementById("diceModalTitle").textContent = isSkill ? "Skill Check" : "Dice Roller";
+
     document.getElementById("skillCheckBtn").hidden = isSkill;
-    document.getElementById("skillDoneBtn").hidden  = !isSkill;
+    document.getElementById("skillDoneRow").hidden  = !isSkill;
     document.getElementById("diceHint").hidden      = isSkill;
-    document.getElementById("diceSwapRow").hidden   = true; // correct value set by _diceUpdateSpecialButtons below
+    document.getElementById("dieLabel0").hidden     = isSkill;
+    document.getElementById("dieLabel1").hidden     = isSkill;
     document.getElementById("diceModal").classList.toggle("dice-modal-skill", isSkill);
     if (isSkill) {
-      document.getElementById("diceSwapRow").hidden = true;
       [0, 1].forEach(i => {
         _diceLocked[i] = false;
         document.getElementById(`die${i}`).classList.remove("locked");
         document.getElementById(`dieAdjRow${i}`).hidden = true;
       });
     }
-    if (!isSkill) _diceUpdateSpecialButtons();
-  }
-
-  function _diceSetLock(i, locked) {
-    _diceLocked[i] = locked;
-    const die = document.getElementById(`die${i}`);
-    die.classList.toggle("locked", locked);
-    document.getElementById(`dieAdjRow${i}`).hidden = !locked;
-    const chars = (currentCombination && currentCombination.characters) || [];
-    const hasHebolt = chars.some(c => c === "Hebolt Rom");
-    document.getElementById(`dieFlip${i}`).hidden = !(locked && hasHebolt);
-    die.setAttribute("aria-label",
-      `Die ${i + 1}, value ${_diceValues[i]}, ${locked ? "locked" : "unlocked"}`);
+    _diceUpdateSwapBtn();
   }
 
   function _diceAdjust(i, delta) {
@@ -3406,17 +3414,15 @@ function getCurrentElapsed() {
       ? [0, 1]
       : isSkill ? [0, 1] : [0, 1].filter(i => !_diceLocked[i]);
     if (toRoll.length === 0) return;
-    if (forceAll && !isSkill) {
-      [0, 1].forEach(i => _diceSetLock(i, false));
-    }
     _diceRolling = true;
     toRoll.forEach(i => document.getElementById(`die${i}`).classList.add("rolling"));
     const finalVals = toRoll.map(() => Math.ceil(Math.random() * 6));
     let frame = 0;
-    const interval = setInterval(() => {
+    _diceInterval = setInterval(() => {
       toRoll.forEach(i => { document.getElementById(`die${i}`).dataset.val = Math.ceil(Math.random() * 6); });
       if (++frame >= 14) {
-        clearInterval(interval);
+        clearInterval(_diceInterval);
+        _diceInterval = null;
         toRoll.forEach((i, j) => {
           const die = document.getElementById(`die${i}`);
           die.classList.remove("rolling");
@@ -3433,26 +3439,27 @@ function getCurrentElapsed() {
   }
 
   function openDiceModal() {
+    if (_diceInterval) { clearInterval(_diceInterval); _diceInterval = null; _diceRolling = false; }
     _diceMode   = "normal";
     _diceLocked = [false, false];
     [0, 1].forEach(i => {
-      const die = document.getElementById(`die${i}`);
-      die.classList.remove("locked");
+      document.getElementById(`die${i}`).classList.remove("locked");
       document.getElementById(`dieAdjRow${i}`).hidden = true;
     });
     document.getElementById("diceModal").classList.remove("dice-modal-skill");
     _dicePopulateLabels();
     _diceApplyMode();
     document.getElementById("diceModal").classList.add("open");
-    rollDice(true);
+    rollDice(false);
     setTimeout(() => document.getElementById("rollBtn").focus(), 50);
   }
 
   function closeDiceModal() {
-    if (_diceRolling) return;
-    document.getElementById("diceModal").classList.remove("open");
-    document.getElementById("diceModal").classList.remove("dice-modal-skill");
-    _savedDiceState = null;
+    if (_diceInterval) { clearInterval(_diceInterval); _diceInterval = null; _diceRolling = false; }
+    [0, 1].forEach(i => document.getElementById(`die${i}`).classList.remove("rolling"));
+    const dm = document.getElementById("diceModal");
+    dm.classList.remove("open");
+    dm.classList.remove("dice-modal-skill");
     _diceMode = "normal";
   }
 
@@ -3602,36 +3609,19 @@ function getCurrentElapsed() {
   document.getElementById("diceModalClose")    .addEventListener("click", closeDiceModal);
   document.getElementById("rollBtn")           .addEventListener("click", () => rollDice(false));
   document.getElementById("diceSwapBtn")       .addEventListener("click", () => {
-    if (_diceRolling) return;
+    if (_diceRolling || _diceLocked[0] || _diceLocked[1]) return;
     [_diceValues[0], _diceValues[1]] = [_diceValues[1], _diceValues[0]];
-    const wasLocked = [_diceLocked[0], _diceLocked[1]];
-    _diceSetLock(0, wasLocked[1]);
-    _diceSetLock(1, wasLocked[0]);
     [0, 1].forEach(i => { document.getElementById(`die${i}`).dataset.val = _diceValues[i]; });
     const t = document.getElementById("dieLabel0").textContent;
     document.getElementById("dieLabel0").textContent = document.getElementById("dieLabel1").textContent;
     document.getElementById("dieLabel1").textContent = t;
   });
   document.getElementById("skillCheckBtn")     .addEventListener("click", () => {
-    _savedDiceState = { values: [..._diceValues], locked: [..._diceLocked] };
     _diceMode = "skill";
     _diceApplyMode();
-    rollDice(true);
+    rollDice(false);
   });
-  document.getElementById("skillDoneBtn")      .addEventListener("click", () => {
-    _diceMode = "normal";
-    if (_savedDiceState) {
-      _diceValues  = _savedDiceState.values;
-      _diceLocked  = _savedDiceState.locked;
-      _savedDiceState = null;
-      [0, 1].forEach(i => {
-        const die = document.getElementById(`die${i}`);
-        die.dataset.val = _diceValues[i];
-        _diceSetLock(i, _diceLocked[i]);
-      });
-    }
-    _diceApplyMode();
-  });
+  document.getElementById("skillDoneBtn")      .addEventListener("click", closeDiceModal);
   [0, 1].forEach(i => {
     document.getElementById(`die${i}`).addEventListener("click", () => {
       if (_diceRolling || _diceMode === "skill") return;
