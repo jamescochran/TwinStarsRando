@@ -875,7 +875,7 @@
       justify-content: center;
     }
     .die-adj:active { opacity: 0.7; }
-    .adj-flip { font-size: 14px; }
+    .adj-flip { font-size: 11px; width: auto; padding: 0 8px; border-radius: 14px; }
     .die {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -1854,7 +1854,7 @@
         </div>
         <div class="die-adj-row" id="dieAdjRow0" hidden>
           <button class="die-adj adj-minus" id="dieMinus0" aria-label="Decrease die 1">−</button>
-          <button class="die-adj adj-flip"  id="dieFlip0"  hidden aria-label="Flip die 1">↕</button>
+          <button class="die-adj adj-flip"  id="dieFlip0"  hidden aria-label="Flip die 1">Flip</button>
           <button class="die-adj adj-plus"  id="diePlus0"  aria-label="Increase die 1">+</button>
         </div>
       </div>
@@ -1866,15 +1866,14 @@
         </div>
         <div class="die-adj-row" id="dieAdjRow1" hidden>
           <button class="die-adj adj-minus" id="dieMinus1" aria-label="Decrease die 2">−</button>
-          <button class="die-adj adj-flip"  id="dieFlip1"  hidden aria-label="Flip die 2">↕</button>
+          <button class="die-adj adj-flip"  id="dieFlip1"  hidden aria-label="Flip die 2">Flip</button>
           <button class="die-adj adj-plus"  id="diePlus1"  aria-label="Increase die 2">+</button>
         </div>
       </div>
     </div>
     <p class="dice-hint" id="diceHint">Tap a die to lock it — locked dice keep their value on the next roll.</p>
     <div class="modal-actions">
-      <button class="btn btn-secondary" id="rollAllBtn">Roll All</button>
-      <button class="btn btn-primary"   id="rollBtn">Roll</button>
+      <button class="btn btn-primary" id="rollBtn">Roll</button>
     </div>
     <div class="dice-special-row" id="diceSwapRow" hidden>
       <button class="btn btn-secondary dice-special-btn" id="diceSwapBtn">⇄ Swap Dice</button>
@@ -2056,7 +2055,7 @@
     <p class="footer-disclaimer">
       Twin Stars Adventure Series is designed by Jason Tagmire &amp; Mike Mullins and published by Button Shy Games. All characters, scenarios, and game content are the intellectual property of Button Shy Games and their creators. This is an unofficial, free, fan-made companion app made out of love for an incredible game — not affiliated with or endorsed by Button Shy Games. If you don't own Twin Stars yet, please go buy it. It's worth every penny.
     </p>
-    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-21 10:32 EST</p>
+    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-21 10:40 EST</p>
   </footer>
 
 </div>
@@ -3345,7 +3344,8 @@ function getCurrentElapsed() {
     document.getElementById("diceModal").classList.toggle("dice-modal-skill", isSkill);
     if (isSkill) {
       [0, 1].forEach(i => {
-        _diceSetLock(i, false);
+        _diceLocked[i] = false;
+        document.getElementById(`die${i}`).classList.remove("locked");
         document.getElementById(`dieAdjRow${i}`).hidden = true;
       });
     }
@@ -3581,7 +3581,6 @@ function getCurrentElapsed() {
   document.getElementById("diceModal")         .addEventListener("click", e => { if (e.target === e.currentTarget) closeDiceModal(); });
   document.getElementById("diceModalClose")    .addEventListener("click", closeDiceModal);
   document.getElementById("rollBtn")           .addEventListener("click", () => rollDice(false));
-  document.getElementById("rollAllBtn")        .addEventListener("click", () => rollDice(true));
   document.getElementById("diceSwapBtn")       .addEventListener("click", () => {
     if (_diceRolling) return;
     [_diceValues[0], _diceValues[1]] = [_diceValues[1], _diceValues[0]];
