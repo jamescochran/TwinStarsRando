@@ -482,6 +482,29 @@
       -webkit-tap-highlight-color: transparent;
     }
     .btn-delete-record:hover { color: var(--loss-color); }
+    .btn-edit-record {
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      cursor: pointer;
+      font-size: 14px;
+      padding: 4px 6px;
+      border-radius: 4px;
+      line-height: 1;
+      vertical-align: middle;
+      transition: color 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-edit-record:hover { color: var(--accent-teal); }
+    .btn-delete-record { vertical-align: middle; }
+    .notes-row td {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-style: italic;
+      padding-top: 2px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(30,45,85,0.5);
+    }
     .result-pill {
       display: inline-block;
       padding: 3px 10px;
@@ -529,6 +552,23 @@
       align-items: center;
       margin-bottom: 18px;
     }
+    .history-select {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-main);
+      font-family: 'Orbitron', sans-serif;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 8px 10px;
+      cursor: pointer;
+      min-height: 48px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .history-select:focus { outline: 2px solid var(--accent-teal); outline-offset: 2px; }
+    #historyFilterChar, #historyFilterScenario { max-width: 160px; }
     .import-label {
       display: inline-flex;
       align-items: center;
@@ -1168,11 +1208,12 @@
 
 <div class="modal-overlay" id="importConfirmModal">
   <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="importConfirmModalTitle">
-    <h2 id="importConfirmModalTitle">Replace Records?</h2>
+    <h2 id="importConfirmModalTitle">Import Records</h2>
     <p id="importConfirmMsg"></p>
-    <div class="modal-actions">
-      <button class="btn btn-secondary" id="importCancel">Cancel</button>
-      <button class="btn btn-danger"    id="importConfirm">Replace</button>
+    <div class="modal-actions" style="flex-wrap:wrap;">
+      <button class="btn btn-secondary" id="importCancel"  style="flex-basis:100%;">Cancel</button>
+      <button class="btn btn-secondary" id="importMerge">Merge</button>
+      <button class="btn btn-danger"    id="importReplace">Replace</button>
     </div>
   </div>
 </div>
@@ -1184,6 +1225,35 @@
     <div class="modal-actions">
       <button class="btn btn-secondary" id="deleteRecordCancel">Cancel</button>
       <button class="btn btn-danger"    id="deleteRecordConfirm">Delete</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="editRecordModal">
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="editRecordModalTitle">
+    <h2 id="editRecordModalTitle">Edit Record</h2>
+    <div class="form-row">
+      <label for="editResult">Result</label>
+      <select id="editResult">
+        <option value="Win">Win</option>
+        <option value="Loss">Loss</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label for="editDifficulty">Difficulty</label>
+      <select id="editDifficulty">
+        <option value="Easy">Easy</option>
+        <option value="Medium">Medium</option>
+        <option value="Hard">Hard</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label for="editNotes">Notes <span style="font-weight:400;color:var(--text-muted)">(optional)</span></label>
+      <textarea id="editNotes" rows="3" style="width:100%;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;color:var(--text-main);padding:8px 10px;font-size:13px;resize:vertical;font-family:inherit;" placeholder="e.g. Close game, used advanced variant…"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="editRecordCancel">Cancel</button>
+      <button class="btn btn-primary"   id="editRecordSave">Save</button>
     </div>
   </div>
 </div>
@@ -1680,6 +1750,31 @@
         <label class="import-label" for="importFile">Import</label>
         <input type="file" id="importFile" accept=".json">
         <button class="btn btn-danger" id="clearDataBtn">Clear All</button>
+        <select id="historySortBy" class="history-select" aria-label="Sort by">
+          <option value="date-desc">Newest first</option>
+          <option value="date-asc">Oldest first</option>
+          <option value="result">Result</option>
+          <option value="difficulty">Difficulty</option>
+          <option value="characters">Characters</option>
+          <option value="scenario">Scenario</option>
+        </select>
+        <select id="historyFilterResult" class="history-select" aria-label="Filter by result">
+          <option value="">All results</option>
+          <option value="Win">Win</option>
+          <option value="Loss">Loss</option>
+        </select>
+        <select id="historyFilterDifficulty" class="history-select" aria-label="Filter by difficulty">
+          <option value="">All difficulties</option>
+          <option value="Easy">Easy</option>
+          <option value="Medium">Medium</option>
+          <option value="Hard">Hard</option>
+        </select>
+        <select id="historyFilterChar" class="history-select" aria-label="Filter by character">
+          <option value="">All characters</option>
+        </select>
+        <select id="historyFilterScenario" class="history-select" aria-label="Filter by scenario">
+          <option value="">All scenarios</option>
+        </select>
       </div>
       <div id="historyTableContainer"></div>
     </div>
@@ -1714,7 +1809,7 @@
     <p class="footer-disclaimer">
       Twin Stars Adventure Series is designed by Jason Tagmire &amp; Mike Mullins and published by Button Shy Games. All characters, scenarios, and game content are the intellectual property of Button Shy Games and their creators. This is an unofficial, free, fan-made companion app made out of love for an incredible game — not affiliated with or endorsed by Button Shy Games. If you don't own Twin Stars yet, please go buy it. It's worth every penny.
     </p>
-    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-21 00:15 EST</p>
+    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-21 00:41 EST</p>
   </footer>
 
 </div>
@@ -2306,16 +2401,72 @@ function getCurrentElapsed() {
       container.innerHTML = `<div class="empty-state"><p>No mission records yet. Start playing!</p></div>`;
       return;
     }
-    const rows = records.map((rec, idx) => `
-      <tr>
-        <td style="color:var(--text-muted);font-size:12px;white-space:nowrap;">${esc(rec.timestamp)}</td>
-        <td style="white-space:nowrap;">${esc(rec.characters.join(" & "))}</td>
-        <td style="color:var(--accent-teal);font-size:12px;">${scenarioHTML(rec.scenario)}</td>
-        <td><span class="result-pill ${rec.result === "Win" ? "win" : "loss"}">${esc(rec.result)}</span></td>
-        <td><span class="diff-pill">${esc(rec.difficulty)}</span></td>
-        <td style="color:var(--text-muted);font-size:12px;white-space:nowrap;">${rec.playtime != null ? formatTime(rec.playtime) : "—"}</td>
-        <td><button class="btn-delete-record" data-idx="${idx}" title="Delete">✕</button></td>
-      </tr>`).join("");
+
+    // Populate character and scenario filter options (preserve current selection)
+    const charSel = document.getElementById("historyFilterChar");
+    const scSel   = document.getElementById("historyFilterScenario");
+    const prevChar = charSel?.value || "";
+    const prevSc   = scSel?.value   || "";
+    if (charSel) {
+      const chars = [...new Set(records.flatMap(r => r.characters))].sort();
+      charSel.innerHTML = `<option value="">All characters</option>` +
+        chars.map(c => `<option value="${esc(c)}"${c === prevChar ? " selected" : ""}>${esc(c)}</option>`).join("");
+    }
+    if (scSel) {
+      const scs = [...new Set(records.map(r => r.scenario))].sort();
+      scSel.innerHTML = `<option value="">All scenarios</option>` +
+        scs.map(s => `<option value="${esc(s)}"${s === prevSc ? " selected" : ""}>${esc(scenarioText(s))}</option>`).join("");
+    }
+
+    const sortBy     = document.getElementById("historySortBy")?.value     || "date-desc";
+    const filterRes  = document.getElementById("historyFilterResult")?.value || "";
+    const filterDiff = document.getElementById("historyFilterDifficulty")?.value || "";
+    const filterChar = charSel?.value || "";
+    const filterSc   = scSel?.value   || "";
+
+    let displayed = records.map((rec, idx) => ({ rec, idx }));
+
+    if (filterRes)  displayed = displayed.filter(({ rec }) => rec.result     === filterRes);
+    if (filterDiff) displayed = displayed.filter(({ rec }) => rec.difficulty === filterDiff);
+    if (filterChar) displayed = displayed.filter(({ rec }) => rec.characters.includes(filterChar));
+    if (filterSc)   displayed = displayed.filter(({ rec }) => rec.scenario   === filterSc);
+
+    const diffOrder = { Easy: 0, Medium: 1, Hard: 2 };
+    displayed.sort((a, b) => {
+      switch (sortBy) {
+        case "date-asc":    return a.idx - b.idx;
+        case "date-desc":   return b.idx - a.idx;
+        case "result":      return a.rec.result.localeCompare(b.rec.result);
+        case "difficulty":  return (diffOrder[a.rec.difficulty] ?? 1) - (diffOrder[b.rec.difficulty] ?? 1);
+        case "characters":  return a.rec.characters.join(" & ").localeCompare(b.rec.characters.join(" & "));
+        case "scenario":    return a.rec.scenario.localeCompare(b.rec.scenario);
+        default:            return b.idx - a.idx;
+      }
+    });
+
+    if (!displayed.length) {
+      container.innerHTML = `<div class="empty-state"><p>No records match the current filter.</p></div>`;
+      return;
+    }
+
+    const rows = displayed.map(({ rec, idx }) => {
+      const notesRow = rec.notes
+        ? `<tr class="notes-row"><td colspan="7">${esc(rec.notes)}</td></tr>`
+        : "";
+      return `
+        <tr>
+          <td style="color:var(--text-muted);font-size:12px;white-space:nowrap;">${esc(rec.timestamp)}</td>
+          <td style="white-space:nowrap;">${esc(rec.characters.join(" & "))}</td>
+          <td style="color:var(--accent-teal);font-size:12px;">${scenarioHTML(rec.scenario)}</td>
+          <td><span class="result-pill ${rec.result === "Win" ? "win" : "loss"}">${esc(rec.result)}</span></td>
+          <td><span class="diff-pill">${esc(rec.difficulty)}</span></td>
+          <td style="color:var(--text-muted);font-size:12px;white-space:nowrap;">${rec.playtime != null ? formatTime(rec.playtime) : "—"}</td>
+          <td style="white-space:nowrap;">
+            <button class="btn-edit-record"   data-idx="${idx}" title="Edit">✎</button>
+            <button class="btn-delete-record" data-idx="${idx}" title="Delete">✕</button>
+          </td>
+        </tr>${notesRow}`;
+    }).join("");
 
     container.innerHTML = `
       <div class="history-table-wrap">
@@ -2324,6 +2475,10 @@ function getCurrentElapsed() {
           <tbody>${rows}</tbody>
         </table>
       </div>`;
+
+    container.querySelectorAll(".btn-edit-record").forEach(btn => {
+      btn.addEventListener("click", () => openEditModal(parseInt(btn.dataset.idx, 10)));
+    });
 
     container.querySelectorAll(".btn-delete-record").forEach(btn => {
       btn.addEventListener("click", () => {
@@ -2501,6 +2656,25 @@ function getCurrentElapsed() {
   let _deleteTrigger   = null;
   let _pendingDeleteIdx = null;
   let _deleteCallback   = null;
+  let _editTrigger     = null;
+  let _editIdx         = null;
+
+  function openEditModal(idx) {
+    _editIdx     = idx;
+    _editTrigger = document.activeElement;
+    const rec = records[idx];
+    document.getElementById("editResult").value     = rec.result;
+    document.getElementById("editDifficulty").value = rec.difficulty;
+    document.getElementById("editNotes").value       = rec.notes || "";
+    document.getElementById("editRecordModal").classList.add("open");
+    setTimeout(() => document.getElementById("editResult").focus(), 0);
+  }
+
+  function closeEditModal() {
+    document.getElementById("editRecordModal").classList.remove("open");
+    if (_editTrigger) { _editTrigger.focus(); _editTrigger = null; }
+    _editIdx = null;
+  }
 
   function closeFaq() {
     document.getElementById("faqModal").classList.remove("open");
@@ -2715,10 +2889,10 @@ function getCurrentElapsed() {
         const skipped = parsed.length - valid.length;
         if (valid.length === 0) { toast("No valid records found in file.", "error"); return; }
         _pendingImport = { valid, skipped };
-        const skipNote = skipped > 0 ? ` (${skipped} invalid records will be skipped.)` : "";
+        const skipNote = skipped > 0 ? ` ${skipped} invalid record(s) will be skipped.` : "";
         const existing = records.length;
         document.getElementById("importConfirmMsg").textContent =
-          `This will replace your ${existing} existing record(s) with ${valid.length} imported record(s).${skipNote} This cannot be undone.`;
+          `Found ${valid.length} valid record(s).${skipNote} Merge adds them to your ${existing} existing record(s). Replace overwrites them entirely.`;
         document.getElementById("importConfirmModal").classList.add("open");
         setTimeout(() => document.getElementById("importCancel").focus(), 0);
       } catch (err) { toast("Could not read file.", "error"); }
@@ -2729,18 +2903,40 @@ function getCurrentElapsed() {
 
   document.getElementById("importCancel").addEventListener("click", closeImportModal);
 
-  document.getElementById("importConfirm").addEventListener("click", () => {
+  document.getElementById("importReplace").addEventListener("click", () => {
     if (!_pendingImport) return;
     const { valid, skipped } = _pendingImport;
     closeImportModal();
     records = valid;
     saveRecords();
+    statsDirty = true;
     displayHistory();
     displayUnplayed();
+    displayStats();
     if (currentCombination) { displayCombination(currentCombination); displayComboHistory(currentCombination); }
     const msg = skipped > 0
       ? `Replaced records with ${valid.length} imported. ${skipped} skipped (invalid).`
       : `Replaced records with ${valid.length} imported.`;
+    toast(msg);
+  });
+
+  document.getElementById("importMerge").addEventListener("click", () => {
+    if (!_pendingImport) return;
+    const { valid, skipped } = _pendingImport;
+    closeImportModal();
+    const existingKeys = new Set(records.map(r => `${r.timestamp}|${r.characters.join("|")}|${r.scenario}`));
+    const toAdd = valid.filter(r => !existingKeys.has(`${r.timestamp}|${r.characters.join("|")}|${r.scenario}`));
+    const dupes = valid.length - toAdd.length;
+    records = [...records, ...toAdd];
+    saveRecords();
+    statsDirty = true;
+    displayHistory();
+    displayUnplayed();
+    displayStats();
+    if (currentCombination) { displayCombination(currentCombination); displayComboHistory(currentCombination); }
+    let msg = `Merged ${toAdd.length} new record(s).`;
+    if (dupes   > 0) msg += ` ${dupes} duplicate(s) skipped.`;
+    if (skipped > 0) msg += ` ${skipped} invalid skipped.`;
     toast(msg);
   });
 
@@ -2775,6 +2971,25 @@ function getCurrentElapsed() {
     records.splice(idx, 1);
     saveRecords();
     if (cb) cb();
+  });
+
+  document.getElementById("editRecordCancel").addEventListener("click", closeEditModal);
+  document.getElementById("editRecordSave").addEventListener("click", () => {
+    if (_editIdx == null) return;
+    const rec = records[_editIdx];
+    rec.result     = document.getElementById("editResult").value;
+    rec.difficulty = document.getElementById("editDifficulty").value;
+    const notes    = document.getElementById("editNotes").value.trim();
+    if (notes) rec.notes = notes; else delete rec.notes;
+    saveRecords();
+    statsDirty = true;
+    const scrollY = window.scrollY;
+    displayHistory();
+    displayStats();
+    window.scrollTo(0, scrollY);
+    if (currentCombination) { displayCombination(currentCombination); displayComboHistory(currentCombination); }
+    closeEditModal();
+    toast("Record updated.");
   });
 
   function showTab(tab) {
@@ -2814,6 +3029,7 @@ function getCurrentElapsed() {
       if (overlay.id === "confirmModal")       { closeConfirmModal(); return; }
       if (overlay.id === "importConfirmModal") { closeImportModal();  return; }
       if (overlay.id === "deleteRecordModal")  { closeDeleteModal();  return; }
+      if (overlay.id === "editRecordModal")    { closeEditModal();    return; }
       overlay.classList.remove("open");
       return;
     }
@@ -2918,6 +3134,11 @@ function getCurrentElapsed() {
   document.getElementById("exportBtn")      .addEventListener("click", handleExport);
   document.getElementById("randomizerTab")  .addEventListener("click", () => showTab("randomizer"));
   document.getElementById("historyTab")     .addEventListener("click", () => showTab("history"));
+  document.getElementById("historySortBy").addEventListener("change", () => { historyDirty = true; displayHistory(); });
+  document.getElementById("historyFilterResult").addEventListener("change", () => { historyDirty = true; displayHistory(); });
+  document.getElementById("historyFilterDifficulty").addEventListener("change", () => { historyDirty = true; displayHistory(); });
+  document.getElementById("historyFilterChar").addEventListener("change", () => { historyDirty = true; displayHistory(); });
+  document.getElementById("historyFilterScenario").addEventListener("change", () => { historyDirty = true; displayHistory(); });
   document.getElementById("faqClose")       .addEventListener("click", closeFaq);
   document.getElementById("faqModal")       .addEventListener("click", e => { if (e.target === e.currentTarget) closeFaq(); });
   document.getElementById("rulesBtn")       .addEventListener("click", openRules);
@@ -2930,6 +3151,7 @@ function getCurrentElapsed() {
   document.getElementById("confirmModal")      .addEventListener("click", e => { if (e.target === e.currentTarget) closeConfirmModal(); });
   document.getElementById("importConfirmModal").addEventListener("click", e => { if (e.target === e.currentTarget) closeImportModal(); });
   document.getElementById("deleteRecordModal") .addEventListener("click", e => { if (e.target === e.currentTarget) closeDeleteModal(); });
+  document.getElementById("editRecordModal")   .addEventListener("click", e => { if (e.target === e.currentTarget) closeEditModal(); });
   document.getElementById("manualChar1")    .addEventListener("change", () => syncDropdown("manualChar1", "manualChar2"));
   document.getElementById("manualChar2")    .addEventListener("change", function() {
     if (this.value === document.getElementById("manualChar1").value) {
