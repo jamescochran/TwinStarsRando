@@ -23,8 +23,10 @@ Hit **Randomize**. The app picks two characters and a scenario at random from th
 
 - **Randomizes** character pairs and scenarios from your owned content — or lets you pick manually if you're that kind of person
 - **Times** your session automatically with pause, resume, and restart
-- **Logs** every result — Win/Loss, difficulty, elapsed time, timestamp
+- **Logs** every result — Win/Loss, difficulty, elapsed time, timestamp; edit any record after the fact and add optional notes
 - **Tracks** per-combination history and shows exactly which combos you've never touched (with a direct "Play" button so there are no excuses)
+- **Sorts and filters** the Mission Log by date, result, difficulty, character, or scenario
+- **Stats panel** — overall win rate, completion percentage, and playtime averages at a glance
 - **Remembers** your last result and difficulty setting so you don't have to re-select them every time
 - **Plays ambient radio** — optional [SomaFM Mission Control](https://somafm.com/missioncontrol/) stream (online only); ♫ button in the header, volume popover, lock-screen controls via mediaSession API
 - **Works offline** once installed — no server, no account, no subscription, no data leaving your device, ever
@@ -96,12 +98,12 @@ git config core.hooksPath .githooks
 
 ```
 TwinStarsRando/
-  index.html          ← the entire app (HTML + CSS + JS in one file, ~2700 lines)
+  index.html          ← the entire app (HTML + CSS + JS in one file, ~3250 lines)
   service-worker.js   ← PWA offline caching
   manifest.json       ← PWA install metadata
   icon-192.png        ← app icon (192×192)
   icon-512.png        ← app icon (512×512)
-  rules/              ← bundled rulebook PDFs (served as static assets)
+  rules/              ← bundled rulebook images (served as static assets)
 ```
 
 **Fonts:** Orbitron (headings) and Exo 2 (body) from Google Fonts. Both are cached by the service worker on first visit — offline looks correct from the second load onward. Falls back to system sans-serif on the first offline load.
@@ -133,6 +135,7 @@ Each saved record looks like this:
 | `difficulty` | `"Easy" \| "Medium" \| "Hard"` | |
 | `playtime` | `number \| null` | Elapsed seconds; `null` on pre-timer records |
 | `timestamp` | `string` | `new Date().toLocaleString()` — locale-dependent format |
+| `notes` | `string` | Optional free-text note added via record edit |
 
 ### localStorage Keys
 
