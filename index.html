@@ -1084,6 +1084,43 @@
     .form-row-top { margin-top: 12px; }
     /* Visually hidden but readable by screen readers */
     .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
+
+    /* History filter row */
+    .history-filter-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 16px;
+      align-items: center;
+    }
+    .filter-group { display: flex; align-items: center; gap: 8px; }
+    .filter-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      white-space: nowrap;
+    }
+    .filter-pills { display: flex; gap: 4px; }
+    .filter-pill {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      cursor: pointer;
+      transition: all 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .filter-pill:hover { border-color: var(--accent-teal); color: var(--accent-teal); }
+    .filter-pill.active { background: var(--accent-teal); color: var(--bg-deep); border-color: var(--accent-teal); }
+    thead th.sortable { cursor: pointer; user-select: none; }
+    thead th.sortable:hover { color: var(--accent-teal); }
+    .sort-arrow { font-size: 9px; margin-left: 3px; color: var(--text-dim); }
+    thead th.sort-active .sort-arrow { color: var(--accent-teal); }
   </style>
 </head>
 <body>
@@ -1562,6 +1599,9 @@
         </svg>
         Randomize Combination
       </button>
+      <button class="btn btn-secondary" id="suggestUnplayedBtn" style="width:100%;margin-top:8px;">
+        Suggest Unplayed
+      </button>
     </div>
 
     <div class="panel" id="manualPanel">
@@ -1606,6 +1646,9 @@
       </div>
       <div class="form-row-top">
         <button class="btn btn-save" id="saveRecordBtn">Save Record</button>
+      </div>
+      <div class="form-row-top" id="playAgainRow" style="display:none;">
+        <button class="btn btn-secondary" id="playAgainBtn" style="width:100%;">Play Again</button>
       </div>
     </div>
 
@@ -1844,6 +1887,9 @@
   let _radioIndex = 0;
   let _radioState = "stopped";
   let _errorTimeout = null;
+
+  let _historySort   = { col: null, dir: "asc" };
+  let _historyFilter = { result: "All", difficulty: "All" };
 
   let records = [];
   let historyDirty  = true;
@@ -2240,25 +2286,123 @@ function getCurrentElapsed() {
       container.innerHTML = `<div class="empty-state"><p>No mission records yet. Start playing!</p></div>`;
       return;
     }
-    const rows = records.map((rec, idx) => `
-      <tr>
-        <td style="color:var(--text-muted);font-size:12px;white-space:nowrap;">${esc(rec.timestamp)}</td>
-        <td style="white-space:nowrap;">${esc(rec.characters.join(" & "))}</td>
-        <td style="color:var(--accent-teal);font-size:12px;">${scenarioHTML(rec.scenario)}</td>
-        <td><span class="result-pill ${rec.result === "Win" ? "win" : "loss"}">${esc(rec.result)}</span></td>
-        <td><span class="diff-pill">${esc(rec.difficulty)}</span></td>
-        <td style="color:var(--text-muted);font-size:12px;white-space:nowrap;">${rec.playtime != null ? formatTime(rec.playtime) : "—"}</td>
-        <td><button class="btn-delete-record" data-idx="${idx}" title="Delete">✕</button></td>
-      </tr>`).join("");
+
+    // Apply filters
+    let filtered = records;
+    if (_historyFilter.result !== "All")     filtered = filtered.filter(r => r.result === _historyFilter.result);
+    if (_historyFilter.difficulty !== "All") filtered = filtered.filter(r => r.difficulty === _historyFilter.difficulty);
+
+    // Apply sort
+    if (_historySort.col) {
+      filtered = [...filtered].sort((a, b) => {
+        let va = a[_historySort.col] ?? "";
+        let vb = b[_historySort.col] ?? "";
+        if (_historySort.col === "playtime") { va = a.playtime ?? Infinity; vb = b.playtime ?? Infinity; }
+        if (_historySort.col === "difficulty") {
+          const order = { Easy: 0, Medium: 1, Hard: 2 };
+          va = order[va] ?? 0; vb = order[vb] ?? 0;
+        }
+        return _historySort.dir === "asc"
+          ? (va < vb ? -1 : va > vb ? 1 : 0)
+          : (va > vb ? -1 : va < vb ? 1 : 0);
+      });
+    }
+
+    // Build sort arrow helper
+    function sortArrow(col) {
+      const isActive = _historySort.col === col;
+      const arrow = isActive ? (_historySort.dir === "asc" ? "▲" : "▼") : "";
+      return `<span class="sort-arrow">${arrow}</span>`;
+    }
+    function thClass(col) {
+      return "sortable" + (_historySort.col === col ? " sort-active" : "");
+    }
+
+    // Build filter pills HTML
+    const resultVals = ["All", "Win", "Loss"];
+    const diffVals   = ["All", "Easy", "Medium", "Hard"];
+    const resultPills = resultVals.map(v =>
+      `<button class="filter-pill${_historyFilter.result === v ? " active" : ""}" data-val="${esc(v)}">${esc(v)}</button>`
+    ).join("");
+    const diffPills = diffVals.map(v =>
+      `<button class="filter-pill${_historyFilter.difficulty === v ? " active" : ""}" data-val="${esc(v)}">${esc(v)}</button>`
+    ).join("");
+
+    const filterRowHTML = `
+      <div class="history-filter-row">
+        <div class="filter-group">
+          <span class="filter-label">Result</span>
+          <div class="filter-pills" data-filter="result">${resultPills}</div>
+        </div>
+        <div class="filter-group">
+          <span class="filter-label">Difficulty</span>
+          <div class="filter-pills" data-filter="difficulty">${diffPills}</div>
+        </div>
+      </div>`;
+
+    // Build table rows using records.indexOf(rec) for correct delete indices
+    let tableBodyHTML;
+    if (!filtered.length) {
+      tableBodyHTML = `<tr><td colspan="7" style="text-align:center;color:var(--text-dim);padding:24px;font-style:italic;font-size:13px;">No records match the current filter.</td></tr>`;
+    } else {
+      tableBodyHTML = filtered.map(rec => {
+        const originalIdx = records.indexOf(rec);
+        return `
+        <tr>
+          <td style="color:var(--text-muted);font-size:12px;white-space:nowrap;">${esc(rec.timestamp)}</td>
+          <td style="white-space:nowrap;">${esc(rec.characters.join(" & "))}</td>
+          <td style="color:var(--accent-teal);font-size:12px;">${scenarioHTML(rec.scenario)}</td>
+          <td><span class="result-pill ${rec.result === "Win" ? "win" : "loss"}">${esc(rec.result)}</span></td>
+          <td><span class="diff-pill">${esc(rec.difficulty)}</span></td>
+          <td style="color:var(--text-muted);font-size:12px;white-space:nowrap;">${rec.playtime != null ? formatTime(rec.playtime) : "—"}</td>
+          <td><button class="btn-delete-record" data-idx="${originalIdx}" title="Delete">✕</button></td>
+        </tr>`;
+      }).join("");
+    }
 
     container.innerHTML = `
+      ${filterRowHTML}
       <div class="history-table-wrap">
         <table>
-          <thead><tr><th>Date / Time</th><th>Characters</th><th>Scenario</th><th>Result</th><th>Difficulty</th><th>Time</th><th></th></tr></thead>
-          <tbody>${rows}</tbody>
+          <thead><tr>
+            <th class="${thClass("timestamp")}" data-col="timestamp">Date / Time ${sortArrow("timestamp")}</th>
+            <th>Characters</th>
+            <th>Scenario</th>
+            <th class="${thClass("result")}" data-col="result">Result ${sortArrow("result")}</th>
+            <th class="${thClass("difficulty")}" data-col="difficulty">Difficulty ${sortArrow("difficulty")}</th>
+            <th class="${thClass("playtime")}" data-col="playtime">Time ${sortArrow("playtime")}</th>
+            <th></th>
+          </tr></thead>
+          <tbody>${tableBodyHTML}</tbody>
         </table>
       </div>`;
 
+    // Wire filter pill clicks
+    container.querySelectorAll(".filter-pills").forEach(group => {
+      const filterKey = group.dataset.filter;
+      group.querySelectorAll(".filter-pill").forEach(pill => {
+        pill.addEventListener("click", () => {
+          _historyFilter[filterKey] = pill.dataset.val;
+          displayHistory();
+        });
+      });
+    });
+
+    // Wire sort header clicks
+    container.querySelectorAll("thead th.sortable").forEach(th => {
+      th.addEventListener("click", () => {
+        const col = th.dataset.col;
+        if (_historySort.col === col) {
+          _historySort.dir = _historySort.dir === "asc" ? "desc" : "asc";
+        } else {
+          _historySort.col = col;
+          _historySort.dir = "asc";
+        }
+        displayHistory();
+      });
+    });
+
+    // Wire delete buttons
     container.querySelectorAll(".btn-delete-record").forEach(btn => {
       btn.addEventListener("click", () => {
         _deleteTrigger    = btn;
@@ -2470,11 +2614,13 @@ function getCurrentElapsed() {
 
   function loadCombination(comb) {
     currentCombination = comb;
+    document.getElementById("playAgainRow").style.display = "none";
+    document.getElementById("saveRecordBtn").disabled = false;
+    try { localStorage.setItem("lastCombination", JSON.stringify({ characters: comb.characters, scenario: comb.scenario })); } catch(e) {}
     startTimer();
     displayCombination(comb);
     displayComboHistory(comb);
     document.getElementById("annotationSection").classList.remove("hidden");
-    document.getElementById("saveRecordBtn").disabled = false;
 
     // Sync manual selectors — put locked character back in its original slot
     const c1 = document.getElementById("manualChar1");
@@ -2526,6 +2672,34 @@ function getCurrentElapsed() {
     if (locks.char1 && locks.char2) {
       toast("Characters locked — scenario re-rolled.");
     }
+
+    // Auto-load the result
+    const char1    = document.getElementById("manualChar1").value;
+    const char2    = document.getElementById("manualChar2").value;
+    const scenario = document.getElementById("manualScenario").value;
+    if (char1 !== char2) {
+      loadCombination({ characters: [char1, char2].sort(), scenario });
+    }
+  }
+
+  function handleSuggestUnplayed() {
+    const playedKeys = new Set(records.map(r => comboKey(r)));
+    const unplayed = [];
+    for (let i = 0; i < characters.length; i++) {
+      for (let j = i + 1; j < characters.length; j++) {
+        for (const scenario of scenarios) {
+          const comb = { characters: [characters[i], characters[j]], scenario };
+          if (!playedKeys.has(comboKey(comb))) unplayed.push(comb);
+        }
+      }
+    }
+    if (!unplayed.length) {
+      toast("You've played every combination — randomizing instead.");
+      handleGenerate();
+      return;
+    }
+    const pick = unplayed[Math.floor(Math.random() * unplayed.length)];
+    loadCombination(pick);
   }
 
   function handleLoadManualCombo() {
@@ -2553,6 +2727,7 @@ function getCurrentElapsed() {
     try { localStorage.setItem("lastResult", result); localStorage.setItem("lastDifficulty", difficulty); } catch(e) {}
     saveRecords();
     document.getElementById("saveRecordBtn").disabled = true;
+    document.getElementById("playAgainRow").style.display = "";
     displayCombination(currentCombination);
     displayComboHistory(currentCombination);
     toast("Record saved!");
@@ -2782,6 +2957,7 @@ function getCurrentElapsed() {
 
   // ─── Init ───────────────────────────────────────────────────────────────────
   document.getElementById("generateBtn")    .addEventListener("click", handleGenerate);
+  document.getElementById("suggestUnplayedBtn").addEventListener("click", handleSuggestUnplayed);
   document.getElementById("lockChar1")      .addEventListener("click", () => { locks.char1    = !locks.char1;    updateLockButtons(); });
   document.getElementById("lockChar2")      .addEventListener("click", () => { locks.char2    = !locks.char2;    updateLockButtons(); });
   document.getElementById("lockScenario")   .addEventListener("click", () => { locks.scenario = !locks.scenario; updateLockButtons(); });
