@@ -1899,7 +1899,7 @@
       </div>
     </div>
     <p class="dice-hint" id="diceHint">Tap a die to lock it.</p>
-    <div class="modal-actions">
+    <div class="modal-actions" id="normalDiceRow">
       <button class="btn btn-secondary" id="rollBtn">Roll</button>
       <button class="btn btn-secondary" id="skillCheckBtn">Skill Check</button>
     </div>
@@ -2079,7 +2079,7 @@
     <p class="footer-disclaimer">
       Twin Stars Adventure Series is designed by Jason Tagmire &amp; Mike Mullins and published by Button Shy Games. All characters, scenarios, and game content are the intellectual property of Button Shy Games and their creators. This is an unofficial, free, fan-made companion app made out of love for an incredible game — not affiliated with or endorsed by Button Shy Games. If you don't own Twin Stars yet, please go buy it. It's worth every penny.
     </p>
-    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-21 11:29 EST</p>
+    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-21 11:46 EST</p>
   </footer>
 
 </div>
@@ -3375,7 +3375,7 @@ function getCurrentElapsed() {
   function _diceApplyMode() {
     const isSkill = _diceMode === "skill";
     document.getElementById("diceModalTitle").textContent = isSkill ? "Skill Check" : "Dice Roller";
-    document.getElementById("skillCheckBtn").hidden = isSkill;
+    document.getElementById("normalDiceRow").classList.toggle("hidden", isSkill);
     document.getElementById("skillDoneRow").classList.toggle("hidden", !isSkill);
     document.getElementById("diceHint").hidden      = isSkill;
     document.getElementById("dieLabel0").hidden     = isSkill;
