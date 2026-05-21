@@ -1084,6 +1084,72 @@
     .form-row-top { margin-top: 12px; }
     /* Visually hidden but readable by screen readers */
     .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
+
+    /* Stats panel */
+    .stats-summary {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+    @media (max-width: 380px) {
+      .stats-summary { grid-template-columns: 1fr 1fr; }
+    }
+    .stats-summary-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      text-align: center;
+    }
+    .stats-summary-value {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--accent-teal);
+      line-height: 1.2;
+    }
+    .stats-summary-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-top: 4px;
+    }
+    .stats-playtime {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+    @media (max-width: 380px) {
+      .stats-playtime { grid-template-columns: 1fr 1fr; }
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 4px 16px;
+      margin-bottom: 6px;
+    }
+    .stats-grid-name {
+      font-size: 12px;
+      color: var(--text-primary);
+      align-self: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .stats-grid-value {
+      font-size: 12px;
+      color: var(--text-dim);
+      white-space: nowrap;
+      text-align: right;
+      align-self: center;
+    }
+    .stats-grid-value .stats-win-num { color: var(--accent-teal); font-weight: 600; }
+    .stats-grid-value .stats-pct     { color: var(--accent-teal); font-weight: 700; }
+    .stats-section { margin-bottom: 16px; }
+    .stats-section:last-child { margin-bottom: 0; }
   </style>
 </head>
 <body>
@@ -1615,6 +1681,10 @@
 
   <!-- HISTORY PAGE -->
   <div id="historyPage" class="hidden">
+    <div class="panel" id="statsPanel">
+      <p class="panel-title">Statistics</p>
+      <div id="statsContent"></div>
+    </div>
     <div class="panel">
       <p class="panel-title">Mission Log</p>
       <div class="history-toolbar">
@@ -1848,6 +1918,7 @@
   let records = [];
   let historyDirty  = true;
   let unplayedDirty = true;
+  let statsDirty    = true;
   try {
     const raw = localStorage.getItem("gameRecords");
     if (raw) {
@@ -1870,8 +1941,9 @@
   }
 
   function saveRecords() {
-    historyDirty = true;
+    historyDirty  = true;
     unplayedDirty = true;
+    statsDirty    = true;
     syncExportBtn();
     try {
       localStorage.setItem("gameRecords", JSON.stringify(records));
@@ -2270,6 +2342,111 @@ function getCurrentElapsed() {
     });
   }
 
+  function displayStats() {
+    statsDirty = false;
+    const el = document.getElementById("statsContent");
+    if (!el) return;
+
+    if (!records.length) {
+      el.innerHTML = `<div class="empty-state"><p>No mission records yet — save some games to see stats!</p></div>`;
+      return;
+    }
+
+    const total  = records.length;
+    const wins   = records.filter(r => r.result === "Win").length;
+    const winPct = Math.round(wins / total * 100);
+
+    const totalPossible = characters.length * (characters.length - 1) / 2 * scenarios.length;
+    const playedKeys    = new Set(records.map(r => comboKey(r)));
+    const completedPct  = totalPossible > 0 ? Math.round(playedKeys.size / totalPossible * 100) : 0;
+
+    // ── Summary row ──
+    let html = `<div class="stats-summary">
+      <div class="stats-summary-card">
+        <div class="stats-summary-value">${total}</div>
+        <div class="stats-summary-label">Games</div>
+      </div>
+      <div class="stats-summary-card">
+        <div class="stats-summary-value">${winPct}%</div>
+        <div class="stats-summary-label">Win Rate</div>
+      </div>
+      <div class="stats-summary-card">
+        <div class="stats-summary-value">${completedPct}%</div>
+        <div class="stats-summary-label">Completed</div>
+      </div>
+    </div>`;
+
+    // ── Playtime ──
+    const timed = records.filter(r => r.playtime != null && r.playtime > 0);
+    if (timed.length) {
+      const times    = timed.map(r => r.playtime);
+      const avg      = Math.round(times.reduce((a, b) => a + b, 0) / times.length);
+      const longest  = Math.max(...times);
+      const shortest = Math.min(...times);
+      html += `<p class="section-heading">Playtime</p>
+      <div class="stats-playtime">
+        <div class="stats-summary-card">
+          <div class="stats-summary-value" style="font-size:14px;">${formatTime(avg)}</div>
+          <div class="stats-summary-label">Average</div>
+        </div>
+        <div class="stats-summary-card">
+          <div class="stats-summary-value" style="font-size:14px;">${formatTime(longest)}</div>
+          <div class="stats-summary-label">Longest</div>
+        </div>
+        <div class="stats-summary-card">
+          <div class="stats-summary-value" style="font-size:14px;">${formatTime(shortest)}</div>
+          <div class="stats-summary-label">Shortest</div>
+        </div>
+      </div>`;
+    }
+
+    // ── Per-character win rates ──
+    const charMap = {};
+    records.forEach(r => {
+      r.characters.forEach(c => {
+        if (!charMap[c]) charMap[c] = { wins: 0, total: 0 };
+        charMap[c].total++;
+        if (r.result === "Win") charMap[c].wins++;
+      });
+    });
+    const charList = Object.entries(charMap).sort((a, b) => b[1].total - a[1].total);
+
+    if (charList.length) {
+      const charRows = charList.map(([name, s]) => {
+        const pct = Math.round(s.wins / s.total * 100);
+        return `<div class="stats-grid-name">${esc(name)}</div>` +
+          `<div class="stats-grid-value"><span class="stats-win-num">${s.wins}</span> / ${s.total} <span class="stats-pct">(${pct}%)</span></div>`;
+      }).join("");
+      html += `<div class="stats-section">
+        <p class="section-heading">Characters</p>
+        <div class="stats-grid">${charRows}</div>
+      </div>`;
+    }
+
+    // ── Per-scenario win rates ──
+    const scMap = {};
+    records.forEach(r => {
+      if (!scMap[r.scenario]) scMap[r.scenario] = { wins: 0, total: 0 };
+      scMap[r.scenario].total++;
+      if (r.result === "Win") scMap[r.scenario].wins++;
+    });
+    const scList = Object.entries(scMap).sort((a, b) => b[1].total - a[1].total);
+
+    if (scList.length) {
+      const scRows = scList.map(([name, s]) => {
+        const pct = Math.round(s.wins / s.total * 100);
+        return `<div class="stats-grid-name">${esc(scenarioText(name))}</div>` +
+          `<div class="stats-grid-value"><span class="stats-win-num">${s.wins}</span> / ${s.total} <span class="stats-pct">(${pct}%)</span></div>`;
+      }).join("");
+      html += `<div class="stats-section">
+        <p class="section-heading">Scenarios</p>
+        <div class="stats-grid">${scRows}</div>
+      </div>`;
+    }
+
+    el.innerHTML = html;
+  }
+
   // ─── Content packs ──────────────────────────────────────────────────────────
   let enabledPacks;
   try {
@@ -2656,6 +2833,7 @@ function getCurrentElapsed() {
     document.getElementById("randomizerTab") .classList.toggle("active", tab === "randomizer");
     document.getElementById("historyTab")    .classList.toggle("active", tab === "history");
     if (tab === "history") {
+      if (statsDirty)    displayStats();
       if (historyDirty)  displayHistory();
       if (unplayedDirty) displayUnplayed();
     }
