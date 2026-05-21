@@ -675,6 +675,63 @@
     }
     .btn-load-unplayed:hover { background: rgba(0,212,170,0.1); border-color: var(--accent-teal); }
 
+    /* Droid Assistant row on combo card */
+    .droid-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      padding: 8px 12px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+    .droid-row-label {
+      font-size: 9px;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      white-space: nowrap;
+    }
+    .droid-select {
+      flex: 1;
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text-main);
+      font-size: 13px;
+      padding: 5px 8px;
+      cursor: pointer;
+      min-width: 0;
+    }
+    .btn-droid-rand {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text-dim);
+      font-size: 9px;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 5px 10px;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-droid-rand:hover { border-color: var(--accent-teal); color: var(--accent-teal); }
+    .droid-tag {
+      display: block;
+      font-size: 10px;
+      color: var(--accent-teal);
+      font-style: italic;
+      white-space: nowrap;
+      margin-top: 2px;
+    }
+
     /* Modal */
     .modal-overlay {
       display: none;
@@ -1809,7 +1866,7 @@
     <p class="footer-disclaimer">
       Twin Stars Adventure Series is designed by Jason Tagmire &amp; Mike Mullins and published by Button Shy Games. All characters, scenarios, and game content are the intellectual property of Button Shy Games and their creators. This is an unofficial, free, fan-made companion app made out of love for an incredible game — not affiliated with or endorsed by Button Shy Games. If you don't own Twin Stars yet, please go buy it. It's worth every penny.
     </p>
-    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-21 00:41 EST</p>
+    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-21 07:09 EST</p>
   </footer>
 
 </div>
@@ -1872,6 +1929,24 @@
       desc: "1 character · no new scenarios",
       characters: ["Captain Crag"],
       scenarios: []
+    },
+    {
+      id: "droids1",
+      name: "Series I Droid Assistants",
+      shortName: "Droids I",
+      desc: "3 droids — C.R.A.N.K., MC-CY, Domino 2-5",
+      characters: [],
+      scenarios: [],
+      droids: ["C.R.A.N.K.", "MC-CY", "Domino 2-5"]
+    },
+    {
+      id: "droids2",
+      name: "Series II Droid Assistants",
+      shortName: "Droids II",
+      desc: "3 droids — F1D0, T.R.IX, MANTIS",
+      characters: [],
+      scenarios: [],
+      droids: ["F1D0", "T.R.IX", "MANTIS"]
     }
   ];
 
@@ -1937,8 +2012,10 @@
     return num ? `Scenario ${num}: ${name}` : name;
   }
 
-  let characters = [];
-  let scenarios  = [];
+  let characters    = [];
+  let scenarios     = [];
+  let droids        = [];
+  let _currentDroid = null;
 
   const VALID_RESULTS      = new Set(["Win", "Loss"]);
   const VALID_DIFFICULTIES = new Set(["Easy", "Medium", "Hard"]);
@@ -2243,6 +2320,12 @@ function getCurrentElapsed() {
     const playCount = records.filter(r => comboKey(r) === key).length;
     const countText = playCount === 0 ? "Never played" : playCount === 1 ? "Played 1 time" : `Played ${playCount} times`;
 
+    const droidOptions = droids.length
+      ? `<option value="">None</option>` + droids.map(d =>
+          `<option value="${esc(d)}"${_currentDroid === d ? " selected" : ""}>${esc(d)}</option>`
+        ).join("")
+      : "";
+
     document.getElementById("combinationDisplay").innerHTML = `
       <div class="combo-display">
         <div class="combo-characters">
@@ -2250,6 +2333,12 @@ function getCurrentElapsed() {
         </div>
         <div class="combo-scenario">${scenarioHTML(comb.scenario)}${SCENARIO_NUMBER[comb.scenario] && parseInt(SCENARIO_NUMBER[comb.scenario]) <= 12 ? faqHelpBtn("faq-sc-" + SCENARIO_NUMBER[comb.scenario]) : ""}</div>
         <div class="combo-play-count"><span>${esc(countText)}</span></div>
+        ${droids.length ? `
+        <div class="droid-row">
+          <span class="droid-row-label">Droid</span>
+          <select class="droid-select" id="droidSelect">${droidOptions}</select>
+          <button class="btn-droid-rand" id="droidRandBtn">Random</button>
+        </div>` : ""}
         <div class="difficulty-row">${renderDiffBadges(comb)}</div>
         <div class="timer-row">
           <div>
@@ -2265,6 +2354,15 @@ function getCurrentElapsed() {
     document.querySelectorAll("#combinationDisplay .btn-faq-inline").forEach(btn => {
       btn.addEventListener("click", () => openFaq(btn.dataset.faqAnchor));
     });
+    const droidSel = document.getElementById("droidSelect");
+    if (droidSel) {
+      droidSel.addEventListener("change", () => { _currentDroid = droidSel.value || null; });
+      document.getElementById("droidRandBtn").addEventListener("click", () => {
+        const pool = droids.filter(d => d !== _currentDroid);
+        _currentDroid = (pool.length ? pool : droids)[Math.floor(Math.random() * (pool.length || droids.length))];
+        droidSel.value = _currentDroid;
+      });
+    }
     document.getElementById("pauseBtn").addEventListener("click", togglePause);
     document.getElementById("restartBtn").addEventListener("click", () => {
       _restartTrigger = document.activeElement;
@@ -2297,7 +2395,10 @@ function getCurrentElapsed() {
       const globalIdx = records.indexOf(rec);
       return `
       <tr>
-        <td style="color:var(--text-muted);font-size:12px;white-space:nowrap;">${esc(rec.timestamp)}</td>
+        <td style="color:var(--text-muted);font-size:12px;">
+          <div style="white-space:nowrap;">${esc(rec.timestamp)}</div>
+          ${rec.droid ? `<span class="droid-tag">${esc(rec.droid)}</span>` : ""}
+        </td>
         <td><span class="result-pill ${rec.result === "Win" ? "win" : "loss"}">${esc(rec.result)}</span></td>
         <td><span class="diff-pill">${esc(rec.difficulty)}</span></td>
         <td style="color:var(--text-muted);font-size:12px;white-space:nowrap;">${rec.playtime != null ? formatTime(rec.playtime) : "—"}</td>
@@ -2456,7 +2557,7 @@ function getCurrentElapsed() {
       return `
         <tr>
           <td style="color:var(--text-muted);font-size:12px;white-space:nowrap;">${esc(rec.timestamp)}</td>
-          <td style="white-space:nowrap;">${esc(rec.characters.join(" & "))}</td>
+          <td style="white-space:nowrap;">${esc(rec.characters.join(" & "))}${rec.droid ? `<span class="droid-tag">${esc(rec.droid)}</span>` : ""}</td>
           <td style="color:var(--accent-teal);font-size:12px;">${scenarioHTML(rec.scenario)}</td>
           <td><span class="result-pill ${rec.result === "Win" ? "win" : "loss"}">${esc(rec.result)}</span></td>
           <td><span class="diff-pill">${esc(rec.difficulty)}</span></td>
@@ -2571,6 +2672,9 @@ function getCurrentElapsed() {
     scenarios  = [...new Set(active.flatMap(p => p.scenarios))].sort(
       (a, b) => (parseInt(SCENARIO_NUMBER[a] || "99") - parseInt(SCENARIO_NUMBER[b] || "99"))
     );
+    droids = [...new Set(active.flatMap(p => p.droids || []))];
+    // Reset current droid if it's no longer available
+    if (_currentDroid && !droids.includes(_currentDroid)) _currentDroid = null;
     // Update the label below the header so the user can always see what's active
     const label = document.getElementById("activePacksLabel");
     if (label) label.textContent = active.map(p => p.shortName).join(" · ");
@@ -2771,6 +2875,7 @@ function getCurrentElapsed() {
 
   function loadCombination(comb) {
     currentCombination = comb;
+    _currentDroid = null;
     startTimer();
     displayCombination(comb);
     displayComboHistory(comb);
@@ -2849,7 +2954,8 @@ function getCurrentElapsed() {
       result,
       difficulty,
       playtime,
-      timestamp: new Date().toLocaleString()
+      timestamp: new Date().toLocaleString(),
+      ...(_currentDroid ? { droid: _currentDroid } : {})
     });
     try { localStorage.setItem("lastResult", result); localStorage.setItem("lastDifficulty", difficulty); } catch(e) {}
     saveRecords();
