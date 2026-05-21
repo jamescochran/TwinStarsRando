@@ -859,6 +859,17 @@
       margin-bottom: 14px;
     }
     .die-wrap { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+    .die-char-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-align: center;
+      max-width: 82px;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      letter-spacing: 0.3px;
+    }
     .die-adj-row { display: flex; gap: 6px; }
     .die-adj {
       background: var(--bg-card);
@@ -1847,6 +1858,7 @@
     </div>
     <div class="dice-tray" id="diceTray">
       <div class="die-wrap" id="dieWrap0">
+        <span class="die-char-label" id="dieLabel0"></span>
         <div class="die" id="die0" data-val="1" aria-label="Die 1, value 1, unlocked">
           <span class="dot d1"></span><span class="dot d2"></span><span class="dot d3"></span>
           <span class="dot d4"></span><span class="dot d5"></span><span class="dot d6"></span>
@@ -1859,6 +1871,7 @@
         </div>
       </div>
       <div class="die-wrap" id="dieWrap1">
+        <span class="die-char-label" id="dieLabel1"></span>
         <div class="die" id="die1" data-val="1" aria-label="Die 2, value 1, unlocked">
           <span class="dot d1"></span><span class="dot d2"></span><span class="dot d3"></span>
           <span class="dot d4"></span><span class="dot d5"></span><span class="dot d6"></span>
@@ -1875,8 +1888,8 @@
     <div class="modal-actions">
       <button class="btn btn-primary" id="rollBtn">Roll</button>
     </div>
-    <div class="dice-special-row" id="diceSwapRow" hidden>
-      <button class="btn btn-secondary dice-special-btn" id="diceSwapBtn">⇄ Swap Dice</button>
+    <div class="dice-special-row" id="diceSwapRow">
+      <button class="btn btn-secondary dice-special-btn" id="diceSwapBtn">⇄ Swap</button>
     </div>
     <div class="dice-skill-row">
       <button class="btn btn-secondary dice-skill-btn" id="skillCheckBtn">Skill Check</button>
@@ -2055,7 +2068,7 @@
     <p class="footer-disclaimer">
       Twin Stars Adventure Series is designed by Jason Tagmire &amp; Mike Mullins and published by Button Shy Games. All characters, scenarios, and game content are the intellectual property of Button Shy Games and their creators. This is an unofficial, free, fan-made companion app made out of love for an incredible game — not affiliated with or endorsed by Button Shy Games. If you don't own Twin Stars yet, please go buy it. It's worth every penny.
     </p>
-    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-21 10:40 EST</p>
+    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-21 10:45 EST</p>
   </footer>
 
 </div>
@@ -3325,13 +3338,18 @@ function getCurrentElapsed() {
 
   function _diceUpdateSpecialButtons() {
     const chars = (currentCombination && currentCombination.characters) || [];
-    const hasYanfred = chars.some(c => c === "Yanfred Jima");
-    const hasHebolt  = chars.some(c => c === "Hebolt Rom");
-    document.getElementById("diceSwapRow").hidden = !hasYanfred;
+    const hasHebolt = chars.some(c => c === "Hebolt Rom");
+    document.getElementById("diceSwapRow").hidden = false;
     [0, 1].forEach(i => {
       const flipBtn = document.getElementById(`dieFlip${i}`);
       if (flipBtn) flipBtn.hidden = !(hasHebolt && _diceLocked[i]);
     });
+  }
+
+  function _dicePopulateLabels() {
+    const chars = (currentCombination && currentCombination.characters) || ["Character 1", "Character 2"];
+    document.getElementById("dieLabel0").textContent = chars[0];
+    document.getElementById("dieLabel1").textContent = chars[1];
   }
 
   function _diceApplyMode() {
@@ -3343,6 +3361,7 @@ function getCurrentElapsed() {
     document.getElementById("diceSwapRow").hidden   = true; // correct value set by _diceUpdateSpecialButtons below
     document.getElementById("diceModal").classList.toggle("dice-modal-skill", isSkill);
     if (isSkill) {
+      document.getElementById("diceSwapRow").hidden = true;
       [0, 1].forEach(i => {
         _diceLocked[i] = false;
         document.getElementById(`die${i}`).classList.remove("locked");
@@ -3422,6 +3441,7 @@ function getCurrentElapsed() {
       document.getElementById(`dieAdjRow${i}`).hidden = true;
     });
     document.getElementById("diceModal").classList.remove("dice-modal-skill");
+    _dicePopulateLabels();
     _diceApplyMode();
     document.getElementById("diceModal").classList.add("open");
     rollDice(true);
@@ -3588,6 +3608,9 @@ function getCurrentElapsed() {
     _diceSetLock(0, wasLocked[1]);
     _diceSetLock(1, wasLocked[0]);
     [0, 1].forEach(i => { document.getElementById(`die${i}`).dataset.val = _diceValues[i]; });
+    const t = document.getElementById("dieLabel0").textContent;
+    document.getElementById("dieLabel0").textContent = document.getElementById("dieLabel1").textContent;
+    document.getElementById("dieLabel1").textContent = t;
   });
   document.getElementById("skillCheckBtn")     .addEventListener("click", () => {
     _savedDiceState = { values: [..._diceValues], locked: [..._diceLocked] };
