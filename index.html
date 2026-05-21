@@ -518,6 +518,22 @@
       align-items: center;
       margin-bottom: 18px;
     }
+    .history-select {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-main);
+      font-family: 'Orbitron', sans-serif;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 8px 10px;
+      cursor: pointer;
+      min-height: 48px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .history-select:focus { outline: 2px solid var(--accent-teal); outline-offset: 2px; }
     .import-label {
       display: inline-flex;
       align-items: center;
@@ -1622,6 +1638,25 @@
         <label class="import-label" for="importFile">Import</label>
         <input type="file" id="importFile" accept=".json">
         <button class="btn btn-danger" id="clearDataBtn">Clear All</button>
+        <select id="historySortBy" class="history-select" aria-label="Sort by">
+          <option value="date-desc">Newest first</option>
+          <option value="date-asc">Oldest first</option>
+          <option value="result">Result</option>
+          <option value="difficulty">Difficulty</option>
+          <option value="characters">Characters</option>
+          <option value="scenario">Scenario</option>
+        </select>
+        <select id="historyFilterResult" class="history-select" aria-label="Filter by result">
+          <option value="">All results</option>
+          <option value="Win">Win</option>
+          <option value="Loss">Loss</option>
+        </select>
+        <select id="historyFilterDifficulty" class="history-select" aria-label="Filter by difficulty">
+          <option value="">All difficulties</option>
+          <option value="Easy">Easy</option>
+          <option value="Medium">Medium</option>
+          <option value="Hard">Hard</option>
+        </select>
       </div>
       <div id="historyTableContainer"></div>
     </div>
@@ -1656,7 +1691,7 @@
     <p class="footer-disclaimer">
       Twin Stars Adventure Series is designed by Jason Tagmire &amp; Mike Mullins and published by Button Shy Games. All characters, scenarios, and game content are the intellectual property of Button Shy Games and their creators. This is an unofficial, free, fan-made companion app made out of love for an incredible game — not affiliated with or endorsed by Button Shy Games. If you don't own Twin Stars yet, please go buy it. It's worth every penny.
     </p>
-    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-20 20:24 EST</p>
+    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-20 23:05 EST</p>
   </footer>
 
 </div>
@@ -2240,7 +2275,35 @@ function getCurrentElapsed() {
       container.innerHTML = `<div class="empty-state"><p>No mission records yet. Start playing!</p></div>`;
       return;
     }
-    const rows = records.map((rec, idx) => `
+
+    const sortBy     = document.getElementById("historySortBy")?.value     || "date-desc";
+    const filterRes  = document.getElementById("historyFilterResult")?.value || "";
+    const filterDiff = document.getElementById("historyFilterDifficulty")?.value || "";
+
+    let displayed = records.map((rec, idx) => ({ rec, idx }));
+
+    if (filterRes)  displayed = displayed.filter(({ rec }) => rec.result     === filterRes);
+    if (filterDiff) displayed = displayed.filter(({ rec }) => rec.difficulty === filterDiff);
+
+    const diffOrder = { Easy: 0, Medium: 1, Hard: 2 };
+    displayed.sort((a, b) => {
+      switch (sortBy) {
+        case "date-asc":    return a.idx - b.idx;
+        case "date-desc":   return b.idx - a.idx;
+        case "result":      return a.rec.result.localeCompare(b.rec.result);
+        case "difficulty":  return (diffOrder[a.rec.difficulty] ?? 1) - (diffOrder[b.rec.difficulty] ?? 1);
+        case "characters":  return a.rec.characters.join(" & ").localeCompare(b.rec.characters.join(" & "));
+        case "scenario":    return a.rec.scenario.localeCompare(b.rec.scenario);
+        default:            return b.idx - a.idx;
+      }
+    });
+
+    if (!displayed.length) {
+      container.innerHTML = `<div class="empty-state"><p>No records match the current filter.</p></div>`;
+      return;
+    }
+
+    const rows = displayed.map(({ rec, idx }) => `
       <tr>
         <td style="color:var(--text-muted);font-size:12px;white-space:nowrap;">${esc(rec.timestamp)}</td>
         <td style="white-space:nowrap;">${esc(rec.characters.join(" & "))}</td>
@@ -2790,6 +2853,9 @@ function getCurrentElapsed() {
   document.getElementById("exportBtn")      .addEventListener("click", handleExport);
   document.getElementById("randomizerTab")  .addEventListener("click", () => showTab("randomizer"));
   document.getElementById("historyTab")     .addEventListener("click", () => showTab("history"));
+  document.getElementById("historySortBy").addEventListener("change", () => { historyDirty = true; displayHistory(); });
+  document.getElementById("historyFilterResult").addEventListener("change", () => { historyDirty = true; displayHistory(); });
+  document.getElementById("historyFilterDifficulty").addEventListener("change", () => { historyDirty = true; displayHistory(); });
   document.getElementById("faqClose")       .addEventListener("click", closeFaq);
   document.getElementById("faqModal")       .addEventListener("click", e => { if (e.target === e.currentTarget) closeFaq(); });
   document.getElementById("rulesBtn")       .addEventListener("click", openRules);
