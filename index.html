@@ -1125,31 +1125,6 @@
     @media (max-width: 380px) {
       .stats-playtime { grid-template-columns: 1fr 1fr; }
     }
-    .stats-grid {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 4px 16px;
-      margin-bottom: 6px;
-    }
-    .stats-grid-name {
-      font-size: 12px;
-      color: var(--text-primary);
-      align-self: center;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .stats-grid-value {
-      font-size: 12px;
-      color: var(--text-dim);
-      white-space: nowrap;
-      text-align: right;
-      align-self: center;
-    }
-    .stats-grid-value .stats-win-num { color: var(--accent-teal); font-weight: 600; }
-    .stats-grid-value .stats-pct     { color: var(--accent-teal); font-weight: 700; }
-    .stats-section { margin-bottom: 16px; }
-    .stats-section:last-child { margin-bottom: 0; }
   </style>
 </head>
 <body>
@@ -1726,7 +1701,7 @@
     <p class="footer-disclaimer">
       Twin Stars Adventure Series is designed by Jason Tagmire &amp; Mike Mullins and published by Button Shy Games. All characters, scenarios, and game content are the intellectual property of Button Shy Games and their creators. This is an unofficial, free, fan-made companion app made out of love for an incredible game — not affiliated with or endorsed by Button Shy Games. If you don't own Twin Stars yet, please go buy it. It's worth every penny.
     </p>
-    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-20 20:24 EST</p>
+    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-20 23:53 EST</p>
   </footer>
 
 </div>
@@ -2397,50 +2372,6 @@ function getCurrentElapsed() {
           <div class="stats-summary-value" style="font-size:14px;">${formatTime(shortest)}</div>
           <div class="stats-summary-label">Shortest</div>
         </div>
-      </div>`;
-    }
-
-    // ── Per-character win rates ──
-    const charMap = {};
-    records.forEach(r => {
-      r.characters.forEach(c => {
-        if (!charMap[c]) charMap[c] = { wins: 0, total: 0 };
-        charMap[c].total++;
-        if (r.result === "Win") charMap[c].wins++;
-      });
-    });
-    const charList = Object.entries(charMap).sort((a, b) => b[1].total - a[1].total);
-
-    if (charList.length) {
-      const charRows = charList.map(([name, s]) => {
-        const pct = Math.round(s.wins / s.total * 100);
-        return `<div class="stats-grid-name">${esc(name)}</div>` +
-          `<div class="stats-grid-value"><span class="stats-win-num">${s.wins}</span> / ${s.total} <span class="stats-pct">(${pct}%)</span></div>`;
-      }).join("");
-      html += `<div class="stats-section">
-        <p class="section-heading">Characters</p>
-        <div class="stats-grid">${charRows}</div>
-      </div>`;
-    }
-
-    // ── Per-scenario win rates ──
-    const scMap = {};
-    records.forEach(r => {
-      if (!scMap[r.scenario]) scMap[r.scenario] = { wins: 0, total: 0 };
-      scMap[r.scenario].total++;
-      if (r.result === "Win") scMap[r.scenario].wins++;
-    });
-    const scList = Object.entries(scMap).sort((a, b) => b[1].total - a[1].total);
-
-    if (scList.length) {
-      const scRows = scList.map(([name, s]) => {
-        const pct = Math.round(s.wins / s.total * 100);
-        return `<div class="stats-grid-name">${esc(scenarioText(name))}</div>` +
-          `<div class="stats-grid-value"><span class="stats-win-num">${s.wins}</span> / ${s.total} <span class="stats-pct">(${pct}%)</span></div>`;
-      }).join("");
-      html += `<div class="stats-section">
-        <p class="section-heading">Scenarios</p>
-        <div class="stats-grid">${scRows}</div>
       </div>`;
     }
 
