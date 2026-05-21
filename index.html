@@ -1848,6 +1848,7 @@
   let records = [];
   let historyDirty  = true;
   let unplayedDirty = true;
+  let statsDirty    = true;
   try {
     const raw = localStorage.getItem("gameRecords");
     if (raw) {
@@ -1870,8 +1871,9 @@
   }
 
   function saveRecords() {
-    historyDirty = true;
+    historyDirty  = true;
     unplayedDirty = true;
+    statsDirty    = true;
     syncExportBtn();
     try {
       localStorage.setItem("gameRecords", JSON.stringify(records));
