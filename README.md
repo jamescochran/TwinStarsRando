@@ -53,10 +53,11 @@ That's it. No tutorial. No onboarding flow. No email required.
 |------|-----------|-----------|
 | Series 1 Wallet *(base game)* | 12 | 6 |
 | Series 2 Wallet | 12 | 6 |
+| Scenario 13: Topple the Giant! | 2 | 1 |
 | Scenario 14: Save the Spacewhales! | 2 | 1 |
 | Captain Crag *(promo)* | 1 | — |
 
-Any character can be paired with any scenario regardless of pack. With both Series wallets and all extras, that's **1,035 unique character-pair + scenario combinations**. At one per day you'd be done in under three years. Totally manageable.
+Any character can be paired with any scenario regardless of pack. With all five packs, that's **5,684 unique character-pair + scenario combinations** (406 pairs × 14 scenarios). At one per day you'd be done in just under 16 years. Totally manageable.
 
 <details>
 <summary>Full character and scenario list</summary>
@@ -68,6 +69,8 @@ Any character can be paired with any scenario regardless of pack. With both Seri
 **Series 2 characters:** Dain Taubo, Grulexon, Gari Obul, Smiff, Zoaze, Tumbug Firo, Mzerzo, Phaeton, Hebolt Rom, Tarla Voke, Gruffles, "Mad" Anxy
 
 **Series 2 scenarios:** Master the Trials!, Beat the Odds!, Control the Skies!, Sell the Junk!, Destroy the Order!, Serve the Rabble!
+
+**Scenario 13:** Feth Doriet, Pummtoggs — Topple the Giant!
 
 **Scenario 14:** Striker, Bippinnidip — Save the Spacewhales!
 

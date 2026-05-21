@@ -1582,7 +1582,7 @@
     <p class="footer-disclaimer">
       Twin Stars Adventure Series is designed by Jason Tagmire &amp; Mike Mullins and published by Button Shy Games. All characters, scenarios, and game content are the intellectual property of Button Shy Games and their creators. This is an unofficial, free, fan-made companion app made out of love for an incredible game — not affiliated with or endorsed by Button Shy Games. If you don't own Twin Stars yet, please go buy it. It's worth every penny.
     </p>
-    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-20 17:32 EST</p>
+    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-20 20:04 EST</p>
   </footer>
 
 </div>
@@ -2625,6 +2625,7 @@ function getCurrentElapsed() {
       btn.textContent = "◼";
       btn.setAttribute("aria-label", "Stop ambient radio");
       volBtn.classList.add("visible");
+      volBtn.setAttribute("aria-expanded", "false");
       label.hidden  = false;
     } else if (state === "error") {
       btn.classList.add("is-error");
@@ -2703,7 +2704,15 @@ function getCurrentElapsed() {
     else stopRadio();
   });
   document.getElementById("volumeBtn")      .addEventListener("click", () => {
-    document.getElementById("volumePopover").classList.toggle("open");
+    const popover = document.getElementById("volumePopover");
+    const isOpen  = popover.classList.toggle("open");
+    document.getElementById("volumeBtn").setAttribute("aria-expanded", String(isOpen));
+  });
+  document.getElementById("volumePopover").addEventListener("focusout", e => {
+    if (!e.currentTarget.contains(e.relatedTarget)) {
+      e.currentTarget.classList.remove("open");
+      document.getElementById("volumeBtn").setAttribute("aria-expanded", "false");
+    }
   });
   document.addEventListener("click", e => {
     const popover = document.getElementById("volumePopover");
@@ -2711,6 +2720,7 @@ function getCurrentElapsed() {
     if (!document.getElementById("volumeBtn").contains(e.target) &&
         !popover.contains(e.target)) {
       popover.classList.remove("open");
+      document.getElementById("volumeBtn").setAttribute("aria-expanded", "false");
     }
   });
   document.getElementById("radioVolume")    .addEventListener("input", e => {
