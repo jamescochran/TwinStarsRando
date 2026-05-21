@@ -2069,6 +2069,7 @@
         </svg>
         Randomize Combination
       </button>
+      <button class="btn btn-secondary" id="playAgainBtn" hidden>Play Again</button>
     </div>
 
     <div class="panel" id="manualPanel">
@@ -3267,6 +3268,8 @@ function getCurrentElapsed() {
       const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       if (el) el.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
     }, 80);
+
+    try { localStorage.setItem("lastCombination", JSON.stringify({ characters: comb.characters, scenario: comb.scenario })); } catch(e) {}
   }
 
   function handleGenerate() {
@@ -3329,6 +3332,7 @@ function getCurrentElapsed() {
     try { localStorage.setItem("lastResult", result); localStorage.setItem("lastDifficulty", difficulty); } catch(e) {}
     saveRecords();
     document.getElementById("saveRecordBtn").disabled = true;
+    document.getElementById("playAgainBtn").hidden = false;
     displayCombination(currentCombination);
     displayComboHistory(currentCombination);
     toast("Record saved!");
@@ -3725,6 +3729,16 @@ function getCurrentElapsed() {
 
   // ─── Init ───────────────────────────────────────────────────────────────────
   document.getElementById("generateBtn")    .addEventListener("click", handleGenerate);
+  document.getElementById("playAgainBtn")   .addEventListener("click", () => {
+    try {
+      const lc = localStorage.getItem("lastCombination");
+      if (!lc) return;
+      const parsed = JSON.parse(lc);
+      if (parsed && Array.isArray(parsed.characters) && parsed.characters.length === 2 && typeof parsed.scenario === "string") {
+        loadCombination(parsed);
+      }
+    } catch(e) {}
+  });
   document.getElementById("lockChar1")      .addEventListener("click", () => { locks.char1    = !locks.char1;    updateLockButtons(); });
   document.getElementById("lockChar2")      .addEventListener("click", () => { locks.char2    = !locks.char2;    updateLockButtons(); });
   document.getElementById("lockScenario")   .addEventListener("click", () => { locks.scenario = !locks.scenario; updateLockButtons(); });
@@ -3870,6 +3884,18 @@ function getCurrentElapsed() {
   buildActiveContent();
   populateSelectors();
   showEmptyComboState();
+
+  try {
+    const lc = localStorage.getItem("lastCombination");
+    if (lc) {
+      const parsed = JSON.parse(lc);
+      if (parsed && Array.isArray(parsed.characters) && parsed.characters.length === 2 && typeof parsed.scenario === "string") {
+        loadCombination(parsed);
+        document.getElementById("playAgainBtn").hidden = false;
+      }
+    }
+  } catch(e) {}
+
   initOnboardingTip();
   syncExportBtn();
 
