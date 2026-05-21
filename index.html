@@ -1121,6 +1121,72 @@
     thead th.sortable:hover { color: var(--accent-teal); }
     .sort-arrow { font-size: 9px; margin-left: 3px; color: var(--text-dim); }
     thead th.sort-active .sort-arrow { color: var(--accent-teal); }
+
+    /* Stats panel */
+    .stats-summary {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+    @media (max-width: 380px) {
+      .stats-summary { grid-template-columns: 1fr 1fr; }
+    }
+    .stats-summary-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      text-align: center;
+    }
+    .stats-summary-value {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--accent-teal);
+      line-height: 1.2;
+    }
+    .stats-summary-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-top: 4px;
+    }
+    .stats-playtime {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+    @media (max-width: 380px) {
+      .stats-playtime { grid-template-columns: 1fr 1fr; }
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 4px 16px;
+      margin-bottom: 6px;
+    }
+    .stats-grid-name {
+      font-size: 12px;
+      color: var(--text-primary);
+      align-self: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .stats-grid-value {
+      font-size: 12px;
+      color: var(--text-dim);
+      white-space: nowrap;
+      text-align: right;
+      align-self: center;
+    }
+    .stats-grid-value .stats-win-num { color: var(--accent-teal); font-weight: 600; }
+    .stats-grid-value .stats-pct     { color: var(--accent-teal); font-weight: 700; }
+    .stats-section { margin-bottom: 16px; }
+    .stats-section:last-child { margin-bottom: 0; }
   </style>
 </head>
 <body>
@@ -1658,6 +1724,10 @@
 
   <!-- HISTORY PAGE -->
   <div id="historyPage" class="hidden">
+    <div class="panel" id="statsPanel">
+      <p class="panel-title">Statistics</p>
+      <div id="statsContent"></div>
+    </div>
     <div class="panel">
       <p class="panel-title">Mission Log</p>
       <div class="history-toolbar">
