@@ -696,6 +696,65 @@
       *, *::before, *::after { transition-duration: 0.01ms !important; }
     }
 
+    /* Rulebook modal */
+    .rules-box {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-glow);
+      border-radius: 12px;
+      width: 100%;
+      max-width: 600px;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .rules-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 24px 12px;
+      flex-shrink: 0;
+    }
+    .rules-header h2 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--accent-teal);
+      margin: 0;
+    }
+    .rules-tabs {
+      display: flex;
+      gap: 8px;
+      padding: 0 24px 12px;
+      flex-shrink: 0;
+      flex-wrap: wrap;
+    }
+    .rules-tab {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-muted);
+      font-family: 'Orbitron', sans-serif;
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 6px 10px;
+      cursor: pointer;
+      transition: all 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .rules-tab:hover { border-color: var(--accent-teal); color: var(--accent-teal); }
+    .rules-tab.active { background: var(--accent-orange); color: #fff; border-color: var(--accent-orange); }
+    .rules-img-wrap {
+      overflow: auto;
+      flex: 1;
+      padding: 0 24px 20px;
+      -webkit-overflow-scrolling: touch;
+    }
+    #rulesImage { max-width: 100%; height: auto; display: block; border-radius: 6px; }
+
     /* Footer */
     .footer-byline {
       font-family: 'Orbitron', sans-serif;
@@ -1071,6 +1130,20 @@
     <div class="modal-actions">
       <button class="btn btn-secondary" id="deleteRecordCancel">Cancel</button>
       <button class="btn btn-danger"    id="deleteRecordConfirm">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- RULEBOOK MODAL -->
+<div class="modal-overlay" id="rulesModal">
+  <div class="rules-box" role="dialog" aria-modal="true" aria-labelledby="rulesModalTitle">
+    <div class="rules-header">
+      <h2 id="rulesModalTitle">Rulebooks</h2>
+      <button class="btn btn-secondary" id="rulesClose" style="min-height:36px;padding:8px 16px;">Close</button>
+    </div>
+    <div class="rules-tabs" id="rulesTabs"></div>
+    <div class="rules-img-wrap">
+      <img id="rulesImage" alt="Rulebook" src="">
     </div>
   </div>
 </div>
@@ -1578,11 +1651,12 @@
       <a href="https://buttonshygames.com/products/twin-stars" target="_blank" rel="noopener noreferrer" class="footer-link">Buy Twin Stars</a>
       <a href="https://boardgamegeek.com/boardgame/231854/twin-stars-adventure-series-i" target="_blank" rel="noopener noreferrer" class="footer-link">BGG</a>
       <a href="https://github.com/jamescochran/TwinStarsRando" target="_blank" rel="noopener noreferrer" class="footer-link">GitHub</a>
+      <button class="footer-link" id="rulesBtn">Rules</button>
     </div>
     <p class="footer-disclaimer">
       Twin Stars Adventure Series is designed by Jason Tagmire &amp; Mike Mullins and published by Button Shy Games. All characters, scenarios, and game content are the intellectual property of Button Shy Games and their creators. This is an unofficial, free, fan-made companion app made out of love for an incredible game — not affiliated with or endorsed by Button Shy Games. If you don't own Twin Stars yet, please go buy it. It's worth every penny.
     </p>
-    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-20 20:04 EST</p>
+    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-20 20:24 EST</p>
   </footer>
 
 </div>
@@ -2293,6 +2367,7 @@ function getCurrentElapsed() {
   // ─── Modal triggers & close helpers ─────────────────────────────────────────
   let _faqTrigger      = null;
   let _settingsTrigger = null;
+  let _rulesTrigger    = null;
   let _restartTrigger  = null;
   let _confirmTrigger  = null;
   let _importTrigger   = null;
@@ -2303,6 +2378,42 @@ function getCurrentElapsed() {
   function closeFaq() {
     document.getElementById("faqModal").classList.remove("open");
     if (_faqTrigger) { _faqTrigger.focus(); _faqTrigger = null; }
+  }
+
+  const RULEBOOK_TABS = [
+    { packId: "series1",     label: "Series 1",  file: "rules/twinstars1.png" },
+    { packId: "series1",     label: "SYZYGY I",  file: "rules/twinstars1-syzygy.png" },
+    { packId: "series2",     label: "Series 2",  file: "rules/twinstars2.png" },
+    { packId: "series2",     label: "SYZYGY II", file: "rules/twinstars2-syzygy.png" },
+    { packId: "captaincrag", label: "Cpt. Crag", file: "rules/twinstars-crag.png" },
+  ];
+
+  function openRules() {
+    _rulesTrigger = document.activeElement;
+    const available = RULEBOOK_TABS.filter(t => enabledPacks.has(t.packId));
+    if (!available.length) { toast("No rulebooks for your current packs."); return; }
+    const tabsEl = document.getElementById("rulesTabs");
+    tabsEl.innerHTML = "";
+    available.forEach((tab, i) => {
+      const btn = document.createElement("button");
+      btn.className = "rules-tab" + (i === 0 ? " active" : "");
+      btn.textContent = tab.label;
+      btn.addEventListener("click", () => {
+        tabsEl.querySelectorAll(".rules-tab").forEach(t => t.classList.remove("active"));
+        btn.classList.add("active");
+        document.getElementById("rulesImage").src = tab.file;
+        document.querySelector(".rules-img-wrap").scrollTop = 0;
+      });
+      tabsEl.appendChild(btn);
+    });
+    document.getElementById("rulesImage").src = available[0].file;
+    document.getElementById("rulesModal").classList.add("open");
+    setTimeout(() => document.getElementById("rulesClose").focus(), 0);
+  }
+
+  function closeRules() {
+    document.getElementById("rulesModal").classList.remove("open");
+    if (_rulesTrigger) { _rulesTrigger.focus(); _rulesTrigger = null; }
   }
 
   function closeRestartModal() {
@@ -2570,6 +2681,7 @@ function getCurrentElapsed() {
     if (e.key === "Escape") {
       if (overlay.id === "settingsModal")      { closeSettings();    return; }
       if (overlay.id === "faqModal")           { closeFaq();         return; }
+      if (overlay.id === "rulesModal")         { closeRules();       return; }
       if (overlay.id === "restartModal")       { closeRestartModal(); return; }
       if (overlay.id === "confirmModal")       { closeConfirmModal(); return; }
       if (overlay.id === "importConfirmModal") { closeImportModal();  return; }
@@ -2579,7 +2691,7 @@ function getCurrentElapsed() {
     }
 
     if (e.key === "Tab") {
-      const box = overlay.querySelector(".modal-box, .settings-box, .faq-box");
+      const box = overlay.querySelector(".modal-box, .settings-box, .faq-box, .rules-box");
       const focusable = [...(box || overlay).querySelectorAll(
         'button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
       )];
@@ -2680,6 +2792,9 @@ function getCurrentElapsed() {
   document.getElementById("historyTab")     .addEventListener("click", () => showTab("history"));
   document.getElementById("faqClose")       .addEventListener("click", closeFaq);
   document.getElementById("faqModal")       .addEventListener("click", e => { if (e.target === e.currentTarget) closeFaq(); });
+  document.getElementById("rulesBtn")       .addEventListener("click", openRules);
+  document.getElementById("rulesClose")     .addEventListener("click", closeRules);
+  document.getElementById("rulesModal")     .addEventListener("click", e => { if (e.target === e.currentTarget) closeRules(); });
   document.getElementById("settingsBtn")    .addEventListener("click", openSettings);
   document.getElementById("settingsClose")  .addEventListener("click", closeSettings);
   document.getElementById("settingsModal")      .addEventListener("click", e => { if (e.target === e.currentTarget) closeSettings(); });
