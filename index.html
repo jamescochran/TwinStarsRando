@@ -491,11 +491,20 @@
       padding: 4px 6px;
       border-radius: 4px;
       line-height: 1;
+      vertical-align: middle;
       transition: color 0.15s;
       -webkit-tap-highlight-color: transparent;
     }
     .btn-edit-record:hover { color: var(--accent-teal); }
-    .notes-row td { font-size: 12px; color: var(--text-muted); padding-top: 0 !important; font-style: italic; }
+    .btn-delete-record { vertical-align: middle; }
+    .notes-row td {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-style: italic;
+      padding-top: 2px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(30,45,85,0.5);
+    }
     .result-pill {
       display: inline-block;
       padding: 3px 10px;
@@ -559,6 +568,7 @@
       -webkit-tap-highlight-color: transparent;
     }
     .history-select:focus { outline: 2px solid var(--accent-teal); outline-offset: 2px; }
+    #historyFilterChar, #historyFilterScenario { max-width: 160px; }
     .import-label {
       display: inline-flex;
       align-items: center;
@@ -1799,7 +1809,7 @@
     <p class="footer-disclaimer">
       Twin Stars Adventure Series is designed by Jason Tagmire &amp; Mike Mullins and published by Button Shy Games. All characters, scenarios, and game content are the intellectual property of Button Shy Games and their creators. This is an unofficial, free, fan-made companion app made out of love for an incredible game — not affiliated with or endorsed by Button Shy Games. If you don't own Twin Stars yet, please go buy it. It's worth every penny.
     </p>
-    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-21 00:30 EST</p>
+    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-21 00:41 EST</p>
   </footer>
 
 </div>
@@ -2973,8 +2983,10 @@ function getCurrentElapsed() {
     if (notes) rec.notes = notes; else delete rec.notes;
     saveRecords();
     statsDirty = true;
+    const scrollY = window.scrollY;
     displayHistory();
     displayStats();
+    window.scrollTo(0, scrollY);
     if (currentCombination) { displayCombination(currentCombination); displayComboHistory(currentCombination); }
     closeEditModal();
     toast("Record updated.");
