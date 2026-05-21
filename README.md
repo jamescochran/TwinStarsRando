@@ -27,6 +27,7 @@ Hit **Randomize**. The app picks two characters and a scenario at random from th
 - **Tracks** per-combination history and shows exactly which combos you've never touched (with a direct "Play" button so there are no excuses)
 - **Sorts and filters** the Mission Log by date, result, difficulty, character, or scenario
 - **Stats panel** — overall win rate, completion percentage, and playtime averages at a glance
+- **Rolls dice** — built-in dice roller during active sessions; tap a die to lock it (teal glow), +/− to adjust, swap both dice, flip to opposite face (Hebolt Rom); Skill Check mode rolls white dice then restores your normal dice exactly as you left them
 - **Remembers** your last result and difficulty setting so you don't have to re-select them every time
 - **Plays ambient radio** — optional [SomaFM Mission Control](https://somafm.com/missioncontrol/) stream (online only); ♫ button in the header, volume popover, lock-screen controls via mediaSession API
 - **Works offline** once installed — no server, no account, no subscription, no data leaving your device, ever
