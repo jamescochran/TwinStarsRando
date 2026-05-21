@@ -870,14 +870,14 @@
       text-overflow: ellipsis;
       letter-spacing: 0.3px;
     }
-    .die-adj-row { display: flex; gap: 6px; }
+    .die-adj-row { display: flex; width: 82px; justify-content: space-between; }
     .die-adj {
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: 50%;
-      width: 30px;
-      height: 30px;
-      font-size: 18px;
+      width: 26px;
+      height: 26px;
+      font-size: 16px;
       line-height: 1;
       cursor: pointer;
       color: var(--text-primary);
@@ -886,7 +886,7 @@
       justify-content: center;
     }
     .die-adj:active { opacity: 0.7; }
-    .adj-flip { font-size: 11px; }
+    .adj-flip { border-radius: 6px; font-size: 10px; }
     .die {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -1900,11 +1900,11 @@
     </div>
     <p class="dice-hint" id="diceHint">Tap a die to lock it.</p>
     <div class="modal-actions">
-      <button class="btn btn-primary"   id="rollBtn">Roll</button>
+      <button class="btn btn-secondary" id="rollBtn">Roll</button>
       <button class="btn btn-secondary" id="skillCheckBtn">Skill Check</button>
     </div>
-    <div class="modal-actions" id="skillDoneRow" hidden>
-      <button class="btn btn-secondary" id="skillDoneBtn">Done</button>
+    <div class="modal-actions hidden" id="skillDoneRow">
+      <button class="btn btn-primary" id="skillDoneBtn">Done</button>
     </div>
   </div>
 </div>
@@ -2079,7 +2079,7 @@
     <p class="footer-disclaimer">
       Twin Stars Adventure Series is designed by Jason Tagmire &amp; Mike Mullins and published by Button Shy Games. All characters, scenarios, and game content are the intellectual property of Button Shy Games and their creators. This is an unofficial, free, fan-made companion app made out of love for an incredible game — not affiliated with or endorsed by Button Shy Games. If you don't own Twin Stars yet, please go buy it. It's worth every penny.
     </p>
-    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-21 11:18 EST</p>
+    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-21 11:29 EST</p>
   </footer>
 
 </div>
@@ -3341,11 +3341,12 @@ function getCurrentElapsed() {
   });
 
   // ─── Dice Roller ──────────────────────────────────────────────────────────────
-  let _diceValues   = [1, 1];
-  let _diceLocked   = [false, false];
-  let _diceRolling  = false;
-  let _diceMode     = "normal"; // "normal" | "skill"
-  let _diceInterval = null;
+  let _diceValues     = [1, 1];
+  let _diceLocked     = [false, false];
+  let _diceRolling    = false;
+  let _diceMode       = "normal"; // "normal" | "skill"
+  let _diceInterval   = null;
+  let _savedDiceState = null;
 
   function _diceSetLock(i, locked) {
     _diceLocked[i] = locked;
@@ -3375,7 +3376,7 @@ function getCurrentElapsed() {
     const isSkill = _diceMode === "skill";
     document.getElementById("diceModalTitle").textContent = isSkill ? "Skill Check" : "Dice Roller";
     document.getElementById("skillCheckBtn").hidden = isSkill;
-    document.getElementById("skillDoneRow").hidden  = !isSkill;
+    document.getElementById("skillDoneRow").classList.toggle("hidden", !isSkill);
     document.getElementById("diceHint").hidden      = isSkill;
     document.getElementById("dieLabel0").hidden     = isSkill;
     document.getElementById("dieLabel1").hidden     = isSkill;
@@ -3384,10 +3385,7 @@ function getCurrentElapsed() {
     document.getElementById("diceModal").classList.toggle("dice-modal-skill", isSkill);
     [0, 1].forEach(i => {
       document.getElementById(`dieAdjRow${i}`).hidden = isSkill;
-      if (isSkill) {
-        _diceLocked[i] = false;
-        document.getElementById(`die${i}`).classList.remove("locked");
-      }
+      if (isSkill) document.getElementById(`die${i}`).classList.remove("locked");
     });
     if (!isSkill) _diceUpdateFlipButtons();
   }
@@ -3612,16 +3610,25 @@ function getCurrentElapsed() {
     [0, 1].forEach(i => { document.getElementById(`die${i}`).dataset.val = _diceValues[i]; });
   });
   document.getElementById("skillCheckBtn")     .addEventListener("click", () => {
+    _savedDiceState = { values: [..._diceValues], locked: [..._diceLocked] };
     _diceMode = "skill";
     _diceApplyMode();
     rollDice(false);
   });
   document.getElementById("skillDoneBtn")      .addEventListener("click", () => {
     _diceMode = "normal";
-    [0, 1].forEach(i => {
-      _diceLocked[i] = false;
-      document.getElementById(`die${i}`).classList.remove("locked");
-    });
+    if (_savedDiceState) {
+      _diceValues = _savedDiceState.values;
+      _diceLocked = _savedDiceState.locked;
+      _savedDiceState = null;
+      [0, 1].forEach(i => {
+        const die = document.getElementById(`die${i}`);
+        die.dataset.val = _diceValues[i];
+        die.classList.toggle("locked", _diceLocked[i]);
+        die.setAttribute("aria-label",
+          `Die ${i + 1}, value ${_diceValues[i]}, ${_diceLocked[i] ? "locked" : "unlocked"}`);
+      });
+    }
     _diceApplyMode();
     setTimeout(() => document.getElementById("rollBtn").focus(), 50);
   });
