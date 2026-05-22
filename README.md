@@ -100,6 +100,19 @@ After cloning, activate the pre-commit hook that auto-bumps the service worker c
 git config core.hooksPath .githooks
 ```
 
+### Testing
+
+Tests live in `tests/` and use [Playwright](https://playwright.dev/). To run locally:
+
+```sh
+cd tests
+npm ci
+npx playwright install firefox   # or chromium on Linux with system deps
+npm test
+```
+
+CI runs on every push and pull request via `.github/workflows/tests.yml`.
+
 ### Stack
 
 ```
