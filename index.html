@@ -533,6 +533,12 @@
       border: 1px solid var(--border);
     }
 
+    /* Table cell helpers — replaces scattered inline styles in history tables */
+    .td-meta     { color: var(--text-muted); font-size: 12px; }
+    .td-nowrap   { white-space: nowrap; }
+    .td-scenario { color: var(--accent-teal); font-size: 12px; }
+    .td-time     { color: var(--text-muted); font-size: 12px; white-space: nowrap; }
+
     /* Section heading */
     .section-heading {
       font-family: 'Orbitron', sans-serif;
@@ -1295,6 +1301,7 @@
       gap: 12px;
       padding: 12px 0;
       border-bottom: 1px solid var(--border);
+      cursor: pointer;
     }
     .pack-item:last-child { border-bottom: none; }
     .pack-item input[type="checkbox"] {
@@ -2399,6 +2406,8 @@
   let _errorTimeout = null;
 
   let records = [];
+  // Dirty flags: set to true whenever records change, cleared when each view re-renders.
+  // This lets showTab() skip expensive re-renders when nothing has changed.
   let historyDirty  = true;
   let unplayedDirty = true;
   let statsDirty    = true;
@@ -2441,10 +2450,15 @@
   }
 
   // ─── Helpers ────────────────────────────────────────────────────────────────
+  // Stable unique key for a character+scenario combination.
+  // Uses ASCII control characters (unit separator \x1F, record separator \x1E)
+  // as delimiters — they can never appear in a character or scenario name.
   function comboKey(comb) {
     return comb.characters.join("\x1F") + "\x1E" + comb.scenario;
   }
 
+  // XSS-safe HTML escape. Uses a detached div for the <, >, & escaping then adds
+  // " escaping so the result is safe inside data-* attribute values too ("Mad" Anxy).
   const _escEl = document.createElement("div");
   function esc(str) {
     _escEl.textContent = String(str);
@@ -2476,6 +2490,8 @@
     setTimeout(() => t.remove(), 2600);
   }
 
+  // Guards against corrupted or externally-imported records making it into the array.
+  // Characters must be from the known master list so comboKey lookups stay consistent.
   function isValidRecord(r) {
     return (
       r && typeof r === "object" &&
@@ -2494,6 +2510,10 @@
 
 
 // ─── Timer ──────────────────────────────────────────────────────────────────
+// Wall-clock timer using Date.now() rather than counting setInterval ticks,
+// so accumulated drift is negligible even over long sessions.
+// accumulatedTime holds ms from completed (pre-pause) segments; startTime marks
+// when the current running segment began. Elapsed = accumulatedTime + (now - startTime).
 
 let timerInterval   = null;
 let timerPaused     = false;
@@ -2561,13 +2581,15 @@ function getCurrentElapsed() {
 }
 
   // ─── Dropdowns ──────────────────────────────────────────────────────────────
+  // Rebuilds tgt dropdown to exclude the value already selected in src,
+  // preserving tgt's previous selection if it's still valid.
   function syncDropdown(srcId, tgtId) {
     const exclude = document.getElementById(srcId).value;
     const tgt     = document.getElementById(tgtId);
     const prev    = tgt.value;
-    tgt.innerHTML = ""; // clear all current options
+    tgt.innerHTML = "";
     characters.forEach(char => {
-      if (char === exclude) return; // skip the character already chosen in the other dropdown
+      if (char === exclude) return;
       const opt = document.createElement("option");
       opt.value = opt.textContent = char;
       tgt.appendChild(opt);
@@ -2690,11 +2712,7 @@ function getCurrentElapsed() {
       });
     }
     document.getElementById("pauseBtn").addEventListener("click", togglePause);
-    document.getElementById("restartBtn").addEventListener("click", () => {
-      _restartTrigger = document.activeElement;
-      document.getElementById("restartModal").classList.add("open");
-      setTimeout(() => document.getElementById("restartCancel").focus(), 0);
-    });
+    document.getElementById("restartBtn").addEventListener("click", () => openModal("restartModal", "restartCancel"));
     document.getElementById("diceRollerBtn").addEventListener("click", openDiceModal);
 
     const timerEl = document.getElementById("timerDisplay");
@@ -2718,17 +2736,17 @@ function getCurrentElapsed() {
       div.innerHTML = `<div class="notice">No records yet for this combination.</div>`;
       return;
     }
-    const rows = recs.map((rec, idx) => {
+    const rows = recs.map((rec) => {
       const globalIdx = records.indexOf(rec);
       return `
       <tr>
-        <td style="color:var(--text-muted);font-size:12px;">
-          <div style="white-space:nowrap;">${esc(rec.timestamp)}</div>
+        <td class="td-meta">
+          <div class="td-nowrap">${esc(rec.timestamp)}</div>
           ${rec.droid ? `<span class="droid-tag">${esc(rec.droid)}</span>` : ""}
         </td>
         <td><span class="result-pill ${rec.result === "Win" ? "win" : "loss"}">${esc(rec.result)}</span></td>
         <td><span class="diff-pill">${esc(rec.difficulty)}</span></td>
-        <td style="color:var(--text-muted);font-size:12px;white-space:nowrap;">${rec.playtime != null ? formatTime(rec.playtime) : "—"}</td>
+        <td class="td-time">${rec.playtime != null ? formatTime(rec.playtime) : "—"}</td>
         <td><button class="btn-delete-record" data-idx="${globalIdx}" title="Delete">✕</button></td>
       </tr>`;}).join("");
 
@@ -2743,18 +2761,19 @@ function getCurrentElapsed() {
         </div>
       </div>`;
 
-    div.querySelectorAll(".btn-delete-record").forEach(btn => {
-      btn.addEventListener("click", () => {
-        _deleteTrigger    = btn;
-        _pendingDeleteIdx = parseInt(btn.dataset.idx, 10);
-        _deleteCallback   = () => { displayCombination(currentCombination); displayComboHistory(currentCombination); };
-        document.getElementById("deleteRecordModal").classList.add("open");
-        setTimeout(() => document.getElementById("deleteRecordCancel").focus(), 0);
-      });
+    div.addEventListener("click", e => {
+      const deleteBtn = e.target.closest(".btn-delete-record");
+      if (!deleteBtn) return;
+      _deleteTrigger    = deleteBtn;
+      _pendingDeleteIdx = parseInt(deleteBtn.dataset.idx, 10);
+      _deleteCallback   = () => { displayCombination(currentCombination); displayComboHistory(currentCombination); };
+      openModal("deleteRecordModal", "deleteRecordCancel");
     });
   }
 
-  // Build and display the list of combinations that haven't been played yet.
+  // Renders combinations that have never appeared in records[].
+  // Virtual-scrolls in batches of 30 to avoid freezing the DOM for large lists
+  // (up to ~11 000 combos with all packs enabled).
   function displayUnplayed() {
     unplayedDirty = false;
     const container = document.getElementById("unplayedContainer");
@@ -2890,13 +2909,13 @@ function getCurrentElapsed() {
         : "";
       return `
         <tr>
-          <td style="color:var(--text-muted);font-size:12px;white-space:nowrap;">${esc(rec.timestamp)}</td>
-          <td style="white-space:nowrap;">${esc(rec.characters.join(" & "))}${rec.droid ? `<span class="droid-tag">${esc(rec.droid)}</span>` : ""}</td>
-          <td style="color:var(--accent-teal);font-size:12px;">${scenarioHTML(rec.scenario)}</td>
+          <td class="td-time">${esc(rec.timestamp)}</td>
+          <td class="td-nowrap">${esc(rec.characters.join(" & "))}${rec.droid ? `<span class="droid-tag">${esc(rec.droid)}</span>` : ""}</td>
+          <td class="td-scenario">${scenarioHTML(rec.scenario)}</td>
           <td><span class="result-pill ${rec.result === "Win" ? "win" : "loss"}">${esc(rec.result)}</span></td>
           <td><span class="diff-pill">${esc(rec.difficulty)}</span></td>
-          <td style="color:var(--text-muted);font-size:12px;white-space:nowrap;">${rec.playtime != null ? formatTime(rec.playtime) : "—"}</td>
-          <td style="white-space:nowrap;">
+          <td class="td-time">${rec.playtime != null ? formatTime(rec.playtime) : "—"}</td>
+          <td class="td-nowrap">
             <button class="btn-edit-record"   data-idx="${idx}" title="Edit">✎</button>
             <button class="btn-delete-record" data-idx="${idx}" title="Delete">✕</button>
           </td>
@@ -2911,18 +2930,18 @@ function getCurrentElapsed() {
         </table>
       </div>`;
 
-    container.querySelectorAll(".btn-edit-record").forEach(btn => {
-      btn.addEventListener("click", () => openEditModal(parseInt(btn.dataset.idx, 10)));
-    });
+    // One delegated listener handles all edit/delete clicks in the table.
+    container.addEventListener("click", e => {
+      const editBtn = e.target.closest(".btn-edit-record");
+      if (editBtn) { openEditModal(parseInt(editBtn.dataset.idx, 10)); return; }
 
-    container.querySelectorAll(".btn-delete-record").forEach(btn => {
-      btn.addEventListener("click", () => {
-        _deleteTrigger    = btn;
-        _pendingDeleteIdx = parseInt(btn.dataset.idx, 10);
+      const deleteBtn = e.target.closest(".btn-delete-record");
+      if (deleteBtn) {
+        _deleteTrigger    = deleteBtn;
+        _pendingDeleteIdx = parseInt(deleteBtn.dataset.idx, 10);
         _deleteCallback   = () => { displayHistory(); displayUnplayed(); if (currentCombination) { displayCombination(currentCombination); displayComboHistory(currentCombination); } };
-        document.getElementById("deleteRecordModal").classList.add("open");
-        setTimeout(() => document.getElementById("deleteRecordCancel").focus(), 0);
-      });
+        openModal("deleteRecordModal", "deleteRecordCancel");
+      }
     });
   }
 
@@ -3015,12 +3034,12 @@ function getCurrentElapsed() {
   }
 
   function openSettings() {
-    _settingsTrigger = document.activeElement;
     const list = document.getElementById("packList");
     list.innerHTML = "";
     CONTENT_PACKS.forEach(pack => {
-      const item = document.createElement("div");
-      item.className = "pack-item";
+      const item = document.createElement("label");
+      item.className  = "pack-item";
+      item.htmlFor    = "pack-" + pack.id;
       const cb = document.createElement("input");
       cb.type    = "checkbox";
       cb.id      = "pack-" + pack.id;
@@ -3051,7 +3070,8 @@ function getCurrentElapsed() {
       list.appendChild(item);
     });
     document.getElementById("settingsWarning").textContent = "";
-    document.getElementById("settingsModal").classList.add("open");
+    // Focus the first interactive element inside the modal once it's visible.
+    openModal("settingsModal", null);
     setTimeout(() => {
       const first = document.querySelector("#settingsModal input, #settingsModal button");
       if (first) first.focus();
@@ -3059,7 +3079,7 @@ function getCurrentElapsed() {
   }
 
   function closeSettings() {
-    document.getElementById("settingsModal").classList.remove("open");
+    // Re-derive active content from the new pack selection before closing.
     buildActiveContent();
     saveEnabledPacks();
     populateSelectors();
@@ -3081,44 +3101,59 @@ function getCurrentElapsed() {
     }
     displayHistory();
     displayUnplayed();
-    if (_settingsTrigger) { _settingsTrigger.focus(); _settingsTrigger = null; }
+    closeModal("settingsModal");
   }
 
-  // ─── Modal triggers & close helpers ─────────────────────────────────────────
-  let _faqTrigger      = null;
-  let _settingsTrigger = null;
-  let _rulesTrigger    = null;
-  let _restartTrigger  = null;
-  let _confirmTrigger  = null;
-  let _importTrigger   = null;
-  let _deleteTrigger   = null;
-  let _pendingDeleteIdx = null;
-  let _deleteCallback   = null;
-  let _editTrigger     = null;
-  let _editIdx         = null;
-  let _diceTrigger     = null;
-  let _tipsTrigger     = null;
+  // ─── Generic modal helpers ───────────────────────────────────────────────────
+  // All modals share the same open/close pattern: add/remove the "open" class
+  // and return focus to whichever element triggered the modal.
+  // Modals that need extra teardown (clearing pending state, etc.) call these
+  // helpers and then do their own cleanup — see closeDeleteModal, closeImportModal, etc.
+
+  // Maps modal ID → the element that was focused when the modal opened,
+  // so we can return focus there on close.
+  const _modalTriggers = {};
+
+  function openModal(id, firstFocusId) {
+    _modalTriggers[id] = document.activeElement;
+    document.getElementById(id).classList.add("open");
+    if (firstFocusId) {
+      setTimeout(() => {
+        const el = document.getElementById(firstFocusId);
+        if (el) el.focus();
+      }, 50);
+    }
+  }
+
+  function closeModal(id) {
+    document.getElementById(id).classList.remove("open");
+    const trigger = _modalTriggers[id];
+    if (trigger) { trigger.focus(); delete _modalTriggers[id]; }
+  }
+
+  // ─── Per-modal state ─────────────────────────────────────────────────────────
+  // Some modals carry pending state that must be cleared when they close.
+  let _deleteTrigger    = null; // element that opened the delete modal (for focus return via delegated handler)
+  let _pendingDeleteIdx = null; // record index waiting to be confirmed for deletion
+  let _deleteCallback   = null; // called after deletion to refresh whichever view triggered it
+  let _editIdx          = null; // record index currently open in the edit modal
 
   function openEditModal(idx) {
-    _editIdx     = idx;
-    _editTrigger = document.activeElement;
+    _editIdx = idx;
     const rec = records[idx];
     document.getElementById("editResult").value     = rec.result;
     document.getElementById("editDifficulty").value = rec.difficulty;
     document.getElementById("editNotes").value       = rec.notes || "";
-    document.getElementById("editRecordModal").classList.add("open");
-    setTimeout(() => document.getElementById("editResult").focus(), 0);
+    openModal("editRecordModal", "editResult");
   }
 
   function closeEditModal() {
-    document.getElementById("editRecordModal").classList.remove("open");
-    if (_editTrigger) { _editTrigger.focus(); _editTrigger = null; }
     _editIdx = null;
+    closeModal("editRecordModal");
   }
 
   function closeFaq() {
-    document.getElementById("faqModal").classList.remove("open");
-    if (_faqTrigger) { _faqTrigger.focus(); _faqTrigger = null; }
+    closeModal("faqModal");
   }
 
   const RULEBOOK_TABS = [
@@ -3130,7 +3165,6 @@ function getCurrentElapsed() {
   ];
 
   function openRules() {
-    _rulesTrigger = document.activeElement;
     const available = RULEBOOK_TABS.filter(t => enabledPacks.has(t.packId));
     if (!available.length) { toast("No rulebooks for your current packs."); return; }
     const tabsEl = document.getElementById("rulesTabs");
@@ -3148,41 +3182,39 @@ function getCurrentElapsed() {
       tabsEl.appendChild(btn);
     });
     document.getElementById("rulesImage").src = available[0].file;
-    document.getElementById("rulesModal").classList.add("open");
-    setTimeout(() => document.getElementById("rulesClose").focus(), 0);
+    openModal("rulesModal", "rulesClose");
   }
 
   function closeRules() {
-    document.getElementById("rulesModal").classList.remove("open");
-    if (_rulesTrigger) { _rulesTrigger.focus(); _rulesTrigger = null; }
+    closeModal("rulesModal");
   }
 
   function closeRestartModal() {
-    document.getElementById("restartModal").classList.remove("open");
-    if (_restartTrigger) { _restartTrigger.focus(); _restartTrigger = null; }
+    closeModal("restartModal");
   }
 
   function closeConfirmModal() {
-    document.getElementById("confirmModal").classList.remove("open");
-    if (_confirmTrigger) { _confirmTrigger.focus(); _confirmTrigger = null; }
+    closeModal("confirmModal");
   }
 
   function closeImportModal() {
     _pendingImport = null;
-    document.getElementById("importConfirmModal").classList.remove("open");
-    if (_importTrigger) { _importTrigger.focus(); _importTrigger = null; }
+    closeModal("importConfirmModal");
   }
 
   function closeDeleteModal() {
     _pendingDeleteIdx = null;
     _deleteCallback   = null;
+    // The delete button that triggered this modal was stored directly; return
+    // focus to it rather than going through the _modalTriggers map.
+    const trigger = _deleteTrigger;
+    _deleteTrigger = null;
     document.getElementById("deleteRecordModal").classList.remove("open");
-    if (_deleteTrigger) { _deleteTrigger.focus(); _deleteTrigger = null; }
+    if (trigger) trigger.focus();
   }
 
   function openFaq(anchorId) {
-    _faqTrigger = document.activeElement;
-    document.getElementById("faqModal").classList.add("open");
+    openModal("faqModal", "faqClose");
     if (anchorId) {
       const target = document.getElementById(anchorId);
       if (target) {
@@ -3190,13 +3222,13 @@ function getCurrentElapsed() {
         setTimeout(() => {
           const container = document.querySelector(".faq-content");
           const stickyHeader = container.querySelector(".faq-section-header");
+          // Offset by the sticky section header so the target isn't hidden under it.
           const clearance = (stickyHeader ? stickyHeader.offsetHeight : 0) + 8;
           const scrollTop = target.getBoundingClientRect().top - container.getBoundingClientRect().top + container.scrollTop - clearance;
           container.scrollTo({ top: Math.max(0, scrollTop), behavior: reduced ? "auto" : "smooth" });
         }, 50);
       }
     }
-    setTimeout(() => document.getElementById("faqClose").focus(), 0);
   }
 
   // ─── Actions ────────────────────────────────────────────────────────────────
@@ -3320,7 +3352,6 @@ function getCurrentElapsed() {
   let _pendingImport = null;
 
   document.getElementById("importFile").addEventListener("change", function () {
-    _importTrigger = document.activeElement;
     const file = this.files[0];
     if (!file) return;
     const reader = new FileReader();
@@ -3336,8 +3367,7 @@ function getCurrentElapsed() {
         const existing = records.length;
         document.getElementById("importConfirmMsg").textContent =
           `Found ${valid.length} valid record(s).${skipNote} Merge adds them to your ${existing} existing record(s). Replace overwrites them entirely.`;
-        document.getElementById("importConfirmModal").classList.add("open");
-        setTimeout(() => document.getElementById("importCancel").focus(), 0);
+        openModal("importConfirmModal", "importCancel");
       } catch (err) { toast("Could not read file.", "error"); }
     };
     reader.readAsText(file);
@@ -3389,11 +3419,7 @@ function getCurrentElapsed() {
     startTimer();
   });
 
-  document.getElementById("clearDataBtn").addEventListener("click", () => {
-    _confirmTrigger = document.activeElement;
-    document.getElementById("confirmModal").classList.add("open");
-    setTimeout(() => document.getElementById("modalCancel").focus(), 0);
-  });
+  document.getElementById("clearDataBtn").addEventListener("click", () => openModal("confirmModal", "modalCancel"));
   document.getElementById("modalCancel").addEventListener("click", closeConfirmModal);
   document.getElementById("modalConfirm").addEventListener("click", () => {
     records = [];
@@ -3555,7 +3581,7 @@ function getCurrentElapsed() {
   }
 
   function openDiceModal() {
-    _diceTrigger = document.activeElement;
+    // Always reset to a clean normal-mode state when opening.
     if (_diceInterval) { clearInterval(_diceInterval); _diceInterval = null; _diceRolling = false; }
     _diceMode   = "normal";
     _diceLocked = [false, false];
@@ -3563,30 +3589,21 @@ function getCurrentElapsed() {
     document.getElementById("diceModal").classList.remove("dice-modal-skill");
     _dicePopulateLabels();
     _diceApplyMode();
-    document.getElementById("diceModal").classList.add("open");
+    openModal("diceModal", "rollBtn");
     rollDice(false);
-    setTimeout(() => document.getElementById("rollBtn").focus(), 50);
   }
 
   function closeDiceModal() {
+    // Stop any in-progress roll animation before closing.
     if (_diceInterval) { clearInterval(_diceInterval); _diceInterval = null; _diceRolling = false; }
     [0, 1].forEach(i => document.getElementById(`die${i}`).classList.remove("rolling"));
-    const dm = document.getElementById("diceModal");
-    dm.classList.remove("open");
-    dm.classList.remove("dice-modal-skill");
+    document.getElementById("diceModal").classList.remove("dice-modal-skill");
     _diceMode = "normal";
-    if (_diceTrigger) { _diceTrigger.focus(); _diceTrigger = null; }
+    closeModal("diceModal");
   }
 
-  function openTipsModal() {
-    _tipsTrigger = document.activeElement;
-    document.getElementById("tipsModal").classList.add("open");
-    setTimeout(() => document.getElementById("tipsModalClose").focus(), 50);
-  }
-  function closeTipsModal() {
-    document.getElementById("tipsModal").classList.remove("open");
-    if (_tipsTrigger) { _tipsTrigger.focus(); _tipsTrigger = null; }
-  }
+  function openTipsModal()  { openModal("tipsModal", "tipsModalClose"); }
+  function closeTipsModal() { closeModal("tipsModal"); }
 
   // ─── Keyboard: Escape closes modals and tooltip, Tab traps focus ─────────────
   document.addEventListener("keydown", e => {
@@ -3607,17 +3624,21 @@ function getCurrentElapsed() {
     if (!overlay) return;
 
     if (e.key === "Escape") {
-      if (overlay.id === "settingsModal")      { closeSettings();    return; }
-      if (overlay.id === "faqModal")           { closeFaq();         return; }
-      if (overlay.id === "rulesModal")         { closeRules();       return; }
-      if (overlay.id === "restartModal")       { closeRestartModal(); return; }
-      if (overlay.id === "confirmModal")       { closeConfirmModal(); return; }
-      if (overlay.id === "importConfirmModal") { closeImportModal();  return; }
-      if (overlay.id === "deleteRecordModal")  { closeDeleteModal();  return; }
-      if (overlay.id === "editRecordModal")    { closeEditModal();    return; }
-      if (overlay.id === "diceModal")          { closeDiceModal();    return; }
-      if (overlay.id === "tipsModal")          { closeTipsModal();    return; }
-      overlay.classList.remove("open");
+      // Modals with extra teardown get their own close function; everything
+      // else goes through the generic closeModal helper.
+      const closers = {
+        settingsModal:      closeSettings,
+        faqModal:           closeFaq,
+        rulesModal:         closeRules,
+        restartModal:       closeRestartModal,
+        confirmModal:       closeConfirmModal,
+        importConfirmModal: closeImportModal,
+        deleteRecordModal:  closeDeleteModal,
+        editRecordModal:    closeEditModal,
+        diceModal:          closeDiceModal,
+        tipsModal:          closeTipsModal,
+      };
+      (closers[overlay.id] || (() => closeModal(overlay.id)))();
       return;
     }
 
@@ -3644,42 +3665,32 @@ function getCurrentElapsed() {
 
   // ─── Radio ──────────────────────────────────────────────────────────────────
 
+  // Visual configuration for each radio state — drives setRadioState below.
+  const RADIO_STATE_UI = {
+    stopped: { cls: null,         text: "♫", label: "Play ambient radio",  showVol: false, showStatus: false, closePopover: true  },
+    loading:  { cls: "is-loading", text: "…", label: "Connecting…",         showVol: false, showStatus: false, closePopover: false },
+    playing:  { cls: "is-playing", text: "◼", label: "Stop ambient radio",  showVol: true,  showStatus: true,  closePopover: false },
+    error:    { cls: "is-error",   text: "♫", label: "Stream unavailable",  showVol: false, showStatus: false, closePopover: true  },
+  };
+
   function setRadioState(state) {
     if (_errorTimeout) { clearTimeout(_errorTimeout); _errorTimeout = null; }
     _radioState = state;
+    const cfg     = RADIO_STATE_UI[state];
     const btn     = document.getElementById("radioBtn");
     const volBtn  = document.getElementById("volumeBtn");
     const label   = document.getElementById("radioStatusLabel");
     const popover = document.getElementById("volumePopover");
+
     btn.classList.remove("is-playing", "is-loading", "is-error");
-    if (state === "stopped") {
-      btn.textContent = "♫";
-      btn.setAttribute("aria-label", "Play ambient radio");
-      volBtn.classList.remove("visible");
-      label.hidden  = true;
-      popover.classList.remove("open");
-    } else if (state === "loading") {
-      btn.classList.add("is-loading");
-      btn.textContent = "…";
-      btn.setAttribute("aria-label", "Connecting…");
-      volBtn.classList.remove("visible");
-      label.hidden  = true;
-    } else if (state === "playing") {
-      btn.classList.add("is-playing");
-      btn.textContent = "◼";
-      btn.setAttribute("aria-label", "Stop ambient radio");
-      volBtn.classList.add("visible");
-      volBtn.setAttribute("aria-expanded", "false");
-      label.hidden  = false;
-    } else if (state === "error") {
-      btn.classList.add("is-error");
-      btn.textContent = "♫";
-      btn.setAttribute("aria-label", "Stream unavailable");
-      volBtn.classList.remove("visible");
-      label.hidden  = true;
-      popover.classList.remove("open");
-      _errorTimeout = setTimeout(() => setRadioState("stopped"), 3000);
-    }
+    if (cfg.cls) btn.classList.add(cfg.cls);
+    btn.textContent = cfg.text;
+    btn.setAttribute("aria-label", cfg.label);
+    volBtn.classList.toggle("visible", cfg.showVol);
+    if (cfg.showVol) volBtn.setAttribute("aria-expanded", "false");
+    label.hidden = !cfg.showStatus;
+    if (cfg.closePopover) popover.classList.remove("open");
+    if (state === "error") _errorTimeout = setTimeout(() => setRadioState("stopped"), 3000);
   }
 
   function startRadio() {
