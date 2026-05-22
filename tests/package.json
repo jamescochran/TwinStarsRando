@@ -1,0 +1,13 @@
+{
+  "name": "twin-stars-tests",
+  "private": true,
+  "devDependencies": {
+    "@playwright/test": "^1.44.0",
+    "serve": "^14.0.0"
+  },
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui"
+  }
+}
