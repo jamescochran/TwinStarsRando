@@ -1,13 +1,12 @@
 import { test, expect } from "@playwright/test";
 
 async function loadCombination(page) {
-  await page.goto("/");
-  await page.evaluate(() => {
+  await page.addInitScript(() => {
     localStorage.clear();
     localStorage.setItem("enabledPacks", JSON.stringify(["series1"]));
     localStorage.setItem("hasSeenTip", "1");
   });
-  await page.reload();
+  await page.goto("/");
   await page.getByRole("button", { name: /Randomize Combination/i }).click();
   await expect(page.locator("#timerDisplay")).toBeVisible();
 }

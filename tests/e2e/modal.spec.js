@@ -1,13 +1,12 @@
 import { test, expect } from "@playwright/test";
 
 test.beforeEach(async ({ page }) => {
-  await page.goto("/");
-  await page.evaluate(() => {
+  await page.addInitScript(() => {
     localStorage.clear();
     localStorage.setItem("enabledPacks", JSON.stringify(["series1"]));
     localStorage.setItem("hasSeenTip", "1");
   });
-  await page.reload();
+  await page.goto("/");
 });
 
 test("My Collection modal opens and closes via Done button", async ({ page }) => {

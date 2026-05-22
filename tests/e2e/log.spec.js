@@ -1,13 +1,12 @@
 import { test, expect } from "@playwright/test";
 
 async function saveRecord(page, { result = "Win", difficulty = "Medium" } = {}) {
-  await page.goto("/");
-  await page.evaluate(() => {
+  await page.addInitScript(() => {
     localStorage.clear();
     localStorage.setItem("enabledPacks", JSON.stringify(["series1"]));
     localStorage.setItem("hasSeenTip", "1");
   });
-  await page.reload();
+  await page.goto("/");
   await page.getByRole("button", { name: /Randomize Combination/i }).click();
 
   // Select result and difficulty, then save
