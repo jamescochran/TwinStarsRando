@@ -1,5 +1,7 @@
 # Twin Stars Adventure Series — Randomizer
 
+[![Tests](https://github.com/jamescochran/TwinStarsRando/actions/workflows/tests.yml/badge.svg)](https://github.com/jamescochran/TwinStarsRando/actions/workflows/tests.yml)
+
 > *"Bood and 'Mad' Anxy again? Really? You've played that combo eleven times."*
 > — this app, judging you gently
 
@@ -22,6 +24,8 @@ Hit **Randomize**. The app picks two characters and a scenario at random from th
 ## What It Does
 
 - **Randomizes** character pairs and scenarios from your owned content — or lets you pick manually if you're that kind of person
+- **Locks** any character or scenario so it survives the next randomize; re-roll everything else freely
+- **Assigns a Droid Assistant** — pick or randomize a droid from your owned Droid Assistant packs for extra challenge
 - **Times** your session automatically with pause, resume, and restart
 - **Logs** every result — Win/Loss, difficulty, elapsed time, timestamp; edit any record after the fact and add optional notes
 - **Tracks** per-combination history and shows exactly which combos you've never touched (with a direct "Play" button so there are no excuses)
@@ -30,6 +34,7 @@ Hit **Randomize**. The app picks two characters and a scenario at random from th
 - **Rolls dice** — built-in dice roller during active sessions; tap a die to lock it (teal glow), +/− to adjust, swap both dice, flip to opposite face (Hebolt Rom); Skill Check mode rolls white dice then restores your normal dice exactly as you left them
 - **Remembers** your last result and difficulty setting so you don't have to re-select them every time
 - **Plays ambient radio** — optional [SomaFM Mission Control](https://somafm.com/missioncontrol/) stream (online only); ♫ button in the header, volume popover, lock-screen controls via mediaSession API
+- **Tips & Features** — tap **?** in the header anytime for a quick reference of every non-obvious feature
 - **Works offline** once installed — no server, no account, no subscription, no data leaving your device, ever
 - **Installs as a PWA** — add it to your home screen and it feels like a native app
 
@@ -99,7 +104,7 @@ git config core.hooksPath .githooks
 
 ```
 TwinStarsRando/
-  index.html          ← the entire app (HTML + CSS + JS in one file, ~3250 lines)
+  index.html          ← the entire app (HTML + CSS + JS in one file, ~3900 lines)
   service-worker.js   ← PWA offline caching
   manifest.json       ← PWA install metadata
   icon-192.png        ← app icon (192×192)
