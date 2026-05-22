@@ -1301,6 +1301,7 @@
       gap: 12px;
       padding: 12px 0;
       border-bottom: 1px solid var(--border);
+      cursor: pointer;
     }
     .pack-item:last-child { border-bottom: none; }
     .pack-item input[type="checkbox"] {
@@ -3036,8 +3037,9 @@ function getCurrentElapsed() {
     const list = document.getElementById("packList");
     list.innerHTML = "";
     CONTENT_PACKS.forEach(pack => {
-      const item = document.createElement("div");
-      item.className = "pack-item";
+      const item = document.createElement("label");
+      item.className  = "pack-item";
+      item.htmlFor    = "pack-" + pack.id;
       const cb = document.createElement("input");
       cb.type    = "checkbox";
       cb.id      = "pack-" + pack.id;
