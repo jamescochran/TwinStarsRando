@@ -90,7 +90,7 @@ Any character can be paired with any scenario regardless of pack. Character 1 is
 
 ## For Developers
 
-This thing is aggressively simple. One HTML file. No framework. No build step. No `node_modules` folder haunting your dreams.
+This thing is aggressively simple. One HTML file. No framework. No build step. The only `node_modules` is in `tests/` and it's gitignored.
 
 ### First-time setup
 
@@ -120,9 +120,11 @@ TwinStarsRando/
   index.html          ← the entire app (HTML + CSS + JS in one file, ~3900 lines)
   service-worker.js   ← PWA offline caching
   manifest.json       ← PWA install metadata
+  netlify.toml        ← security headers + service worker no-cache config
   icon-192.png        ← app icon (192×192)
   icon-512.png        ← app icon (512×512)
   rules/              ← bundled rulebook images (served as static assets)
+  tests/              ← Playwright e2e test suite
 ```
 
 **Fonts:** Orbitron (headings) and Exo 2 (body) from Google Fonts. Both are cached by the service worker on first visit — offline looks correct from the second load onward. Falls back to system sans-serif on the first offline load.
