@@ -2518,7 +2518,7 @@
   </div>
 
   <!-- SYZYGY CAMPAIGN PAGE -->
-  <div id="syzygyCampaignPage" class="hidden">
+  <div id="syzygyCampaignPage" role="tabpanel" aria-labelledby="syzygyCampaignTab" tabindex="0" class="hidden">
     <div id="syzygyCampaignContent"></div>
   </div>
 
@@ -4194,7 +4194,7 @@ function getCurrentElapsed() {
   const SYZYGY2_RANKS = [
     { rank: "LOADED",            desc: "The only thing that slowed you down was all the loot you brought home.", wins: 3, maxLosses: 0 },
     { rank: "SAFE",              desc: "Home with one nifty new scar.",                                          wins: 3, maxLosses: 1 },
-    { rank: "BACK TO SQUARE ONE",desc: "Home, broken, and broke, but home.",                                     wins: 3, maxLosses: 2 },
+    { rank: "BACK TO SQUARE ONE",desc: "Home, broken, and broke, but home.",                                     wins: 1, maxLosses: 2 },
     { rank: "LOST IN THE UNIVERSE", desc: "The universe is a big place. Someone will find you eventually." }
   ];
 
@@ -4485,7 +4485,7 @@ function getCurrentElapsed() {
         <div class="syzygy-scenario-card">
           <div class="syzygy-stage-label">${esc(stageLabel)}</div>
           <div class="syzygy-stage-scenario">${scenarioHTML(sc)}</div>
-          <div style="font-size:12px;color:var(--text-muted);">Playing: <strong>${esc(playingNames.join(" &amp; "))}</strong>${benchedName ? ` · Benched: ${esc(benchedName)} (heals)` : ""}</div>
+          <div style="font-size:12px;color:var(--text-muted);">Playing: <strong>${playingNames.map(esc).join(" &amp; ")}</strong>${benchedName ? ` · Benched: ${esc(benchedName)} (heals)` : ""}</div>
           ${c.retrying ? `<div class="notice" style="margin-top:10px;color:var(--loss-color);border-color:rgba(255,68,85,0.3);">Retry — only 3 resource points this attempt</div>` : ""}
         </div>`;
 
@@ -4614,7 +4614,7 @@ function getCurrentElapsed() {
     const histRows = c.stageResults.map(r =>
       `<tr>
         <td style="font-size:12px;color:var(--text-muted);">${esc(r.scenario)}</td>
-        <td style="font-size:12px;color:var(--text-muted);">${esc(r.chars.map(i => c.characters[i]).join(" &amp; "))}</td>
+        <td style="font-size:12px;color:var(--text-muted);">${r.chars.map(i => c.characters[i]).map(esc).join(" &amp; ")}</td>
         <td><span class="result-pill ${r.result === "Win" ? "win" : "loss"}">${esc(r.result)}</span></td>
       </tr>`
     ).join("");
