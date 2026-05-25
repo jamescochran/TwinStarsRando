@@ -2196,7 +2196,7 @@
     <p class="footer-disclaimer">
       Twin Stars Adventure Series is designed by Jason Tagmire &amp; Mike Mullins and published by Button Shy Games. All characters, scenarios, and game content are the intellectual property of Button Shy Games and their creators. This is an unofficial, free, fan-made companion app made out of love for an incredible game — not affiliated with or endorsed by Button Shy Games. If you don't own Twin Stars yet, please go buy it. It's worth every penny.
     </p>
-    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-21 21:39 EST · <a href="https://github.com/jamescochran/TwinStarsRando/commit/fe5c11e" style="color:inherit;text-decoration:none;border-bottom:1px dotted currentColor;" target="_blank" rel="noopener noreferrer">fe5c11e</a></p>
+    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-25 16:37 EST · <a href="https://github.com/jamescochran/TwinStarsRando/commit/fea7880" style="color:inherit;text-decoration:none;border-bottom:1px dotted currentColor;" target="_blank" rel="noopener noreferrer">fea7880</a></p>
   </footer>
 
 </div>
@@ -2527,7 +2527,7 @@ function startTimer() {
   startTime       = Date.now();
   timerInterval   = setInterval(updateDisplay, 1000);
   const el = document.getElementById("timerDisplay");
-  if (el) { el.textContent = "00:00"; el.classList.remove("stopped"); }
+  if (el) { el.textContent = "00:00"; el.classList.remove("stopped"); el.setAttribute("aria-label", "Timer running: 0 minutes 0 seconds"); }
 }
 
 function stopTimer() {
@@ -2538,7 +2538,7 @@ function stopTimer() {
   timerPaused = false;
   startTime   = null;
   const el = document.getElementById("timerDisplay");
-  if (el) el.classList.add("stopped");
+  if (el) { el.classList.add("stopped"); el.setAttribute("aria-label", "Timer stopped"); }
 }
 
 function togglePause() {
@@ -2556,11 +2556,13 @@ function togglePause() {
 
   if (btn) {
     btn.textContent = timerPaused ? "Resume" : "Pause";
+    btn.setAttribute("aria-label", timerPaused ? "Resume timer" : "Pause timer");
     btn.classList.toggle("paused", timerPaused);
   }
 
   if (display) {
     display.classList.toggle("paused", timerPaused);
+    display.setAttribute("aria-label", timerPaused ? "Timer paused" : "Timer running");
   }
 }
 
@@ -2688,11 +2690,11 @@ function getCurrentElapsed() {
         <div class="timer-row">
           <div>
             <div class="timer-label">Elapsed Time</div>
-            <div class="timer-display" id="timerDisplay">00:00</div>
+            <div class="timer-display" id="timerDisplay" aria-live="off" aria-label="Timer stopped">00:00</div>
           </div>
           <div style="display:flex;gap:8px;">
-            <button class="btn-pause" id="restartBtn">Restart</button>
-            <button class="btn-pause" id="pauseBtn">Pause</button>
+            <button class="btn-pause" id="restartBtn" aria-label="Restart timer">Restart</button>
+            <button class="btn-pause" id="pauseBtn" aria-label="Pause timer">Pause</button>
           </div>
         </div>
         <div class="dice-row">
@@ -2747,7 +2749,7 @@ function getCurrentElapsed() {
         <td><span class="result-pill ${rec.result === "Win" ? "win" : "loss"}">${esc(rec.result)}</span></td>
         <td><span class="diff-pill">${esc(rec.difficulty)}</span></td>
         <td class="td-time">${rec.playtime != null ? formatTime(rec.playtime) : "—"}</td>
-        <td><button class="btn-delete-record" data-idx="${globalIdx}" title="Delete">✕</button></td>
+        <td><button class="btn-delete-record" data-idx="${globalIdx}" title="Delete" aria-label="Delete record">✕</button></td>
       </tr>`;}).join("");
 
     div.innerHTML = `
@@ -2916,8 +2918,8 @@ function getCurrentElapsed() {
           <td><span class="diff-pill">${esc(rec.difficulty)}</span></td>
           <td class="td-time">${rec.playtime != null ? formatTime(rec.playtime) : "—"}</td>
           <td class="td-nowrap">
-            <button class="btn-edit-record"   data-idx="${idx}" title="Edit">✎</button>
-            <button class="btn-delete-record" data-idx="${idx}" title="Delete">✕</button>
+            <button class="btn-edit-record"   data-idx="${idx}" title="Edit"   aria-label="Edit record">✎</button>
+            <button class="btn-delete-record" data-idx="${idx}" title="Delete" aria-label="Delete record">✕</button>
           </td>
         </tr>${notesRow}`;
     }).join("");
@@ -3733,6 +3735,25 @@ function getCurrentElapsed() {
   document.getElementById("exportBtn")      .addEventListener("click", handleExport);
   document.getElementById("randomizerTab")  .addEventListener("click", () => showTab("randomizer"));
   document.getElementById("historyTab")     .addEventListener("click", () => showTab("history"));
+
+  // Arrow key navigation between tabs (ARIA tablist pattern)
+  document.querySelector(".tab-nav[role='tablist']").addEventListener("keydown", e => {
+    const tabs = [...e.currentTarget.querySelectorAll("[role='tab']")];
+    const idx  = tabs.indexOf(document.activeElement);
+    if (idx === -1) return;
+    const TAB_NAMES = { randomizerTab: "randomizer", historyTab: "history", syzygyCampaignTab: "syzygy" };
+    if (e.key === "ArrowRight") {
+      e.preventDefault();
+      const next = tabs[(idx + 1) % tabs.length];
+      showTab(TAB_NAMES[next.id] || next.id);
+      next.focus();
+    } else if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      const prev = tabs[(idx - 1 + tabs.length) % tabs.length];
+      showTab(TAB_NAMES[prev.id] || prev.id);
+      prev.focus();
+    }
+  });
   document.getElementById("historySortBy").addEventListener("change", () => { historyDirty = true; displayHistory(); });
   document.getElementById("historyFilterResult").addEventListener("change", () => { historyDirty = true; displayHistory(); });
   document.getElementById("historyFilterDifficulty").addEventListener("change", () => { historyDirty = true; displayHistory(); });
