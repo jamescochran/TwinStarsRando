@@ -2196,7 +2196,7 @@
     <p class="footer-disclaimer">
       Twin Stars Adventure Series is designed by Jason Tagmire &amp; Mike Mullins and published by Button Shy Games. All characters, scenarios, and game content are the intellectual property of Button Shy Games and their creators. This is an unofficial, free, fan-made companion app made out of love for an incredible game — not affiliated with or endorsed by Button Shy Games. If you don't own Twin Stars yet, please go buy it. It's worth every penny.
     </p>
-    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-21 21:39 EST · <a href="https://github.com/jamescochran/TwinStarsRando/commit/fe5c11e" style="color:inherit;text-decoration:none;border-bottom:1px dotted currentColor;" target="_blank" rel="noopener noreferrer">fe5c11e</a></p>
+    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-05-25 16:37 EST · <a href="https://github.com/jamescochran/TwinStarsRando/commit/fea7880" style="color:inherit;text-decoration:none;border-bottom:1px dotted currentColor;" target="_blank" rel="noopener noreferrer">fea7880</a></p>
   </footer>
 
 </div>
@@ -3738,18 +3738,19 @@ function getCurrentElapsed() {
 
   // Arrow key navigation between tabs (ARIA tablist pattern)
   document.querySelector(".tab-nav[role='tablist']").addEventListener("keydown", e => {
-    const tabs = [document.getElementById("randomizerTab"), document.getElementById("historyTab")];
+    const tabs = [...e.currentTarget.querySelectorAll("[role='tab']")];
     const idx  = tabs.indexOf(document.activeElement);
     if (idx === -1) return;
+    const TAB_NAMES = { randomizerTab: "randomizer", historyTab: "history", syzygyCampaignTab: "syzygy" };
     if (e.key === "ArrowRight") {
       e.preventDefault();
       const next = tabs[(idx + 1) % tabs.length];
-      showTab(next.id === "randomizerTab" ? "randomizer" : "history");
+      showTab(TAB_NAMES[next.id] || next.id);
       next.focus();
     } else if (e.key === "ArrowLeft") {
       e.preventDefault();
       const prev = tabs[(idx - 1 + tabs.length) % tabs.length];
-      showTab(prev.id === "randomizerTab" ? "randomizer" : "history");
+      showTab(TAB_NAMES[prev.id] || prev.id);
       prev.focus();
     }
   });
