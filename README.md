@@ -1,6 +1,8 @@
 # Twin Stars Adventure Series — Randomizer
 
 [![Tests](https://github.com/jamescochran/TwinStarsRando/actions/workflows/tests.yml/badge.svg)](https://github.com/jamescochran/TwinStarsRando/actions/workflows/tests.yml)
+[![CodeQL](https://github.com/jamescochran/TwinStarsRando/actions/workflows/codeql.yml/badge.svg)](https://github.com/jamescochran/TwinStarsRando/actions/workflows/codeql.yml)
+[![Dependabot](https://img.shields.io/badge/Dependabot-enabled-025e8c?logo=dependabot)](https://github.com/jamescochran/TwinStarsRando/network/updates)
 
 > *"Bood and 'Mad' Anxy again? Really? You've played that combo eleven times."*
 > — this app, judging you gently
