@@ -28,6 +28,7 @@ Hit **Randomize**. The app picks two characters and a scenario at random from th
 - **Randomizes** character pairs and scenarios from your owned content — or lets you pick manually if you're that kind of person
 - **Locks** any character or scenario so it survives the next randomize; re-roll everything else freely
 - **Assigns a Droid Assistant** — pick or randomize a droid from your owned Droid Assistant packs for extra challenge
+- **SYZYGY Campaign Mode** — a separate branching mini-campaign for 3 characters from one series; one sits out each stage on a rotating bench, the mid-campaign scenario branches based on your choice, and a final rank (from LEGENDS down to GROSKSH'D, or LOADED down to LOST IN THE UNIVERSE) is calculated from your win/loss record
 - **Times** your session automatically with pause, resume, and restart
 - **Logs** every result — Win/Loss, difficulty, elapsed time, timestamp; edit any record after the fact and add optional notes
 - **Tracks** per-combination history and shows exactly which combos you've never touched (with a direct "Play" button so there are no excuses)
@@ -66,8 +67,10 @@ That's it. No tutorial. No onboarding flow. No email required.
 | Scenario 13: Topple the Giant! | 2 | 1 |
 | Scenario 14: Save the Spacewhales! | 2 | 1 |
 | Captain Crag *(promo)* | 1 | — |
+| Series I Droid Assistants | — | — |
+| Series II Droid Assistants | — | — |
 
-Any character can be paired with any scenario regardless of pack. Character 1 is **Primary**; Character 2 is **Secondary** — so order matters. With all five packs, that's **11,368 unique ordered character-pair + scenario combinations** (29 × 28 × 14). At one per day you'd be done in just over 31 years. Totally manageable.
+Any character can be paired with any scenario regardless of pack. Character 1 is **Primary**; Character 2 is **Secondary** — so order matters. The two Droid Assistant packs don't add characters or scenarios, just optional droids. With all five character/scenario packs, that's **11,368 unique ordered character-pair + scenario combinations** (29 × 28 × 14). At one per day you'd be done in just over 31 years. Totally manageable.
 
 <details>
 <summary>Full character and scenario list</summary>
@@ -85,6 +88,10 @@ Any character can be paired with any scenario regardless of pack. Character 1 is
 **Scenario 14:** Striker, Bippinnidip — Save the Spacewhales!
 
 **Captain Crag:** Promo character. No new scenarios. Tremendous hat.
+
+**Series I Droid Assistants:** C.R.A.N.K., MC-CY, Domino 2-5
+
+**Series II Droid Assistants:** F1D0, T.R.IX, MANTIS
 
 </details>
 
@@ -109,17 +116,18 @@ Tests live in `tests/` and use [Playwright](https://playwright.dev/). To run loc
 ```sh
 cd tests
 npm ci
-npx playwright install firefox   # or chromium on Linux with system deps
-npm test
+npx playwright install --with-deps chromium firefox
+npm test                                # runs both browsers
+npx playwright test --project=chromium  # or just one
 ```
 
-CI runs on every push and pull request via `.github/workflows/tests.yml`.
+CI runs on every push and pull request via `.github/workflows/tests.yml`, Chromium and Firefox each in their own job — running both in one job on a shared runner caused CPU contention that showed up as flaky Firefox failures, so they're isolated.
 
 ### Stack
 
 ```
 TwinStarsRando/
-  index.html          ← the entire app (HTML + CSS + JS in one file, ~3900 lines)
+  index.html          ← the entire app (HTML + CSS + JS in one file, ~4800 lines)
   service-worker.js   ← PWA offline caching
   manifest.json       ← PWA install metadata
   netlify.toml        ← security headers + service worker no-cache config
@@ -172,6 +180,7 @@ Each saved record looks like this:
 | `"hasSeenTip"` | `"1"` once the onboarding tooltip has been dismissed |
 | `"radioVolume"` | Float string `"0"`–`"1"` — ambient radio volume (default `"0.3"`) |
 | `"seenPrimarySecondaryNotice"` | `"1"` once the Primary/Secondary migration notice has been shown |
+| `"syzygyCampaign"` | JSON object — active SYZYGY campaign state (mode, stage, chosen characters, results); absent when no campaign is in progress |
 
 ### Combo Key Format
 
