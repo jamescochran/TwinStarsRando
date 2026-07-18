@@ -2,7 +2,7 @@
   "name": "twin-stars-tests",
   "private": true,
   "devDependencies": {
-    "@playwright/test": "^1.44.0",
+    "@playwright/test": "^1.61.1",
     "serve": "^14.0.0"
   },
   "scripts": {
