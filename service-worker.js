@@ -1,4 +1,4 @@
-const CACHE = "twin-stars-2026-10-14-1904";
+const CACHE = "twin-stars-2026-10-14-1927";
 const FONTS_CACHE = "twin-stars-fonts-v1";
 const BASE = self.registration.scope;
 const ASSETS = [
@@ -12,7 +12,12 @@ const ASSETS = [
 // Install — cache all assets
 self.addEventListener("install", e => {
   e.waitUntil(
-    caches.open(CACHE).then(cache => cache.addAll(ASSETS))
+    caches.open(CACHE).then(cache =>
+      // cache:"reload" skips the browser's HTTP cache. GitHub Pages sends max-age=600, so a
+      // plain addAll() could precache the *previous* deploy's files under the new cache name
+      // and leave users stuck on the old version.
+      Promise.all(ASSETS.map(url => cache.add(new Request(url, { cache: "reload" }))))
+    )
   );
   self.skipWaiting();
 });
