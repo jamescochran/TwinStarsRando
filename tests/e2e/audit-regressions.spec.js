@@ -36,9 +36,12 @@ test.describe("service worker", () => {
     page.on("load", () => loads++);
     await seed({})(page);
     await page.goto("/");
+    // A marker on the live document survives only if the document is never replaced.
+    await page.evaluate(() => { window.__sameDocument = true; });
     await page.evaluate(() => navigator.serviceWorker.ready);
     await page.waitForTimeout(2000);
-    expect(loads).toBe(1);
+    const stillSame = await page.evaluate(() => window.__sameDocument === true);
+    expect(stillSame, `document was replaced (load events seen: ${loads})`).toBe(true);
   });
 });
 
