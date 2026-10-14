@@ -180,6 +180,7 @@ Each saved record looks like this:
 | `"hasSeenTip"` | `"1"` once the onboarding tooltip has been dismissed |
 | `"radioVolume"` | Float string `"0"`–`"1"` — ambient radio volume (default `"0.3"`) |
 | `"seenPrimarySecondaryNotice"` | `"1"` once the Primary/Secondary migration notice has been shown |
+| `"gameRecordsBackup"` | Untouched copy of `gameRecords` taken the first time any saved record fails validation on load, so a rejected record is never destroyed by the next save |
 | `"syzygyCampaign"` | JSON object — active SYZYGY campaign state (mode, stage, chosen characters, results); absent when no campaign is in progress |
 
 ### Combo Key Format

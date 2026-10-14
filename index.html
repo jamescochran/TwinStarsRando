@@ -48,8 +48,11 @@
       --accent-yellow:#f0b429;
       --text-primary: #e8eaf6;
       --text-muted:   #7a88b0;
-      --text-dim:     #3e4f78;
+      --text-dim:     #7380ab;
       --loss-color:   #ff4455;
+      --on-orange:    #07091a;
+      --orange-hover: #ff855a;
+      --teal-hover:   #00edc0;
     }
 
     /* Light mode overrides — same space-computer feel, brighter environment */
@@ -59,12 +62,16 @@
       --bg-card:      #dce0f4;
       --border:       #b8c4e0;
       --border-glow:  #7890cc;
-      --accent-teal:   #008f74;
-      --accent-yellow: #b07d00;
+      --accent-orange: #b03a0a;
+      --accent-teal:   #006e5a;
+      --accent-yellow: #7d5a00;
       --text-primary: #0b0f28;
       --text-muted:   #2a3868;
-      --text-dim:     #7888b8;
+      --text-dim:     #4f5e8a;
       --loss-color:   #c8001e;
+      --on-orange:    #ffffff;
+      --orange-hover: #c4440f;
+      --teal-hover:   #007a64;
     }
     /* Hide the dark starfield background in light mode */
     [data-theme="light"] body::before { display: none; }
@@ -167,7 +174,7 @@
       min-height: 48px;
     }
     .tab-btn:not(:last-child) { border-right: 1px solid var(--border); }
-    .tab-btn.active { background: var(--accent-orange); color: #fff; }
+    .tab-btn.active { background: var(--accent-orange); color: var(--on-orange); }
     .tab-btn:not(.active):hover { color: var(--text-primary); background: rgba(255,107,53,0.1); }
 
     /* Panels */
@@ -209,12 +216,12 @@
     }
     .btn-primary {
       background: var(--accent-orange);
-      color: #fff;
+      color: var(--on-orange);
       width: 100%;
       font-size: 11px;
       padding: 15px;
     }
-    .btn-primary:hover  { background: #ff855a; }
+    .btn-primary:hover  { background: var(--orange-hover); }
     .btn-primary:active { opacity: 0.85; }
     .btn-secondary {
       background: transparent;
@@ -224,10 +231,10 @@
     .btn-secondary:hover { border-color: var(--accent-teal); color: var(--accent-teal); }
     .btn-danger {
       background: transparent;
-      border: 1px solid #3a1a1a;
-      color: #ff4455;
+      border: 1px solid rgba(255,68,85,0.35);
+      color: var(--loss-color);
     }
-    .btn-danger:hover { border-color: #ff4455; background: rgba(255,68,85,0.1); }
+    .btn-danger:hover { border-color: var(--loss-color); background: rgba(255,68,85,0.1); }
     .btn-load {
       background: var(--bg-card);
       border: 1px solid var(--border-glow);
@@ -244,7 +251,7 @@
       padding: 14px;
       font-weight: 700;
     }
-    .btn-save:hover  { background: #00edc0; }
+    .btn-save:hover  { background: var(--teal-hover); }
     .btn-save:active { opacity: 0.85; }
     .btn:disabled,
     .btn-pause:disabled { opacity: 0.4; pointer-events: none; }
@@ -320,7 +327,7 @@
     .char-role {
       display: block;
       font-family: 'Orbitron', sans-serif;
-      font-size: 7px;
+      font-size: 9px;
       font-weight: 700;
       letter-spacing: 2px;
       text-transform: uppercase;
@@ -379,7 +386,7 @@
       cursor: pointer;
       font-size: 12px;
       line-height: 1;
-      padding: 3px 5px;
+      padding: 7px 9px;
       transition: border-color 0.15s, background 0.15s, color 0.15s;
       -webkit-tap-highlight-color: transparent;
       flex-shrink: 0;
@@ -401,9 +408,12 @@
       vertical-align: middle;
       margin-left: 5px;
       flex-shrink: 0;
+      position: relative;
       transition: color 0.15s, border-color 0.15s;
       -webkit-tap-highlight-color: transparent;
     }
+    /* Visible circle stays 18px; the tappable area grows to 32px. */
+    .btn-faq-inline::after { content: ''; position: absolute; inset: -7px; }
     .btn-faq-inline:hover { color: var(--accent-teal); border-color: var(--accent-teal); }
 
     /* Timer */
@@ -445,7 +455,7 @@
       border-radius: 6px;
       cursor: pointer;
       transition: all 0.18s;
-      min-height: 36px;
+      min-height: 40px;
       -webkit-tap-highlight-color: transparent;
     }
     .btn-pause:hover  { border-color: var(--accent-teal); color: var(--accent-teal); }
@@ -479,7 +489,7 @@
       color: var(--text-dim);
       cursor: pointer;
       font-size: 14px;
-      padding: 4px 6px;
+      padding: 8px 9px;
       border-radius: 4px;
       line-height: 1;
       transition: color 0.15s;
@@ -492,7 +502,7 @@
       color: var(--text-dim);
       cursor: pointer;
       font-size: 14px;
-      padding: 4px 6px;
+      padding: 8px 9px;
       border-radius: 4px;
       line-height: 1;
       vertical-align: middle;
@@ -538,6 +548,46 @@
     .td-nowrap   { white-space: nowrap; }
     .td-scenario { color: var(--accent-teal); font-size: 12px; }
     .td-time     { color: var(--text-muted); font-size: 12px; white-space: nowrap; }
+
+    /* Phones: the 7-column Mission Log would be ~740px wide, hiding Result and the
+       edit/delete buttons off-screen. Below 560px each record becomes a stacked card.
+       (Table roles are restored from JS — see restoreTableRoles — because display
+       overrides remove native table semantics.) */
+    @media (max-width: 560px) {
+      #historyTableContainer table,
+      #historyTableContainer tbody { display: block; min-width: 0; }
+      #historyTableContainer thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+      #historyTableContainer tbody tr:not(.notes-row) {
+        display: grid;
+        grid-template-columns: auto auto 1fr auto;
+        grid-template-areas:
+          "date  date  date  act"
+          "chars chars chars chars"
+          "scen  scen  scen  scen"
+          "res   diff  time  time";
+        gap: 6px 8px;
+        align-items: center;
+        padding: 12px 2px;
+        border-top: 1px solid var(--border);
+      }
+      #historyTableContainer tbody tr:first-child { border-top: none; }
+      #historyTableContainer tbody tr:hover td { background: none; }
+      #historyTableContainer tbody td { display: block; padding: 0; border: 0; }
+      #historyTableContainer tbody tr:not(.notes-row) td:nth-child(1) { grid-area: date; }
+      #historyTableContainer tbody tr:not(.notes-row) td:nth-child(2) { grid-area: chars; font-weight: 600; }
+      #historyTableContainer tbody tr:not(.notes-row) td:nth-child(3) { grid-area: scen; }
+      #historyTableContainer tbody tr:not(.notes-row) td:nth-child(4) { grid-area: res; }
+      #historyTableContainer tbody tr:not(.notes-row) td:nth-child(5) { grid-area: diff; }
+      #historyTableContainer tbody tr:not(.notes-row) td:nth-child(6) { grid-area: time; justify-self: end; }
+      #historyTableContainer tbody tr:not(.notes-row) td:nth-child(7) { grid-area: act; justify-self: end; }
+      #historyTableContainer tbody tr.notes-row { display: block; padding: 0 2px 12px; margin-top: -6px; }
+      #historyTableContainer tbody tr.notes-row td { padding: 0; }
+      /* Per-combination history (5 columns) just needs to fit */
+      #comboHistory table { min-width: 0; }
+      #comboHistory td, #comboHistory th { padding-left: 4px; padding-right: 4px; }
+      #comboHistory .td-nowrap { white-space: normal; }
+      #comboHistory .result-pill, #comboHistory .diff-pill { padding: 3px 7px; letter-spacing: 0; }
+    }
 
     /* Section heading */
     .section-heading {
@@ -595,6 +645,9 @@
     }
     .history-select:focus { outline: 2px solid var(--accent-teal); outline-offset: 2px; }
     #historyFilterChar, #historyFilterScenario { max-width: none; }
+    @media (max-width: 480px) {
+      .history-select { letter-spacing: 0; padding: 8px 6px; text-overflow: ellipsis; }
+    }
     .import-label {
       display: inline-flex;
       align-items: center;
@@ -615,7 +668,9 @@
       -webkit-tap-highlight-color: transparent;
     }
     .import-label:hover { border-color: var(--accent-teal); color: var(--accent-teal); }
-    #importFile { display: none; }
+    /* Visually hidden (not display:none) so the file input stays keyboard-focusable */
+    #importFile { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; clip: rect(0,0,0,0); }
+    .import-label:focus-within { outline: 2px solid var(--accent-teal); outline-offset: 2px; }
 
     /* Footer links — hover handled in CSS, not inline JS */
     .footer-link {
@@ -731,9 +786,17 @@
       border-radius: 4px;
       color: var(--text-primary);
       font-size: 13px;
-      padding: 5px 8px;
+      padding: 8px 28px 8px 8px;
       cursor: pointer;
       min-width: 0;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237a88b0' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+    }
+    [data-theme="light"] .droid-select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%232a3868' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
     }
     .btn-droid-rand {
       background: transparent;
@@ -745,7 +808,7 @@
       font-weight: 700;
       letter-spacing: 1px;
       text-transform: uppercase;
-      padding: 5px 10px;
+      padding: 9px 12px;
       cursor: pointer;
       transition: all 0.15s;
       white-space: nowrap;
@@ -917,13 +980,13 @@
       text-overflow: ellipsis;
       letter-spacing: 0.3px;
     }
-    .die-adj-row { display: flex; width: 82px; justify-content: space-between; }
+    .die-adj-row { display: flex; width: 96px; justify-content: space-between; }
     .die-adj {
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: 50%;
-      width: 26px;
-      height: 26px;
+      width: 32px;
+      height: 32px;
       font-size: 16px;
       line-height: 1;
       cursor: pointer;
@@ -1099,17 +1162,17 @@
       border-radius: 6px;
       color: var(--text-muted);
       font-family: 'Orbitron', sans-serif;
-      font-size: 8px;
+      font-size: 10px;
       font-weight: 700;
       letter-spacing: 1px;
       text-transform: uppercase;
-      padding: 6px 10px;
+      padding: 9px 12px;
       cursor: pointer;
       transition: all 0.15s;
       -webkit-tap-highlight-color: transparent;
     }
     .rules-tab:hover { border-color: var(--accent-teal); color: var(--accent-teal); }
-    .rules-tab.active { background: var(--accent-orange); color: #fff; border-color: var(--accent-orange); }
+    .rules-tab.active { background: var(--accent-orange); color: var(--on-orange); border-color: var(--accent-orange); }
     .rules-img-wrap {
       overflow: auto;
       flex: 1;
@@ -1179,14 +1242,14 @@
     }
     .btn-settings {
       font-family: 'Orbitron', sans-serif;
-      font-size: 8px;
+      font-size: 10px;
       font-weight: 700;
       letter-spacing: 1px;
       text-transform: uppercase;
-      padding: 5px 8px;
+      padding: 8px 10px;
     }
     .btn-theme {
-      padding: 5px 7px;
+      padding: 8px 9px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -1197,7 +1260,7 @@
       border-radius: 6px;
       color: var(--text-dim);
       cursor: pointer;
-      padding: 5px 7px;
+      padding: 7px 9px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -1219,7 +1282,7 @@
       border-radius: 6px;
       color: var(--text-dim);
       cursor: pointer;
-      padding: 5px 7px;
+      padding: 7px 9px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -1241,7 +1304,7 @@
     .volume-popover.open { display: block; }
     .radio-status-label {
       font-family: 'Orbitron', sans-serif;
-      font-size: 7px;
+      font-size: 9px;
       font-weight: 700;
       letter-spacing: 2px;
       color: var(--accent-teal);
@@ -1298,11 +1361,11 @@
       margin-top: 12px;
       padding: 7px;
       background: var(--accent-teal);
-      color: #07091a;
+      color: var(--bg-deep);
       border: none;
       border-radius: 6px;
       font-family: 'Orbitron', sans-serif;
-      font-size: 8px;
+      font-size: 9px;
       font-weight: 700;
       letter-spacing: 1px;
       text-transform: uppercase;
@@ -1621,11 +1684,11 @@
     .syzygy-path-stage.win     { border-color: var(--accent-teal);   color: var(--accent-teal);   background: rgba(0,212,170,0.1); }
     .syzygy-path-stage.loss    { border-color: var(--loss-color);    color: var(--loss-color);    background: rgba(255,68,85,0.1); }
     .syzygy-path-label {
-      font-size: 8px;
+      font-size: 9px;
       color: var(--text-dim);
       letter-spacing: 0.5px;
       text-align: center;
-      max-width: 58px;
+      max-width: 62px;
       line-height: 1.3;
       word-break: break-word;
     }
@@ -1649,7 +1712,7 @@
     .syzygy-char-card.removed { opacity: 0.3; }
     .syzygy-char-name {
       font-family: 'Orbitron', sans-serif;
-      font-size: 8px;
+      font-size: 9px;
       font-weight: 700;
       letter-spacing: 1px;
       text-transform: uppercase;
@@ -1677,7 +1740,7 @@
     .syzygy-resource-label { font-size: 14px; }
     .syzygy-stepper { display: flex; align-items: center; gap: 4px; }
     .btn-sz-step {
-      width: 28px; height: 28px;
+      width: 32px; height: 32px;
       border-radius: 50%;
       border: 1px solid var(--border-glow);
       background: var(--bg-card);
@@ -1730,7 +1793,7 @@
     }
     .syzygy-stage-label {
       font-family: 'Orbitron', sans-serif;
-      font-size: 8px;
+      font-size: 9px;
       font-weight: 700;
       letter-spacing: 2px;
       text-transform: uppercase;
@@ -1798,11 +1861,11 @@
       transition: background 0.15s;
       -webkit-tap-highlight-color: transparent;
     }
-    .btn-sz-win:hover { background: #00edc0; }
+    .btn-sz-win:hover { background: var(--teal-hover); }
     .btn-sz-loss {
       background: transparent;
       color: var(--loss-color);
-      border: 1px solid #3a1a1a;
+      border: 1px solid rgba(255,68,85,0.35);
       border-radius: 6px;
       font-family: 'Orbitron', sans-serif;
       font-size: 10px;
@@ -1827,7 +1890,7 @@
     }
     .syzygy-rank-eyebrow {
       font-family: 'Orbitron', sans-serif;
-      font-size: 8px;
+      font-size: 9px;
       letter-spacing: 3px;
       color: var(--text-dim);
       text-transform: uppercase;
@@ -1907,6 +1970,17 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="szAbandonModal">
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="szAbandonModalTitle">
+    <h2 id="szAbandonModalTitle">Abandon Campaign</h2>
+    <p>Abandon this SYZYGY campaign? All progress will be lost.</p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="szAbandonCancel">Cancel</button>
+      <button class="btn btn-danger"    id="szAbandonConfirm">Abandon</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="deleteRecordModal">
   <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="deleteRecordModalTitle">
     <h2 id="deleteRecordModalTitle">Delete Record</h2>
@@ -1938,7 +2012,7 @@
     </div>
     <div class="form-row">
       <label for="editNotes">Notes <span style="font-weight:400;color:var(--text-muted)">(optional)</span></label>
-      <textarea id="editNotes" rows="3" style="width:100%;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);padding:8px 10px;font-size:13px;resize:vertical;font-family:inherit;" placeholder="e.g. Close game, used advanced variant…"></textarea>
+      <textarea id="editNotes" rows="3" maxlength="2000" style="width:100%;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);padding:8px 10px;font-size:13px;resize:vertical;font-family:inherit;" placeholder="e.g. Close game, used advanced variant…"></textarea>
     </div>
     <div class="modal-actions">
       <button class="btn btn-secondary" id="editRecordCancel">Cancel</button>
@@ -2342,7 +2416,7 @@
     <div class="dice-tray" id="diceTray">
       <div class="die-wrap" id="dieWrap0">
         <span class="die-char-label" id="dieLabel0"></span>
-        <div class="die" id="die0" data-val="1" aria-label="Die 1, value 1, unlocked">
+        <div class="die" id="die0" data-val="1" role="button" tabindex="0" aria-label="Die 1, value 1, unlocked">
           <span class="dot d1"></span><span class="dot d2"></span><span class="dot d3"></span>
           <span class="dot d4"></span><span class="dot d5"></span><span class="dot d6"></span>
           <span class="dot d7"></span><span class="dot d8"></span><span class="dot d9"></span>
@@ -2356,7 +2430,7 @@
       <button class="dice-swap-mid" id="diceSwapBtn" title="Swap dice">⇄</button>
       <div class="die-wrap" id="dieWrap1">
         <span class="die-char-label" id="dieLabel1"></span>
-        <div class="die" id="die1" data-val="1" aria-label="Die 2, value 1, unlocked">
+        <div class="die" id="die1" data-val="1" role="button" tabindex="0" aria-label="Die 2, value 1, unlocked">
           <span class="dot d1"></span><span class="dot d2"></span><span class="dot d3"></span>
           <span class="dot d4"></span><span class="dot d5"></span><span class="dot d6"></span>
           <span class="dot d7"></span><span class="dot d8"></span><span class="dot d9"></span>
@@ -2473,16 +2547,16 @@
       <div class="form-row-inline">
         <div class="form-row form-row-flush">
           <div class="form-row-label">Character 1 <button type="button" class="btn-lock" id="lockChar1" title="Lock" aria-label="Lock Character 1" aria-pressed="false"><svg aria-hidden="true" width="12" height="14" viewBox="0 0 12 14" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="6" width="10" height="8" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M3 6V4a3 3 0 0 1 6 0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button></div>
-          <select id="manualChar1"></select>
+          <select id="manualChar1" aria-label="Character 1 (Primary)"></select>
         </div>
         <div class="form-row form-row-flush">
           <div class="form-row-label">Character 2 <button type="button" class="btn-lock" id="lockChar2" title="Lock" aria-label="Lock Character 2" aria-pressed="false"><svg aria-hidden="true" width="12" height="14" viewBox="0 0 12 14" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="6" width="10" height="8" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M3 6V4a3 3 0 0 1 6 0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button></div>
-          <select id="manualChar2"></select>
+          <select id="manualChar2" aria-label="Character 2 (Secondary)"></select>
         </div>
       </div>
       <div class="form-row form-row-top">
         <div class="form-row-label">Scenario <button type="button" class="btn-lock" id="lockScenario" title="Lock" aria-label="Lock Scenario" aria-pressed="false"><svg aria-hidden="true" width="12" height="14" viewBox="0 0 12 14" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="6" width="10" height="8" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M3 6V4a3 3 0 0 1 6 0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button></div>
-        <select id="manualScenario"></select>
+        <select id="manualScenario" aria-label="Scenario"></select>
       </div>
       <button class="btn btn-load" id="loadManualCombo">Load Mission</button>
     </div>
@@ -2688,6 +2762,7 @@
 
   const ALL_CHARACTERS_SET = new Set(CONTENT_PACKS.flatMap(p => p.characters));
   const ALL_SCENARIOS_SET  = new Set(CONTENT_PACKS.flatMap(p => p.scenarios));
+  const ALL_DROIDS_SET     = new Set(CONTENT_PACKS.flatMap(p => p.droids || []));
 
   const SCENARIO_NUMBER = {
     "Escape The Brig!":      "01",
@@ -2733,8 +2808,9 @@
     "https://ice4.somafm.com/missioncontrol-128-mp3",
   ];
 
-  function faqHelpBtn(anchor) {
-    return `<button class="btn-faq-inline" data-faq-anchor="${esc(anchor)}" title="Rules FAQ" aria-label="Rules FAQ">?</button>`;
+  function faqHelpBtn(anchor, subject) {
+    const label = subject ? `Rules FAQ: ${subject}` : "Rules FAQ";
+    return `<button class="btn-faq-inline" data-faq-anchor="${esc(anchor)}" title="${esc(label)}" aria-label="${esc(label)}">?</button>`;
   }
 
   function scenarioHTML(name) {
@@ -2825,17 +2901,22 @@
       const dropped = parsed.length - records.length;
       if (dropped > 0) {
         console.warn(`Discarded ${dropped} invalid record(s) from localStorage.`);
-        setTimeout(() => toast(`${dropped} saved record(s) could not be loaded and were skipped.`, "error"), 300);
+        // saveRecords() will overwrite "gameRecords" without the rejected entries, so keep
+        // the untouched original (first occurrence only) where it can still be recovered.
+        try { if (!localStorage.getItem("gameRecordsBackup")) localStorage.setItem("gameRecordsBackup", raw); } catch(e) {}
+        setTimeout(() => toast(`${dropped} saved record(s) could not be loaded and were skipped. A backup copy was kept.`, "error"), 300);
       }
     }
   } catch (e) {
     console.warn("Could not load saved records:", e);
   }
 
-  if (records.length > 0 && !localStorage.getItem("seenPrimarySecondaryNotice")) {
-    try { localStorage.setItem("seenPrimarySecondaryNotice", "1"); } catch(e) {}
-    setTimeout(() => toast("Roles added: Character 1 = Primary, Character 2 = Secondary. Older records show characters in their saved order.", "info"), 800);
-  }
+  try {
+    if (records.length > 0 && !localStorage.getItem("seenPrimarySecondaryNotice")) {
+      localStorage.setItem("seenPrimarySecondaryNotice", "1");
+      setTimeout(() => toast("Roles added: Character 1 = Primary, Character 2 = Secondary. Older records show characters in their saved order.", "info"), 800);
+    }
+  } catch(e) {}
 
   function syncExportBtn() {
     const empty = !records.length;
@@ -2889,11 +2970,13 @@
   function toast(msg, type) {
     const live = document.getElementById("ariaLive");
     if (live) live.textContent = msg;
+    // One toast at a time (they share a position), shown long enough to read.
+    document.querySelectorAll(".toast").forEach(el => el.remove());
     const t = document.createElement("div");
     t.className = "toast " + (type || "info");
     t.textContent = msg;
     document.body.appendChild(t);
-    setTimeout(() => t.remove(), 2600);
+    setTimeout(() => t.remove(), Math.max(2600, 1500 + msg.length * 45));
   }
 
   // Guards against corrupted or externally-imported records making it into the array.
@@ -2910,7 +2993,8 @@
       VALID_DIFFICULTIES.has(r.difficulty) &&
       typeof r.timestamp === "string" &&
       (r.playtime == null || (Number.isInteger(r.playtime) && r.playtime >= 0)) &&
-      (r.notes   == null || (typeof r.notes === "string"  && r.notes.length <= 2000))
+      (r.notes   == null || (typeof r.notes === "string"  && r.notes.length <= 2000)) &&
+      (r.droid   == null || ALL_DROIDS_SET.has(r.droid))
     );
   }
 
@@ -3007,7 +3091,11 @@ function getCurrentElapsed() {
 
   function populateSelectors() {
     const c1 = document.getElementById("manualChar1");
+    const c2 = document.getElementById("manualChar2");
     const sc = document.getElementById("manualScenario");
+    // Remember what the user had picked so rebuilding the lists (e.g. after closing
+    // My Collection) doesn't silently change a locked character or scenario.
+    const prev1 = c1.value, prev2 = c2.value, prevSc = sc.value;
     c1.innerHTML = "";
     sc.innerHTML = "";
     characters.forEach(char => {
@@ -3021,7 +3109,16 @@ function getCurrentElapsed() {
       opt.textContent = scenarioText(s);
       sc.appendChild(opt);
     });
+    if (prev1  && characters.includes(prev1))  c1.value = prev1;
+    if (prevSc && scenarios.includes(prevSc))  sc.value = prevSc;
     syncDropdown("manualChar1", "manualChar2");
+    // A lock on something that is no longer available (pack disabled) is released.
+    const released = (locks.char1 && c1.value !== prev1) || (locks.char2 && c2.value !== prev2) || (locks.scenario && sc.value !== prevSc);
+    if (locks.char1    && c1.value !== prev1)  locks.char1    = false;
+    if (locks.char2    && c2.value !== prev2)  locks.char2    = false;
+    if (locks.scenario && sc.value !== prevSc) locks.scenario = false;
+    updateLockButtons();
+    if (released) toast("A locked item is no longer in your collection — lock released.", "error");
   }
 
   // ─── Difficulty status ──────────────────────────────────────────────────────
@@ -3082,14 +3179,14 @@ function getCurrentElapsed() {
     document.getElementById("combinationDisplay").innerHTML = `
       <div class="combo-display">
         <div class="combo-characters">
-          <span class="combo-char-wrap"><span class="char-role primary-role">Primary</span>${esc(comb.characters[0])}${CHAR_FAQ_ANCHOR[comb.characters[0]] ? faqHelpBtn(CHAR_FAQ_ANCHOR[comb.characters[0]]) : ""}</span><span class="combo-vs">&amp;</span><span class="combo-char-wrap"><span class="char-role secondary-role">Secondary</span>${esc(comb.characters[1])}${CHAR_FAQ_ANCHOR[comb.characters[1]] ? faqHelpBtn(CHAR_FAQ_ANCHOR[comb.characters[1]]) : ""}</span>
+          <span class="combo-char-wrap"><span class="char-role primary-role">Primary</span>${esc(comb.characters[0])}${CHAR_FAQ_ANCHOR[comb.characters[0]] ? faqHelpBtn(CHAR_FAQ_ANCHOR[comb.characters[0]], comb.characters[0]) : ""}</span><span class="combo-vs">&amp;</span><span class="combo-char-wrap"><span class="char-role secondary-role">Secondary</span>${esc(comb.characters[1])}${CHAR_FAQ_ANCHOR[comb.characters[1]] ? faqHelpBtn(CHAR_FAQ_ANCHOR[comb.characters[1]], comb.characters[1]) : ""}</span>
         </div>
-        <div class="combo-scenario">${scenarioHTML(comb.scenario)}${SCENARIO_NUMBER[comb.scenario] && parseInt(SCENARIO_NUMBER[comb.scenario]) <= 12 ? faqHelpBtn("faq-sc-" + SCENARIO_NUMBER[comb.scenario]) : ""}</div>
+        <div class="combo-scenario">${scenarioHTML(comb.scenario)}${SCENARIO_NUMBER[comb.scenario] && parseInt(SCENARIO_NUMBER[comb.scenario]) <= 12 ? faqHelpBtn("faq-sc-" + SCENARIO_NUMBER[comb.scenario], scenarioText(comb.scenario)) : ""}</div>
         <div class="combo-play-count"><span>${esc(countText)}</span></div>
         ${droids.length ? `
         <div class="droid-row">
           <span class="droid-row-label">Droid</span>
-          <select class="droid-select" id="droidSelect">${droidOptions}</select>
+          <select class="droid-select" id="droidSelect" aria-label="Droid assistant">${droidOptions}</select>
           <button class="btn-droid-rand" id="droidRandBtn">Random</button>
         </div>` : ""}
         <div class="difficulty-row">${renderDiffBadges(comb)}</div>
@@ -3123,16 +3220,23 @@ function getCurrentElapsed() {
     document.getElementById("restartBtn").addEventListener("click", () => openModal("restartModal", "restartCancel"));
     document.getElementById("diceRollerBtn").addEventListener("click", openDiceModal);
 
-    const timerEl = document.getElementById("timerDisplay");
-    const pauseB  = document.getElementById("pauseBtn");
+    const timerEl  = document.getElementById("timerDisplay");
+    const pauseB   = document.getElementById("pauseBtn");
+    const restartB = document.getElementById("restartBtn");
     timerEl.textContent = formatTime(getCurrentElapsed());
     if (timerPaused) {
       pauseB.textContent = "Resume";
+      pauseB.setAttribute("aria-label", "Resume timer");
       pauseB.classList.add("paused");
       timerEl.classList.add("paused");
+      timerEl.setAttribute("aria-label", "Timer paused");
     } else if (!timerInterval) {
-      pauseB.disabled = true;
+      // Stopped (record already saved): nothing to pause or restart.
+      pauseB.disabled   = true;
+      restartB.disabled = true;
       timerEl.classList.add("stopped");
+    } else {
+      timerEl.setAttribute("aria-label", "Timer running");
     }
   }
 
@@ -3182,14 +3286,15 @@ function getCurrentElapsed() {
         </div>
       </div>`;
 
-    div.addEventListener("click", e => {
+    // Property assignment (not addEventListener): this runs on every render.
+    div.onclick = e => {
       const deleteBtn = e.target.closest(".btn-delete-record");
       if (!deleteBtn) return;
       _deleteTrigger    = deleteBtn;
       _pendingDeleteIdx = parseInt(deleteBtn.dataset.idx, 10);
       _deleteCallback   = () => { displayCombination(currentCombination); displayComboHistory(currentCombination); };
       openModal("deleteRecordModal", "deleteRecordCancel");
-    });
+    };
   }
 
   // Renders combinations that have never appeared in records[].
@@ -3343,7 +3448,7 @@ function getCurrentElapsed() {
       return `
         <tr>
           <td class="td-time">${esc(rec.timestamp)}</td>
-          <td class="td-nowrap">${esc(rec.characters.join(" & "))}${rec.droid ? `<span class="droid-tag">${esc(rec.droid)}</span>` : ""}</td>
+          <td>${esc(rec.characters.join(" & "))}${rec.droid ? `<span class="droid-tag">${esc(rec.droid)}</span>` : ""}</td>
           <td class="td-scenario">${scenarioHTML(rec.scenario)}</td>
           <td><span class="result-pill ${rec.result === "Win" ? "win" : "loss"}">${esc(rec.result)}</span></td>
           <td><span class="diff-pill">${esc(rec.difficulty)}</span></td>
@@ -3363,8 +3468,11 @@ function getCurrentElapsed() {
         </table>
       </div>`;
 
-    // One delegated listener handles all edit/delete clicks in the table.
-    container.addEventListener("click", e => {
+    restoreTableRoles(container);
+
+    // One delegated listener handles all edit/delete clicks in the table
+    // (assigned, not added, because this function runs on every re-render).
+    container.onclick = e => {
       const editBtn = e.target.closest(".btn-edit-record");
       if (editBtn) { openEditModal(parseInt(editBtn.dataset.idx, 10)); return; }
 
@@ -3375,7 +3483,14 @@ function getCurrentElapsed() {
         _deleteCallback   = () => { displayHistory(); displayUnplayed(); if (currentCombination) { displayCombination(currentCombination); displayComboHistory(currentCombination); } };
         openModal("deleteRecordModal", "deleteRecordCancel");
       }
-    });
+    };
+  }
+
+  // The phone layout turns table cells into blocks, which drops their native table
+  // semantics; restate them so screen readers still announce rows and columns.
+  function restoreTableRoles(root) {
+    const roles = { TABLE: "table", THEAD: "rowgroup", TBODY: "rowgroup", TR: "row", TH: "columnheader", TD: "cell" };
+    root.querySelectorAll("table, thead, tbody, tr, th, td").forEach(el => el.setAttribute("role", roles[el.tagName]));
   }
 
   function displayStats() {
@@ -3393,7 +3508,12 @@ function getCurrentElapsed() {
     const winPct = Math.round(wins / total * 100);
 
     const totalPossible = characters.length * (characters.length - 1) * scenarios.length;
-    const playedKeys    = new Set(records.map(r => comboKey(r)));
+    // Only combos reachable with the currently enabled packs count towards completion,
+    // matching the "N of M combinations played" line in Unplayed Combinations.
+    const activeChars = new Set(characters), activeScenes = new Set(scenarios);
+    const playedKeys  = new Set(records
+      .filter(r => r.characters.every(c => activeChars.has(c)) && activeScenes.has(r.scenario))
+      .map(r => comboKey(r)));
     const completedPct  = totalPossible > 0 ? Math.round(playedKeys.size / totalPossible * 100) : 0;
 
     // ── Summary row ──
@@ -3438,7 +3558,7 @@ function getCurrentElapsed() {
 
     // ── Droid coverage ──
     if (droids.length) {
-      const droidRecs = records.filter(r => r.droid);
+      const droidRecs = records.filter(r => r.droid && playedKeys.has(comboKey(r)));
       const combosWithDroid = new Set(droidRecs.map(r => comboKey(r)));
       const totalPlayed = playedKeys.size;
       const coveragePct = totalPlayed > 0 ? Math.round(combosWithDroid.size / totalPlayed * 100) : 0;
@@ -3557,6 +3677,7 @@ function getCurrentElapsed() {
     }
     displayHistory();
     displayUnplayed();
+    displayStats();
     closeModal("settingsModal");
   }
 
@@ -3792,7 +3913,8 @@ function getCurrentElapsed() {
 
   function handleExport() {
     if (!records.length) { toast("No records to export.", "error"); return; }
-    const date     = new Date().toISOString().slice(0, 10);
+    const now      = new Date();
+    const date     = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
     const blob     = new Blob([JSON.stringify(records, null, 2)], { type: "application/json" });
     const url      = URL.createObjectURL(blob);
     const a        = document.createElement("a");
@@ -3888,6 +4010,10 @@ function getCurrentElapsed() {
     toast("All records cleared.");
   });
 
+  document.getElementById("szAbandonCancel").addEventListener("click", () => closeModal("szAbandonModal"));
+  document.getElementById("szAbandonConfirm").addEventListener("click", () => { closeModal("szAbandonModal"); szAbandon(); });
+  document.getElementById("szAbandonModal").addEventListener("click", e => { if (e.target === e.currentTarget) closeModal("szAbandonModal"); });
+
   document.getElementById("deleteRecordCancel").addEventListener("click", closeDeleteModal);
   document.getElementById("deleteRecordConfirm").addEventListener("click", () => {
     const idx = _pendingDeleteIdx;
@@ -3905,7 +4031,7 @@ function getCurrentElapsed() {
     const rec = records[_editIdx];
     rec.result     = document.getElementById("editResult").value;
     rec.difficulty = document.getElementById("editDifficulty").value;
-    const notes    = document.getElementById("editNotes").value.trim();
+    const notes    = document.getElementById("editNotes").value.trim().slice(0, 2000); // matches isValidRecord
     if (notes) rec.notes = notes; else delete rec.notes;
     saveRecords();
     statsDirty = true;
@@ -4106,7 +4232,7 @@ function getCurrentElapsed() {
       const box = overlay.querySelector(".modal-box, .settings-box, .faq-box, .rules-box, .dice-box");
       if (!box) return;
       const focusable = [...box.querySelectorAll(
-        'button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, a[href], [tabindex]:not([tabindex="-1"])'
       )];
       if (!focusable.length) return;
       const first = focusable[0];
@@ -4153,12 +4279,21 @@ function getCurrentElapsed() {
     if (state === "error") _errorTimeout = setTimeout(() => setRadioState("stopped"), 3000);
   }
 
+  // Saved volume, tolerant of blocked storage and corrupted values.
+  function getRadioVolume() {
+    try {
+      const v = parseFloat(localStorage.getItem("radioVolume"));
+      if (v >= 0 && v <= 1) return v;
+    } catch(e) {}
+    return 0.3;
+  }
+
   function startRadio() {
     if (!navigator.onLine) { toast("Ambient radio requires an internet connection."); return; }
     _radioIndex = 0;
     setRadioState("loading");
     const audio = document.getElementById("radioAudio");
-    audio.volume = parseFloat(localStorage.getItem("radioVolume") || "0.3");
+    audio.volume = getRadioVolume();
     audio.src = RADIO_STREAMS[0];
     audio.play().catch(() => {});
   }
@@ -4202,10 +4337,27 @@ function getCurrentElapsed() {
   let _szMode   = null;     // setup: "syzygy1" | "syzygy2"
   let _szChars  = [];       // setup: selected character names
 
+  // Guards against an old or hand-edited saved campaign crashing the SYZYGY tab on every visit.
+  function isValidSz(c) {
+    const isCounts = a => Array.isArray(a) && a.length === 3 && a.every(x => x && Number.isFinite(x.energy) && Number.isFinite(x.health));
+    return !!c && typeof c === "object" &&
+      (c.mode === "syzygy1" || c.mode === "syzygy2") &&
+      Array.isArray(c.characters) && c.characters.length === 3 &&
+      Array.isArray(c.removed) && c.removed.length === 3 &&
+      isCounts(c.carryover) &&
+      Array.isArray(c.scenarios) && c.scenarios.length >= 3 &&
+      Array.isArray(c.stageResults) &&
+      Number.isInteger(c.stage) && Number.isInteger(c.losses);
+  }
+
   (function loadSzCampaign() {
     try {
       const raw = localStorage.getItem("syzygyCampaign");
       _sz = raw ? JSON.parse(raw) : null;
+      if (_sz && !isValidSz(_sz)) {
+        _sz = null;
+        setTimeout(() => toast("A saved SYZYGY campaign could not be read and was reset.", "error"), 500);
+      }
     } catch(e) { _sz = null; }
   })();
 
@@ -4336,11 +4488,11 @@ function getCurrentElapsed() {
 
     const modeHTML = `
       <div class="syzygy-mode-cards">
-        <div class="syzygy-mode-card${!hasSeries1 ? " disabled" : ""}${_szMode === "syzygy1" ? " selected" : ""}" id="szSel1" role="button" tabindex="${hasSeries1 ? "0" : "-1"}">
+        <div class="syzygy-mode-card${!hasSeries1 ? " disabled" : ""}${_szMode === "syzygy1" ? " selected" : ""}" id="szSel1" role="button" aria-pressed="${_szMode === "syzygy1"}" aria-disabled="${!hasSeries1}" tabindex="${hasSeries1 ? "0" : "-1"}">
           <div class="syzygy-mode-card-title">SYZYGY I</div>
           <div class="syzygy-mode-card-desc">4-scenario campaign. Pay off your debt to the Grosksh.${!hasSeries1 ? "<br><em>Requires Series 1</em>" : ""}</div>
         </div>
-        <div class="syzygy-mode-card${!hasSeries2 ? " disabled" : ""}${_szMode === "syzygy2" ? " selected" : ""}" id="szSel2" role="button" tabindex="${hasSeries2 ? "0" : "-1"}">
+        <div class="syzygy-mode-card${!hasSeries2 ? " disabled" : ""}${_szMode === "syzygy2" ? " selected" : ""}" id="szSel2" role="button" aria-pressed="${_szMode === "syzygy2"}" aria-disabled="${!hasSeries2}" tabindex="${hasSeries2 ? "0" : "-1"}">
           <div class="syzygy-mode-card-title">SYZYGY II</div>
           <div class="syzygy-mode-card-desc">3-scenario campaign. Stranded across the universe — find your way home.</div>
         </div>
@@ -4356,7 +4508,7 @@ function getCurrentElapsed() {
             const si = _szChars.indexOf(c);
             const cls = si >= 0 ? " " + selClasses[si + 1] : "";
             const num = si >= 0 ? `<span style="display:block;font-size:9px;color:var(--accent-orange);margin-top:2px;">${si + 1}</span>` : "";
-            return `<button class="syzygy-char-btn${cls}" data-char="${esc(c)}">${esc(c)}${num}</button>`;
+            return `<button class="syzygy-char-btn${cls}" data-char="${esc(c)}" aria-pressed="${si >= 0}">${esc(c)}${num}</button>`;
           }).join("")}
         </div>
         <p style="font-size:12px;color:var(--text-muted);text-align:center;margin-bottom:16px;">${_szChars.length}/3 selected</p>`;
@@ -4563,7 +4715,7 @@ function getCurrentElapsed() {
 
     // Events
     document.getElementById("szAbandonBtn").addEventListener("click", () => {
-      if (confirm("Abandon this campaign? All progress will be lost.")) szAbandon();
+      openModal("szAbandonModal", "szAbandonCancel");
     });
 
     const branchL = document.getElementById("szBranchL");
@@ -4735,9 +4887,14 @@ function getCurrentElapsed() {
     setTimeout(() => document.getElementById("rollBtn").focus(), 50);
   });
   [0, 1].forEach(i => {
-    document.getElementById(`die${i}`).addEventListener("click", () => {
+    const dieEl = document.getElementById(`die${i}`);
+    const toggleDieLock = () => {
       if (_diceRolling || _diceMode === "skill") return;
       _diceSetLock(i, !_diceLocked[i]);
+    };
+    dieEl.addEventListener("click", toggleDieLock);
+    dieEl.addEventListener("keydown", e => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleDieLock(); }
     });
     document.getElementById(`dieMinus${i}`).addEventListener("click", () => _diceAdjust(i, -1));
     document.getElementById(`diePlus${i}`) .addEventListener("click", () => _diceAdjust(i, +1));
@@ -4813,7 +4970,7 @@ function getCurrentElapsed() {
     if (lastDifficulty) document.getElementById("difficulty").value = lastDifficulty;
   } catch(e) {}
 
-  document.getElementById("radioVolume").value = parseFloat(localStorage.getItem("radioVolume") || "0.3");
+  document.getElementById("radioVolume").value = getRadioVolume();
   if (!navigator.onLine) document.getElementById("radioBtn").disabled = true;
 
   buildActiveContent();
@@ -4823,10 +4980,16 @@ function getCurrentElapsed() {
   syncExportBtn();
 
   if ("serviceWorker" in navigator) {
+    // controllerchange also fires on the very first install (the worker claims the page),
+    // which used to reload brand-new visitors a moment after load. Only treat it as an
+    // update when the page was already controlled by an earlier worker.
+    const hadController = !!navigator.serviceWorker.controller;
     window.addEventListener("load", () => {
       navigator.serviceWorker.register("service-worker.js").catch(() => {});
       navigator.serviceWorker.addEventListener("controllerchange", () => {
-        if (!currentCombination && !timerInterval) {
+        if (!hadController) return;
+        const busy = currentCombination || timerInterval || document.querySelector(".modal-overlay.open") || _szMode;
+        if (!busy) {
           window.location.reload();
         } else {
           toast("App updated — reload for the latest version.");
