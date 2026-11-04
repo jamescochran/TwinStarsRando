@@ -7,7 +7,8 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   workers: 2,
   timeout: 30000,
-  reporter: "html",
+  // On CI also emit GitHub annotations so failures are readable without downloading the report.
+  reporter: process.env.CI ? [["github"], ["html"]] : "html",
 
   use: {
     baseURL: "http://localhost:7919",
