@@ -55,7 +55,7 @@ Graphics added earlier tonight, before rule 3, are on `main` and awaiting the ow
 
 ## Owner actions
 
-1. **GitHub Pages source:** Settings → Pages → Build and deployment → Source: **GitHub Actions**. Until this changes, Pages deploys straight from the branch, skipping the tests and the version stamp. The service-worker cache name also stays `twin-stars-dev`, so installed apps may not pick up future updates.
+1. ~~**GitHub Pages source:**~~ Done (2026-11-05): Source is set to **GitHub Actions**, so deploys now run the tests and the version stamp.
 2. **Captain Crag rulebook:** the image in `rules/` is truncated. Download the official file from BoardGameGeek file page 217405 while logged in, then follow `rules/README.md`.
 3. **Unverified names:** check "Striker" vs "Ztriker" (Scenario 14) and "Feth Doriet" / "Pummtoggs" (Scenario 13) against the physical cards.
 4. **Permission:** ask Button Shy about storing per-card data, if that is ever wanted. Today the Mission Board uses values the user enters.
