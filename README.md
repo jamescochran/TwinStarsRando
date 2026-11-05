@@ -201,6 +201,10 @@ All user-visible data passes through `esc()` before insertion via `innerHTML`. T
 
 The cache name in `service-worker.js` must change on every deployment or installed PWA users will receive stale content indefinitely. The deploy workflow does this automatically (`twin-stars-<shortsha>-<run>`, see Release / deploy); don't hand-edit the `const CACHE = "...";` line's format, because the build's `sed` relies on it. The fonts live in a separate persistent `FONTS_CACHE` that survives app cache rotations.
 
+### Analytics and privacy
+
+Anonymous usage counts go to a self-hosted [Umami](https://umami.is/) instance via the tag in `index.html`, restricted to `jamescochran.github.io` (`data-domains`, so local and CI runs aren't counted), with query strings and hashes stripped and Do Not Track respected. Custom events go through `track(name, data)` in `app.js`, which no-ops when Umami isn't loaded and only passes numbers, booleans and short strings: send fixed labels and counts, never notes, names or other record contents. Uncaught errors are reported as `js_error` (message truncated to 120 characters, file basename, line; at most 3 per page load). The footer's Privacy link explains this to users; keep it accurate when adding events or third parties.
+
 ---
 
 ## Color Palette
