@@ -2445,9 +2445,9 @@
     <h2 id="importConfirmModalTitle">Import Records</h2>
     <p id="importConfirmMsg"></p>
     <div class="modal-actions" style="flex-wrap:wrap;">
-      <button class="btn btn-secondary" id="importCancel"  style="flex-basis:100%;">Cancel</button>
-      <button class="btn btn-primary" id="importMerge">Merge</button>
+      <button class="btn btn-secondary" id="importCancel">Cancel</button>
       <button class="btn btn-danger"    id="importReplace">Replace All</button>
+      <button class="btn btn-primary"   id="importMerge">Merge</button>
     </div>
   </div>
 </div>
@@ -2520,10 +2520,10 @@
   <div class="rules-box" role="dialog" aria-modal="true" aria-labelledby="rulesModalTitle">
     <div class="rules-header dialog-header">
       <h2 id="rulesModalTitle">Rulebooks</h2>
-      <button type="button" class="dialog-close" id="rulesClose" aria-label="Close">✕</button>
+      <button type="button" class="dialog-close" id="rulesClose" aria-label="Close Rulebooks">✕</button>
     </div>
     <div class="rules-tabs" id="rulesTabs"></div>
-    <div class="rules-img-wrap">
+    <div class="rules-img-wrap" tabindex="0" role="region" aria-label="Rulebook page (scroll with the arrow keys)">
       <p class="rules-status" id="rulesStatus" role="status"></p>
       <img id="rulesImage" alt="Rulebook" src="">
     </div>
@@ -2535,7 +2535,7 @@
   <div class="settings-box" role="dialog" aria-modal="true" aria-labelledby="settingsModalTitle" aria-describedby="settingsModalDesc">
     <div class="dialog-header">
       <h2 id="settingsModalTitle">My Collection</h2>
-      <button type="button" class="dialog-close" id="settingsDismiss" aria-label="Close">✕</button>
+      <button type="button" class="dialog-close" id="settingsDismiss" aria-label="Close My Collection">✕</button>
     </div>
     <p id="settingsModalDesc">Tick the Twin Stars products you own. Only their characters, scenarios and droids are used.</p>
     <div id="packList"></div>
@@ -2551,7 +2551,7 @@
   <div class="faq-box" role="dialog" aria-modal="true" aria-labelledby="faqModalTitle">
     <div class="dialog-header">
       <h2 id="faqModalTitle">Rules FAQ</h2>
-      <button type="button" class="dialog-close" id="faqClose" aria-label="Close">✕</button>
+      <button type="button" class="dialog-close" id="faqClose" aria-label="Close Rules FAQ">✕</button>
     </div>
     <div class="faq-content" tabindex="-1">
 
@@ -2909,7 +2909,7 @@
   <div class="modal-box dice-box" role="dialog" aria-modal="true" aria-labelledby="diceModalTitle">
     <div class="dice-header dialog-header">
       <h2 class="dice-modal-title" id="diceModalTitle">Dice Roller</h2>
-      <button type="button" class="dice-close dialog-close" id="diceModalClose" aria-label="Close">✕</button>
+      <button type="button" class="dice-close dialog-close" id="diceModalClose" aria-label="Close Dice Roller">✕</button>
     </div>
     <div class="dice-tray" id="diceTray">
       <div class="die-wrap" id="dieWrap0">
@@ -2956,7 +2956,7 @@
   <div class="modal-box tips-box" role="dialog" aria-modal="true" aria-labelledby="tipsModalTitle">
     <div class="tips-modal-header dialog-header">
       <h2 id="tipsModalTitle">Tips &amp; Features</h2>
-      <button type="button" class="tips-modal-close dialog-close" id="tipsModalClose" aria-label="Close">✕</button>
+      <button type="button" class="tips-modal-close dialog-close" id="tipsModalClose" aria-label="Close Tips">✕</button>
     </div>
     <div class="tips-content" tabindex="0" role="region" aria-labelledby="tipsModalTitle">
       <h3 class="tips-section-heading">Randomizing</h3>
@@ -3123,8 +3123,8 @@
       <div class="history-toolbar">
         <div class="history-actions">
           <button class="btn btn-secondary" id="exportBtn" disabled>Export</button>
-          <label class="import-label" for="importFile">Import</label>
-          <input type="file" id="importFile" accept=".json">
+          <button type="button" class="btn btn-secondary" id="importBtn">Import</button>
+          <input type="file" id="importFile" accept=".json,application/json" tabindex="-1" aria-hidden="true">
           <button class="btn btn-danger" id="clearDataBtn">Clear All</button>
         </div>
         <div class="history-filters">
@@ -3198,6 +3198,8 @@
   </footer>
 
 </div>
+
+<section id="toastRegion" class="toast-region" aria-label="Notifications"></section>
 
 <audio id="radioAudio" preload="none"></audio>
 <script src="app.js"></script>

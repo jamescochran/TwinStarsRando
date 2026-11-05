@@ -300,6 +300,7 @@
     setTimeout(() => { live.textContent = msg; }, 30);
   }
 
+  const UNDO_KEY = /Mac|iPhone|iPad/.test(navigator.platform || "") ? "Command+Z" : "Control+Z";
   // The undo callback of the most recent undoable action (cleared when its toast goes).
   let _undoAction = null;
 
@@ -316,8 +317,14 @@
     let timer;
     const remove = () => { clearTimeout(timer); t.remove(); if (_undoAction === run) _undoAction = null; };
     let run = null;
+    _toastOffered = false;
     if (action) {
-      run = () => { remove(); action.onClick(); };
+      run = () => {
+        const fromToast = t.contains(document.activeElement);
+        remove(); action.onClick();
+        // Focus was on the Undo button, which is gone now: go back to where the user was.
+        if (fromToast || document.activeElement === document.body) restoreToastFocus();
+      };
       _undoAction = run;
       t.classList.add("has-action");
       const b = document.createElement("button");
@@ -330,16 +337,40 @@
       t.addEventListener("mouseenter", () => clearTimeout(timer));
       t.addEventListener("focusin",    () => clearTimeout(timer));
       t.addEventListener("mouseleave", () => { timer = setTimeout(remove, 4000); });
-      announce(`${msg} Press Control+Z or the ${action.label} button to reverse.`);
+      announce(`${msg} Press Tab to reach ${action.label}, or ${UNDO_KEY}.`);
     } else {
       // The live region already announces it; hide the visual copy from the a11y tree.
       t.setAttribute("aria-hidden", "true");
       announce(msg);
     }
-    document.body.appendChild(t);
+    (document.getElementById("toastRegion") || document.body).appendChild(t);
     timer = setTimeout(remove, action ? 10000 : Math.max(2600, 1500 + msg.length * 45));
   }
 
+  // Keyboard path to a toast's Undo: while it is showing, the next Tab (from anywhere
+  // outside a dialog) jumps to it once; Tab/Shift+Tab/Escape on it go back to where
+  // the user was. Focus is never moved without a key press.
+  let _toastReturn = null, _toastOffered = false;
+  function restoreToastFocus() {
+    const el = _toastReturn; _toastReturn = null;
+    if (el && el.isConnected && !el.disabled && el.offsetParent !== null) { el.focus(); return; }
+    const panel = document.querySelector("[role='tabpanel']:not(.hidden)");
+    if (panel) panel.focus();
+  }
+  document.addEventListener("keydown", e => {
+    const btn = document.querySelector("#toastRegion .toast-action");
+    if (!btn) { _toastOffered = false; return; }
+    const inToast = btn === document.activeElement;
+    if (inToast && (e.key === "Escape" || (e.key === "Tab" && e.shiftKey))) {
+      e.preventDefault(); restoreToastFocus(); return;
+    }
+    if (inToast && e.key === "Tab") { const r = _toastReturn; _toastReturn = null; if (r && r.isConnected) r.focus(); return; }
+    if (e.key !== "Tab" || e.shiftKey || _toastOffered || document.querySelector(".modal-overlay.open")) return;
+    _toastOffered = true;
+    e.preventDefault();
+    _toastReturn = document.activeElement !== document.body ? document.activeElement : null;
+    btn.focus();
+  });
   function undoToast(msg, onUndo) { toast(msg, "info", { label: "Undo", onClick: onUndo }); }
 
   // Ctrl/Cmd+Z reverses the last undoable action while its message is showing
@@ -388,7 +419,10 @@ function startTimer() {
   timerPaused     = false;
   accumulatedTime = 0;
   startTime       = Date.now();
-  timerInterval   = setInterval(updateDisplay, 1000);
+  // Tick several times a second: the shown time follows the real elapsed time even after
+  // a pause/resume (a 1 s tick phase-locked to the start left the display frozen for up
+  // to ~2 s after Resume).
+  timerInterval   = setInterval(updateDisplay, 250);
   const el = document.getElementById("timerDisplay");
   if (el) { el.textContent = "00:00"; el.classList.remove("stopped"); el.setAttribute("aria-label", "Timer running: 0 minutes 0 seconds"); }
 }
@@ -430,6 +464,7 @@ function togglePause() {
   }
 
   if (display) {
+    display.textContent = formatTime(getCurrentElapsed());
     display.classList.toggle("paused", timerPaused);
     display.setAttribute("aria-label", timerPaused ? "Timer paused" : "Timer running");
   }
@@ -441,9 +476,8 @@ function updateDisplay() {
   if (timerPaused) return;
   const elapsedMs = accumulatedTime + (Date.now() - startTime);
   const el = document.getElementById("timerDisplay");
-  if (el) {
-    el.textContent = formatTime(Math.floor(elapsedMs / 1000));
-  }
+  const text = formatTime(Math.floor(elapsedMs / 1000));
+  if (el && el.textContent !== text) el.textContent = text;
 }
 
 function getCurrentElapsed() {
@@ -521,8 +555,10 @@ function getCurrentElapsed() {
   }
 
   // Short human description of a record, used to give each row's buttons a unique name.
+  // Concise: characters plus the date and time to the minute (seconds dropped).
+  function shortStamp(ts) { return String(ts).replace(/(\d{1,2}:\d{2}):\d{2}/, "$1"); }
   function recordLabel(rec) {
-    return `${rec.characters.join(" & ")}, ${scenarioText(rec.scenario)}, ${rec.result}, ${rec.timestamp}`;
+    return `${rec.characters.join(" & ")}, ${shortStamp(rec.timestamp)}`;
   }
 
   // ─── Render ─────────────────────────────────────────────────────────────────
@@ -654,7 +690,7 @@ function getCurrentElapsed() {
         <td><span class="result-pill ${rec.result === "Win" ? "win" : "loss"}">${esc(rec.result)}</span></td>
         <td><span class="diff-pill">${esc(rec.difficulty)}</span></td>
         <td class="td-time">${rec.playtime != null ? formatTime(rec.playtime) : "—"}</td>
-        <td><button class="btn-delete-record" data-idx="${globalIdx}" title="Delete" aria-label="Delete record: ${esc(recordLabel(rec))}">✕</button></td>
+        <td><button class="btn-delete-record" data-idx="${globalIdx}" title="Delete" aria-label="Delete record from ${esc(shortStamp(rec.timestamp))}">✕</button></td>
       </tr>`;}).join("");
 
     // Droid coverage summary for this combo
@@ -724,7 +760,8 @@ function getCurrentElapsed() {
       <p class="panel-intro">
         <strong class="text-teal">${played}</strong> of <strong>${total}</strong> combinations played
       </p>
-      <div class="unplayed-grid" id="unplayedGrid"></div>`;
+      <p class="sr-only" id="unplayedHint">Up and down arrow keys move between combinations; Tab leaves the list.</p>
+      <div class="unplayed-grid" id="unplayedGrid" role="list" aria-label="Unplayed combinations" aria-describedby="unplayedHint"></div>`;
 
     const grid   = document.getElementById("unplayedGrid");
     const BATCH  = 30;
@@ -737,6 +774,7 @@ function getCurrentElapsed() {
       slice.forEach(comb => {
         const div = document.createElement("div");
         div.className = "unplayed-item";
+        div.setAttribute("role", "listitem");
         div.innerHTML = `
           <div class="unplayed-item-text">
             <div>${esc(comb.characters.join(" & "))}</div>
@@ -746,6 +784,7 @@ function getCurrentElapsed() {
             data-char0="${esc(comb.characters[0])}"
             data-char1="${esc(comb.characters[1])}"
             data-scenario="${esc(comb.scenario)}"
+            tabindex="${offset === 0 && !frag.childNodes.length ? "0" : "-1"}"
             aria-label="Play ${esc(comb.characters.join(" & "))}, ${esc(scenarioText(comb.scenario))}">Play</button>`;
         frag.appendChild(div);
       });
@@ -762,6 +801,20 @@ function getCurrentElapsed() {
         showTab("randomizer");
         loadCombination(comb, { focusCard: true });
       });
+    });
+
+    // Thousands of Play buttons would make the list an endless run of Tab stops, so it is
+    // one Tab stop (roving tabindex) and the arrow keys move inside it.
+    grid.addEventListener("keydown", e => {
+      const keys = { ArrowDown: 1, ArrowUp: -1, Home: "first", End: "last" };
+      if (!(e.key in keys) || !e.target.classList.contains("btn-load-unplayed")) return;
+      e.preventDefault();
+      let btns = [...grid.querySelectorAll(".btn-load-unplayed")];
+      let i = btns.indexOf(e.target);
+      if (keys[e.key] === 1 && i === btns.length - 1) { appendBatch(); btns = [...grid.querySelectorAll(".btn-load-unplayed")]; }
+      const next = keys[e.key] === "first" ? btns[0] : keys[e.key] === "last" ? btns[btns.length - 1] : btns[Math.max(0, Math.min(btns.length - 1, i + keys[e.key]))];
+      if (!next || next === e.target) return;
+      e.target.tabIndex = -1; next.tabIndex = 0; next.focus();
     });
 
     // Append more rows as the user scrolls toward the bottom
@@ -866,8 +919,8 @@ function getCurrentElapsed() {
           <td><span class="diff-pill">${esc(rec.difficulty)}</span></td>
           <td class="td-time">${rec.playtime != null ? formatTime(rec.playtime) : "—"}</td>
           <td class="td-nowrap">
-            <button class="btn-edit-record"   data-idx="${idx}" title="Edit"   aria-label="Edit record: ${esc(recordLabel(rec))}">✎</button>
-            <button class="btn-delete-record" data-idx="${idx}" title="Delete" aria-label="Delete record: ${esc(recordLabel(rec))}">✕</button>
+            <button class="btn-edit-record"   data-idx="${idx}" title="Edit"   aria-label="Edit ${esc(recordLabel(rec))}">✎</button>
+            <button class="btn-delete-record" data-idx="${idx}" title="Delete" aria-label="Delete ${esc(recordLabel(rec))}">✕</button>
           </td>
         </tr>${notesRow}`;
     }).join("");
@@ -1333,10 +1386,22 @@ function getCurrentElapsed() {
     c2.value = b;
     sc.value = comb.scenario;
 
+    // Bring the new mission card into view — but not if it is already fully visible
+    // (two-column desktop) or the user has started doing something else meanwhile:
+    // moving the page under their pointer would make the next tap land elsewhere.
+    let cancelled = false;
+    const cancel = () => { cancelled = true; };
+    document.addEventListener("pointerdown", cancel, { once: true, capture: true });
+    document.addEventListener("keydown", cancel, { once: true, capture: true });
     setTimeout(() => {
+      document.removeEventListener("pointerdown", cancel, { capture: true });
+      document.removeEventListener("keydown", cancel, { capture: true });
       const el = document.getElementById("combinationDisplay");
+      if (!el || cancelled) return;
+      const r = el.getBoundingClientRect();
+      if (r.top >= 0 && r.bottom <= window.innerHeight) return;
       const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      if (el) el.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
+      el.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
     }, 80);
   }
 
@@ -1437,6 +1502,7 @@ function getCurrentElapsed() {
 
   let _pendingImport = null;
 
+  document.getElementById("importBtn").addEventListener("click", () => document.getElementById("importFile").click());
   document.getElementById("importFile").addEventListener("change", function () {
     const file = this.files[0];
     if (!file) return;
@@ -1444,17 +1510,17 @@ function getCurrentElapsed() {
     reader.onload = e => {
       try {
         const parsed = JSON.parse(e.target.result);
-        if (!Array.isArray(parsed)) { toast("Invalid file format.", "error"); return; }
+        if (!Array.isArray(parsed)) { toast("Couldn't import: this file isn't a Mission Log backup.", "error"); return; }
         const valid   = parsed.filter(isValidRecord);
         const skipped = parsed.length - valid.length;
-        if (valid.length === 0) { toast("No valid records found in file.", "error"); return; }
+        if (valid.length === 0) { toast("Couldn't import: no valid records in this file.", "error"); return; }
         _pendingImport = { valid, skipped };
         const skipNote = skipped > 0 ? ` ${skipped} invalid record(s) will be skipped.` : "";
         const existing = records.length;
         document.getElementById("importConfirmMsg").textContent =
           `Found ${valid.length} valid record(s).${skipNote} Merge adds them to your ${existing} existing record(s). Replace overwrites them entirely.`;
         openModal("importConfirmModal", "importCancel");
-      } catch (err) { toast("Could not read file.", "error"); }
+      } catch (err) { toast("Couldn't import: the file couldn't be read.", "error"); }
     };
     reader.readAsText(file);
     this.value = "";
@@ -1660,6 +1726,7 @@ function getCurrentElapsed() {
   function _diceApplyMode() {
     const isSkill = _diceMode === "skill";
     document.getElementById("diceModalTitle").textContent = isSkill ? "Skill Check" : "Dice Roller";
+    document.getElementById("diceModalClose").setAttribute("aria-label", isSkill ? "Close Skill Check" : "Close Dice Roller");
     document.getElementById("normalDiceRow").classList.toggle("hidden", isSkill);
     document.getElementById("skillDoneRow").classList.toggle("hidden", !isSkill);
     document.getElementById("diceHint").hidden      = isSkill;
@@ -1792,6 +1859,7 @@ function getCurrentElapsed() {
         editRecordModal:    closeEditModal,
         diceModal:          closeDiceModal,
         tipsModal:          closeTipsModal,
+        discardGameModal:   () => { _discardAction = null; closeModal("discardGameModal"); },
       };
       (closers[overlay.id] || (() => closeModal(overlay.id)))();
       return;
@@ -2123,7 +2191,7 @@ function getCurrentElapsed() {
             return `<button class="syzygy-char-btn${cls}" data-char="${esc(c)}" aria-pressed="${si >= 0}">${esc(c)}${num}</button>`;
           }).join("")}
         </div>
-        <p class="sz-hint" aria-live="polite">${_szChars.length} of 3 selected</p>`;
+        <p class="sz-hint">${_szChars.length} of 3 selected</p>`;
     }
 
     const canStart = _szMode && _szChars.length === 3;

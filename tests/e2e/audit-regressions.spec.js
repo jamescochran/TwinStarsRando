@@ -180,7 +180,14 @@ test.describe("keyboard and screen reader access", () => {
     await page.getByRole("tab", { name: "Mission Log" }).click();
     await page.locator("#exportBtn").focus();
     await page.keyboard.press("Tab");
-    await expect(page.locator("#importFile")).toBeFocused();
+    // A real button (the file input itself is hidden from Tab and screen readers, so
+    // Import is announced once and shows the normal focus ring).
+    await expect(page.locator("#importBtn")).toBeFocused();
+    // Enter on it opens the (hidden) file input. Spy on the click rather than waiting for a
+    // native file chooser, which headless Chromium sometimes withholds from an unfocused window.
+    await page.evaluate(() => document.getElementById("importFile").addEventListener("click", e => { e.preventDefault(); window.__importOpened = true; }));
+    await page.keyboard.press("Enter");
+    await expect.poll(() => page.evaluate(() => window.__importOpened === true)).toBe(true);
   });
 
   test("Shift+Tab from the first FAQ question stays inside the dialog", async ({ page }) => {

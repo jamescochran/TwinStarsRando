@@ -19,9 +19,7 @@ test("timer display is visible after loading a combination", async ({ page }) =>
 test("timer starts running after loading a combination", async ({ page }) => {
   await loadCombination(page);
   const initial = await page.locator("#timerDisplay").textContent();
-  await page.waitForTimeout(1200);
-  const after = await page.locator("#timerDisplay").textContent();
-  expect(after).not.toBe(initial);
+  await expect(page.locator("#timerDisplay")).not.toHaveText(initial);
 });
 
 test("pause button stops the timer", async ({ page }) => {
@@ -44,9 +42,22 @@ test("resume resumes the timer after pause", async ({ page }) => {
   expect(paused).not.toBe("00:00");
   // Click pause again to resume
   await page.locator("#pauseBtn").click();
-  await page.waitForTimeout(1500);
-  const afterResume = await page.locator("#timerDisplay").textContent();
-  expect(afterResume).not.toBe(paused);
+  await expect(page.locator("#timerDisplay")).not.toHaveText(paused);
+});
+
+// Regression: the display used to tick once a second in phase with the original start,
+// so right after Resume it could show the paused value for up to ~2 s (flaky under load).
+test("display follows the real elapsed time right after pause and resume", async ({ page }) => {
+  await page.clock.install({ time: new Date("2026-01-01T12:00:00") });
+  await page.clock.pauseAt(new Date("2026-01-01T12:00:01"));
+  await loadCombination(page);
+  await page.clock.runFor(2100);
+  await page.locator("#pauseBtn").click();
+  await expect(page.locator("#timerDisplay")).toHaveText("00:02");
+  await page.clock.runFor(1200);              // paused: time doesn't count
+  await page.locator("#pauseBtn").click();    // resume
+  await page.clock.runFor(1500);              // 2.1 + 1.5 = 3.6 s played
+  await expect(page.locator("#timerDisplay")).toHaveText("00:03");
 });
 
 test("restart button opens confirmation modal", async ({ page }) => {
