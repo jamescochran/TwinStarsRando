@@ -1365,6 +1365,23 @@
       padding: 0 24px 20px;
     }
     #rulesImage { max-width: 100%; height: auto; display: block; border-radius: 6px; }
+    /* <picture> only picks the format; the img sizes against .rules-img-wrap as before */
+    #rulesPicture { display: contents; }
+    /* Kept out of sight until the file is confirmed complete (a cut-off image still "loads") */
+    #rulesImage.rules-img-pending { visibility: hidden; }
+    #rulesImage.rules-img-broken { display: none; }
+    .rules-offline {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: var(--space-2) var(--space-3);
+      padding: var(--space-3) 24px 20px;
+      border-top: 1px solid var(--border-control);
+      flex-shrink: 0;
+    }
+    .rules-offline .btn { padding: 10px 14px; min-height: 44px; }
+    .rules-offline-status { flex: 1 1 12em; margin: 0; font-size: var(--fs-md); color: var(--text-muted); }
+    .rules-offline-status:empty { display: none; }
 
     /* Footer */
     .footer-byline {
@@ -2241,6 +2258,7 @@
     .empty-state .btn { margin-top: var(--space-4); font-style: normal; }
     .rules-status { font-size: var(--fs-md); color: var(--text-muted); padding: var(--space-2) 0; }
     .rules-status:empty { display: none; }
+    .rules-status a { color: var(--accent-teal); }
     .diff-mark { font-weight: 700; }
     .syzygy-path-mark { font-weight: 700; margin-right: 2px; }
     .syzygy-mode-card-check {
@@ -2367,6 +2385,7 @@
       .rules-tabs   { padding: 0 var(--space-3) var(--space-3); }
       .rules-tab    { padding-left: var(--space-2); padding-right: var(--space-2); letter-spacing: 0.5px; }
       .rules-img-wrap { padding: 0 var(--space-3) var(--space-3); min-height: 0; }
+      .rules-offline  { padding: var(--space-2) var(--space-3); }
       /* Fit the rulebook sheet to the sheet's height and pan sideways: ~3x larger than
          squeezing a landscape page into 330px of width */
       #rulesImage { height: 100%; width: auto; max-width: none; }
@@ -2593,7 +2612,15 @@
     <div class="rules-tabs" id="rulesTabs"></div>
     <div class="rules-img-wrap" tabindex="0" role="region" aria-label="Rulebook page (scroll with the arrow keys)">
       <p class="rules-status" id="rulesStatus" role="status"></p>
-      <img id="rulesImage" alt="Rulebook" src="">
+      <picture id="rulesPicture">
+        <source id="rulesSourceAvif" type="image/avif">
+        <source id="rulesSourceWebp" type="image/webp">
+        <img id="rulesImage" alt="Rulebook" src="">
+      </picture>
+    </div>
+    <div class="rules-offline">
+      <button type="button" class="btn btn-secondary" id="rulesSaveAll">Save all for offline</button>
+      <p class="rules-offline-status" id="rulesOfflineStatus" role="status"></p>
     </div>
   </div>
 </div>

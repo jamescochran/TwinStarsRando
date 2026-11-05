@@ -36,4 +36,10 @@ for f in $(grep -o 'rules/[A-Za-z0-9_.-]*\.\(png\|webp\|jpg\|avif\)' "$root/app.
   [ -f "$out/$f" ] || fail "rulebook image missing from build: $f"
 done
 
+# The AVIF/WebP variants are derived from the .png names in app.js, so also require every
+# file under rules/ to ship.
+for f in "$root"/rules/*; do
+  [ -f "$out/rules/$(basename "$f")" ] || fail "rules file missing from build: rules/$(basename "$f")"
+done
+
 echo "check-build-site: OK"
