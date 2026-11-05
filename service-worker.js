@@ -8,7 +8,11 @@ const ASSETS = [
   BASE + "app.js",
   BASE + "manifest.json",
   BASE + "icon-192.png",
-  BASE + "icon-512.png"
+  BASE + "icon-512.png",
+  // Self-hosted fonts, precached so the first offline visit renders in the real typefaces.
+  // fonts/exo2-latin-ext.woff2 is left out: browsers fetch it only for non-latin characters.
+  BASE + "fonts/orbitron-latin.woff2",
+  BASE + "fonts/exo2-latin.woff2"
 ];
 
 // Install — cache all assets
