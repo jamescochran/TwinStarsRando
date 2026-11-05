@@ -2706,8 +2706,70 @@ function getCurrentElapsed() {
         if (!busy) {
           window.location.reload();
         } else {
-          toast("App updated — reload for the latest version.");
+          // Mid-game: never reload on our own; offer a button and let the player choose when.
+          toast("App updated — reload for the latest version.", "info", { label: "Reload", onClick: () => window.location.reload() });
+          _undoAction = null; // Ctrl/Cmd+Z stays "undo"; it must not reload the page
+          announce("App updated. Press Tab to reach Reload.");
         }
       });
     });
   }
+
+  // ─── Hash routes (manifest shortcuts: ./#randomizer, ./#log, ./#syzygy) ──────
+  const HASH_ROUTES = { "#randomizer": "randomizer", "#log": "history", "#history": "history", "#syzygy": "syzygy" };
+  function routeFromHash() {
+    const tab = HASH_ROUTES[(window.location.hash || "").toLowerCase()];
+    if (!tab) return; // other fragments (e.g. the #main skip link) keep their normal meaning
+    showTab(tab);
+    // Drop the fragment so a later reload or a manual tab change isn't overridden by it,
+    // and so the same shortcut fires hashchange again next time.
+    try { history.replaceState(history.state, "", window.location.pathname + window.location.search); } catch (e) {}
+  }
+  routeFromHash();
+  window.addEventListener("hashchange", routeFromHash);
+
+  // ─── Install app ────────────────────────────────────────────────────────────
+  // Chromium: keep the browser's install prompt and offer it from a header button.
+  // iOS has no prompt, so show a one-time hint pointing at Share → Add to Home Screen.
+  (function initInstall() {
+    const btn = document.getElementById("installBtn");
+    const hint = document.getElementById("iosInstallHint");
+    const isStandalone = () => {
+      try { if (window.matchMedia("(display-mode: standalone)").matches || window.matchMedia("(display-mode: minimal-ui)").matches) return true; } catch (e) {}
+      return window.navigator.standalone === true;
+    };
+    let deferredPrompt = null;
+    window.addEventListener("beforeinstallprompt", e => {
+      e.preventDefault();
+      deferredPrompt = e;
+      if (btn && !isStandalone()) btn.hidden = false;
+    });
+    window.addEventListener("appinstalled", () => {
+      deferredPrompt = null;
+      if (btn) btn.hidden = true;
+    });
+    if (btn) btn.addEventListener("click", () => {
+      const ev = deferredPrompt;
+      if (!ev) return;
+      deferredPrompt = null; // a prompt can only be shown once
+      btn.hidden = true;
+      try { Promise.resolve(ev.prompt()).catch(() => {}); } catch (e) {}
+    });
+
+    if (!hint) return;
+    const ua = navigator.userAgent || "";
+    const isIOS = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    let seen = true;
+    try { seen = !!localStorage.getItem("iosInstallHintSeen") || !localStorage.getItem("hasSeenTip"); } catch (e) {}
+    // Wait until the first-run tip has been dismissed so two popovers never stack.
+    if (!isIOS || isStandalone() || seen) return;
+    hint.classList.remove("hidden");
+    const dismiss = () => {
+      hint.classList.add("hidden");
+      try { localStorage.setItem("iosInstallHintSeen", "1"); } catch (e) {}
+      document.removeEventListener("click", outside);
+    };
+    const outside = e => { if (!hint.contains(e.target)) dismiss(); };
+    document.getElementById("iosInstallHintDismiss").addEventListener("click", dismiss);
+    document.addEventListener("click", outside);
+  })();
