@@ -434,6 +434,8 @@
     unplayedDirty = true;
     statsDirty    = true;
     syncExportBtn();
+    // Feature scripts (insights.js) re-render from this.
+    document.dispatchEvent(new Event("tsr:records-changed"));
   }
 
   // Union by id, first list wins.
