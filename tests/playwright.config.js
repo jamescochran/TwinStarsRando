@@ -27,7 +27,8 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: "npx serve@14 .. -p 7919 --no-clipboard",
+    // `npx --no` runs the lockfile-pinned serve from node_modules and refuses to download anything.
+    command: "npx --no serve .. -p 7919 --no-clipboard",
     url: "http://localhost:7919",
     reuseExistingServer: !process.env.CI,
     timeout: 30000,
