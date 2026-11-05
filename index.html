@@ -84,7 +84,9 @@
       --fs-sm:     12px;
       --fs-md:     13px;
       --fs-body:   14px;
-      --fs-input:  15px;   /* form controls + base body (>=15 avoids iOS zoom-ish cramping) */
+      --fs-input:  15px;   /* base body + primary form selects */
+      --fs-control:    var(--fs-input);  /* full-size form selects */
+      --fs-control-sm: var(--fs-body);   /* compact selects, textareas; both become 16px on touch (iOS zooms <16px) */
       --fs-button: 11px;   /* Orbitron button labels */
       --fs-title:  13px;   /* modal / dialog titles */
       --fs-stat:   18px;
@@ -148,6 +150,8 @@
     [data-theme="light"] body::before { display: none; }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    /* Form controls don't inherit the page font by default (they render in the UA font, e.g. Arial) */
+    button, input, select, textarea { font-family: inherit; }
 
     body {
       background-color: var(--bg-deep);
@@ -365,8 +369,8 @@
       background: var(--bg-card);
       border: 1px solid var(--border-control);
       color: var(--text-primary);
-      font-family: 'Exo 2', sans-serif;
-      font-size: var(--fs-input);
+      font-family: var(--font-body);
+      font-size: var(--fs-control);
       padding: 11px 36px 11px 12px;
       border-radius: 6px;
       appearance: none;
@@ -383,7 +387,7 @@
       cursor: text;
       min-height: 0;
       padding: 10px 12px;
-      font-size: var(--fs-body);
+      font-size: var(--fs-control-sm);
       line-height: 1.5;
       resize: vertical;
     }
@@ -784,7 +788,7 @@
       border-radius: var(--radius);
       color: var(--text-primary);
       font-family: var(--font-body);
-      font-size: var(--fs-body);
+      font-size: var(--fs-control-sm);
       font-weight: 400;
       padding: 8px 30px 8px 10px;
       cursor: pointer;
@@ -846,7 +850,13 @@
 
     /* Misc */
     .empty-state { text-align: center; padding: 36px 20px; color: var(--text-dim); }
-    .empty-state p { font-size: var(--fs-md); font-style: italic; }
+    .empty-state p { font-size: var(--fs-md); font-style: italic; line-height: var(--lh-body); }
+    .empty-state p.empty-state-title {
+      font-family: var(--font-display); font-style: normal; font-size: var(--fs-label); font-weight: 700;
+      letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--text-muted); margin-bottom: var(--space-2);
+    }
+    .combo-empty { padding: 28px 20px; margin-bottom: var(--space-4); border: 1px dashed var(--border-glow); border-radius: var(--radius-lg); }
+    .combo-empty p:not(.empty-state-title) { max-width: 40ch; margin: 0 auto; color: var(--text-dim); }
     .notice {
       padding: 10px 14px;
       border-radius: 6px;
@@ -942,7 +952,7 @@
       border: 1px solid var(--border-control);
       border-radius: var(--radius);
       color: var(--text-primary);
-      font-size: var(--fs-md);
+      font-size: var(--fs-control-sm);
       padding: 8px 28px 8px 8px;
       cursor: pointer;
       min-width: 0;
@@ -1039,7 +1049,7 @@
       padding: 28px 24px;
       max-width: 360px;
       width: 100%;
-      text-align: center;
+      text-align: left;
     }
     /* Dialog title: teal by default; red only on destructive confirmations (.modal-danger) */
     .modal-box h2 {
@@ -1056,7 +1066,8 @@
     /* Dialogs containing forms or lists read left-aligned */
     .modal-box.modal-form, .tips-box { text-align: left; }
     .modal-actions { display: flex; gap: 12px; }
-    .modal-actions .btn { flex: 1; }
+    .modal-actions .btn { flex: 1; padding-left: var(--space-3); padding-right: var(--space-3); white-space: nowrap; }
+    @media (max-width: 400px) { .modal-actions .btn { letter-spacing: var(--tracking-tight); } }
 
     /* Toast */
     /* Toast: opaque surface (it floats over content) + coloured edge for status */
@@ -1107,13 +1118,7 @@
     }
 
     /* Dice Roller */
-    .dice-box { max-width: 300px; text-align: center; }
-    .dice-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 20px;
-    }
+    .dice-box { max-width: 360px; text-align: center; }
     .dice-modal-title {
       font-family: var(--font-display);
       font-size: var(--fs-title);
@@ -1123,8 +1128,20 @@
       color: var(--accent-teal);
       margin: 0;
     }
-    /* Dialog close (✕) — one icon-button recipe for dice / tips */
-    .dice-close, .tips-modal-close {
+    /* Dialog header: title left, ✕ close right — the one dismiss control on every
+       non-destructive dialog (Tips, Dice, Rulebooks, Rules FAQ, My Collection).
+       Confirmations and forms use Cancel + action buttons instead. */
+    .dialog-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-3);
+      margin-bottom: var(--space-4);
+      flex-shrink: 0;
+      text-align: left;
+    }
+    .modal-overlay .dialog-header h2 { margin: 0; }
+    .dialog-close, .dice-close, .tips-modal-close {
       background: transparent;
       border: 1px solid var(--border-control);
       border-radius: var(--radius);
@@ -1138,7 +1155,7 @@
       flex-shrink: 0;
       transition: color 0.15s, border-color 0.15s, background-color 0.15s;
     }
-    .dice-close:hover, .tips-modal-close:hover { color: var(--accent-teal); border-color: var(--accent-teal); background: var(--tint-teal); }
+    .dialog-close:hover, .dice-close:hover, .tips-modal-close:hover { color: var(--accent-teal); border-color: var(--accent-teal); background: var(--tint-teal); }
     .dice-tray {
       display: flex;
       justify-content: center;
@@ -1260,13 +1277,6 @@
 
     /* --- Tips modal --- */
     .tips-box { max-width: 380px; }
-    .tips-modal-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 16px;
-    }
-    .tips-modal-header h2 { margin: 0; }
     .tips-content {
       max-height: 65vh;
       overflow-y: auto;
@@ -1307,13 +1317,7 @@
       display: flex;
       flex-direction: column;
     }
-    .rules-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 20px 24px 12px;
-      flex-shrink: 0;
-    }
+    .rules-header { padding: 20px 24px 0; margin-bottom: var(--space-3); }
     .rules-header h2 {
       font-family: var(--font-display);
       font-size: var(--fs-title);
@@ -1323,13 +1327,20 @@
       color: var(--accent-teal);
       margin: 0;
     }
+    /* One row of rulebook tabs; scrolls sideways when it doesn't fit (phones) */
     .rules-tabs {
       display: flex;
-      gap: 8px;
+      gap: var(--space-2);
       padding: 0 24px 12px;
       flex-shrink: 0;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      overscroll-behavior-x: contain;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
     }
+    .rules-tabs::-webkit-scrollbar { display: none; }
+    .rules-tab { flex: 1 0 auto; white-space: nowrap; }
     .rules-tab {
       background: transparent;
       border: 1px solid var(--border-control);
@@ -1559,15 +1570,6 @@
       max-width: 380px;
       width: 100%;
     }
-    .settings-box h2 {
-      font-family: var(--font-display);
-      font-size: var(--fs-title);
-      font-weight: 700;
-      letter-spacing: var(--tracking-label);
-      text-transform: uppercase;
-      color: var(--accent-teal);
-      margin-bottom: 8px;
-    }
     .settings-box > p {
       font-size: var(--fs-md);
       color: var(--text-muted);
@@ -1621,15 +1623,13 @@
       display: flex;
       flex-direction: column;
     }
-    .faq-box h2 {
+    .faq-box h2, .settings-box h2 {
       font-family: var(--font-display);
       font-size: var(--fs-title);
       font-weight: 700;
       letter-spacing: var(--tracking-label);
       text-transform: uppercase;
       color: var(--accent-teal);
-      margin-bottom: 16px;
-      flex-shrink: 0;
     }
     .faq-content {
       overflow-y: auto;
@@ -2160,35 +2160,53 @@
     .tab-btn.active:focus-visible { outline-color: var(--on-orange); }
     h2.panel-title, h3.section-heading { font-weight: 700; }
     [tabindex="-1"]:focus:not(:focus-visible) { outline: none; }
-    .all-locked-hint { font-size: 12px; color: var(--text-muted); margin-top: 10px; text-align: center; }
+    .all-locked-hint { font-size: var(--fs-sm); color: var(--text-muted); margin-top: var(--space-3); text-align: center; line-height: var(--lh-body); }
     .notes-input {
-      width: 100%; background: var(--bg-card); border: 1px solid var(--border-control); border-radius: 6px;
-      color: var(--text-primary); padding: 8px 10px; font-size: var(--fs-md); font-family: inherit; resize: vertical;
+      width: 100%; background: var(--bg-card); border: 1px solid var(--border-control); border-radius: var(--radius);
+      color: var(--text-primary); padding: 10px 12px; font-size: var(--fs-control-sm); font-family: var(--font-body); resize: vertical;
     }
-    .save-status { margin-top: 12px; text-align: center; }
-    .save-status p { font-size: 13px; color: var(--accent-teal); margin-bottom: 10px; }
+    /* Inline confirmation after saving: teal check line + next step, like a notice */
+    .save-status { margin-top: var(--space-3); text-align: center; }
+    .save-status p { font-size: var(--fs-md); font-weight: 600; color: var(--accent-teal); margin-bottom: var(--space-3); line-height: var(--lh-tight); }
     .save-status .btn { width: 100%; }
-    .edit-record-summary { font-size: 13px !important; margin-bottom: 16px !important; }
-    .history-count { font-size: 12px; color: var(--text-muted); margin: 0 0 8px; min-height: 1em; }
+    .modal-box p.edit-record-summary { font-size: var(--fs-md); margin-bottom: var(--space-4); }
+    .history-count { font-size: var(--fs-sm); color: var(--text-muted); margin: 0 0 var(--space-2); min-height: 1em; }
     .history-count:empty { display: none; }
-    .btn-clear-filters {
-      margin-top: 12px; background: transparent; border: 1px solid var(--border-control); color: var(--accent-teal);
-      border-radius: 6px; padding: 10px 16px; font: inherit; font-size: 13px; cursor: pointer; min-height: 44px;
-    }
-    .rules-status { font-size: 13px; color: var(--text-muted); padding: 8px 0; }
+    /* "Clear Filters" in the empty filtered log is a standard secondary button (class .btn .btn-secondary) */
+    .empty-state .btn { margin-top: var(--space-4); font-style: normal; }
+    .rules-status { font-size: var(--fs-md); color: var(--text-muted); padding: var(--space-2) 0; }
     .rules-status:empty { display: none; }
     .diff-mark { font-weight: 700; }
     .syzygy-path-mark { font-weight: 700; margin-right: 2px; }
-    .syzygy-mode-card-check { display: block; font-size: 11px; font-weight: 700; color: var(--accent-orange); margin-top: 6px; }
-    .syzygy-branch-card { font: inherit; color: inherit; width: 100%; }
-    .sz-hint { font-size: 12px; color: var(--text-muted); text-align: center; margin: 0 0 12px; }
-    .syzygy-heading-focus:focus { outline: none; }
-    .toast.has-action { pointer-events: auto; display: flex; align-items: center; gap: 12px; justify-content: center; }
-    .toast-action {
-      background: transparent; border: 1px solid currentColor; color: inherit; border-radius: 4px;
-      font: inherit; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 6px 12px;
-      min-height: 32px; cursor: pointer;
+    .syzygy-mode-card-check {
+      display: block; margin-top: var(--space-2);
+      font-family: var(--font-display); font-size: var(--fs-label); font-weight: 700;
+      letter-spacing: var(--tracking-tight); text-transform: uppercase; color: var(--accent-orange);
     }
+    .syzygy-branch-card { font: inherit; color: inherit; width: 100%; }
+    .sz-hint { font-size: var(--fs-sm); color: var(--text-muted); text-align: center; margin: 0 0 var(--space-3); line-height: var(--lh-body); }
+    .syzygy-heading-focus:focus { outline: none; }
+    /* Toast with an action (Undo): text + a compact outline button in the toast colour */
+    .toast.has-action { pointer-events: auto; display: flex; align-items: center; gap: var(--space-3); justify-content: space-between; text-align: left; padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4); }
+    .toast-action {
+      background: transparent; border: 1px solid var(--accent-teal); color: var(--accent-teal); border-radius: var(--radius);
+      font-family: var(--font-display); font-size: var(--fs-button); font-weight: 700;
+      letter-spacing: var(--tracking-label); text-transform: uppercase; line-height: var(--lh-tight);
+      padding: var(--space-2) var(--space-4); min-height: 40px; cursor: pointer; flex-shrink: 0;
+      transition: background-color 0.18s, color 0.18s;
+    }
+    .toast-action:hover { background: var(--tint-teal); }
+    .toast.error .toast-action { border-color: var(--loss-color); color: var(--loss-color); }
+    .toast.error .toast-action:hover { background: var(--tint-loss); }
+    /* Panel intro copy (SYZYGY, unplayed summary) — one size for the same role everywhere */
+    .panel-intro { font-size: var(--fs-md); color: var(--text-muted); line-height: var(--lh-body); margin-bottom: var(--space-4); }
+    .syzygy-playing { font-size: var(--fs-sm); color: var(--text-muted); line-height: var(--lh-body); }
+    .syzygy-playing strong { color: var(--text-primary); font-weight: 600; }
+    .syzygy-retry-notice { margin-top: var(--space-3); }
+    .syzygy-resource-name { font-weight: 600; }
+    .syzygy-carryover-note { font-size: var(--fs-xs); color: var(--text-dim); }
+    .cell-meta { font-size: var(--fs-sm); color: var(--text-muted); }
+    .settings-actions { margin-top: var(--space-5); }
 
     /* ─── Responsive layout ──────────────────────────────────────────────────
        Consolidated layout rules for phones, landscape phones, touch devices and
@@ -2197,17 +2215,17 @@
 
     /* Notched phones in landscape (viewport-fit=cover): keep content out of the cut-outs */
     .app-shell {
-      padding-left:  max(16px, env(safe-area-inset-left, 0px));
-      padding-right: max(16px, env(safe-area-inset-right, 0px));
+      padding-left:  max(var(--space-4), env(safe-area-inset-left, 0px));
+      padding-right: max(var(--space-4), env(safe-area-inset-right, 0px));
     }
 
     /* Compact button variant (replaces inline sizing on Rulebooks Close / SYZYGY Abandon) */
-    .btn-compact { min-height: 36px; padding: 8px 14px; font-size: var(--fs-label); }
+    .btn-compact { min-height: 36px; padding: var(--space-2) 14px; font-size: var(--fs-label); }
 
     /* Combo card: keep each role label with its character name, wrap as whole units */
-    .combo-characters { display: flex; flex-wrap: wrap; align-items: flex-end; row-gap: 8px; }
+    .combo-characters { display: flex; flex-wrap: wrap; align-items: flex-end; row-gap: var(--space-2); }
     .combo-char-wrap  { display: inline-block; }
-    .combo-vs         { line-height: 1.6; }
+    .combo-vs         { line-height: var(--lh-body); }
     @media (max-width: 480px) {
       .combo-characters { flex-direction: column; align-items: flex-start; }
       /* Stacked: the role labels already pair them; keep "&" for screen readers only */
@@ -2215,14 +2233,11 @@
     }
 
     /* SYZYGY steppers: a label + stepper pair never splits across lines */
-    .sz-step-group { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
-    .syzygy-resource-controls { gap: 8px 14px; }
-    .syzygy-stepper-compact { gap: 3px; }
-    .syzygy-stepper-compact .btn-sz-step { width: 28px; height: 28px; font-size: 13px; }
-    .syzygy-stepper-compact .sz-step-val { font-size: 13px; min-width: 18px; }
-    .syzygy-carryover-row { gap: 6px 14px; }
+    .sz-step-group { display: inline-flex; align-items: center; gap: var(--space-1); white-space: nowrap; }
+    .syzygy-resource-controls { gap: var(--space-2) var(--space-3); }
+    .syzygy-carryover-row { gap: var(--space-2) var(--space-3); }
     @media (max-width: 480px) {
-      .syzygy-resource-row { flex-direction: column; align-items: stretch; gap: 8px; }
+      .syzygy-resource-row { flex-direction: column; align-items: stretch; gap: var(--space-2); }
       .syzygy-resource-controls { justify-content: space-between; }
       .syzygy-carryover-row { justify-content: space-between; }
       .syzygy-carryover-name { flex-basis: 100%; }
@@ -2230,8 +2245,8 @@
 
     /* Narrow phones: tabs and toolbar labels on one line */
     @media (max-width: 420px) {
-      .tab-btn { letter-spacing: 1px; padding: 8px 4px; }
-      .history-actions .btn, .history-actions .import-label { letter-spacing: 0.5px; padding: 12px 4px; white-space: nowrap; }
+      .tab-btn { letter-spacing: var(--tracking-tight); padding: var(--space-2) var(--space-1); }
+      .history-actions .btn, .history-actions .import-label { letter-spacing: 0.5px; padding: var(--space-3) var(--space-1); white-space: nowrap; }
     }
 
     /* History filters: sort on its own row, filters in pairs, a lone last filter spans the row */
@@ -2270,11 +2285,11 @@
 
     /* Phones: dialogs become bottom sheets — full width, thumb-reachable actions */
     @media (max-width: 560px) {
-      .modal-overlay { padding: 12px 0 0; align-items: flex-end; }
+      .modal-overlay { padding: var(--space-3) 0 0; align-items: flex-end; }
       .modal-box, .settings-box, .faq-box, .rules-box {
         max-width: none;
         width: 100%;
-        border-radius: 16px 16px 0 0;
+        border-radius: var(--radius-xl) var(--radius-xl) 0 0;
         border-bottom: none;
         max-height: calc(100vh - 12px);
         max-height: calc(100dvh - 12px);
@@ -2283,9 +2298,10 @@
         padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
       }
       .rules-box { height: calc(100vh - 12px); height: calc(100dvh - 12px); padding: 0 0 env(safe-area-inset-bottom, 0px); }
-      .rules-header { padding: 16px 16px 10px; }
-      .rules-tabs   { padding: 0 16px 10px; }
-      .rules-img-wrap { padding: 0 12px 12px; min-height: 0; }
+      .rules-header { padding: var(--space-4) var(--space-4) 0; }
+      .rules-tabs   { padding: 0 var(--space-3) var(--space-3); }
+      .rules-tab    { padding-left: var(--space-2); padding-right: var(--space-2); letter-spacing: 0.5px; }
+      .rules-img-wrap { padding: 0 var(--space-3) var(--space-3); min-height: 0; }
       /* Fit the rulebook sheet to the sheet's height and pan sideways: ~3x larger than
          squeezing a landscape page into 330px of width */
       #rulesImage { height: 100%; width: auto; max-width: none; }
@@ -2296,19 +2312,23 @@
         padding: 14px 20px calc(20px + env(safe-area-inset-bottom, 0px));
       }
       .tips-content { max-height: none; }
-      .dice-tray { gap: 12px; }
+      .dice-tray { gap: var(--space-3); }
     }
 
     /* ── Touch layouts: ~44px targets for frequent actions ── */
+    /* iOS Safari zooms the page when a focused control's text is under 16px */
+    @media (pointer: coarse), (max-width: 767px) {
+      :root { --fs-control: 16px; --fs-control-sm: 16px; }
+    }
     @media (pointer: coarse), (max-width: 560px) {
       .app-header { padding-top: 0; }
-      .header-actions { position: static; margin-bottom: 14px; }
+      .header-actions { position: static; margin-bottom: var(--space-3); }
       .header-btn-row { flex-wrap: wrap; justify-content: flex-end; }
       .onboarding-tip { top: 56px; }
       .btn-tips-trigger, .btn-radio, .btn-volume, .btn-theme { min-width: 44px; min-height: 44px; }
       .btn-settings { min-height: 44px; }
       .btn-lock { min-width: 44px; min-height: 44px; }
-      .form-row-label { margin-bottom: 4px; }
+      .form-row-label { margin-bottom: var(--space-1); }
       .btn-faq-inline::after { inset: -13px; }
       .droid-select, .btn-droid-rand { min-height: 44px; }
       .btn-pause { min-height: 44px; }
@@ -2319,19 +2339,16 @@
       .btn-compact { min-height: 44px; }
       .rules-tab { min-height: 44px; }
       .btn-sz-step,
-      .syzygy-stepper-compact .btn-sz-step { width: 44px; height: 44px; }
+      .syzygy-stepper.is-compact .btn-sz-step { width: 44px; height: 44px; }
       .syzygy-stepper { gap: 2px; }
-      .die-adj-row { width: auto; gap: 4px; justify-content: center; flex-wrap: wrap; max-width: 92px; }
+      .die-adj-row { width: auto; gap: var(--space-1); justify-content: center; flex-wrap: wrap; max-width: 92px; }
       .die-adj, .dice-swap-mid { width: 44px; height: 44px; }
       /* Flip (Hebolt Rom, locked die) drops to its own full-width row under −/+ */
       .die-adj.adj-flip { order: 3; width: 100%; }
-      .dice-close, .tips-modal-close { min-width: 44px; min-height: 44px; }
+      .dialog-close, .dice-close, .tips-modal-close { min-width: 44px; min-height: 44px; }
       details.faq-item summary { padding-top: 13px; padding-bottom: 13px; }
       details.faq-item summary::after { top: 15px; }
       .btn-tip-dismiss { min-height: 44px; }
-    }
-    @media (pointer: coarse) and (min-width: 561px) {
-      .dice-box { max-width: 340px; }   /* room for 44px −/+ controls; phones use the full-width sheet */
     }
     /* Tablets (table layout + 44px edit/delete): tighter cell padding so the log fits */
     @media (pointer: coarse) and (min-width: 720px) and (max-width: 1023px) {
@@ -2340,38 +2357,38 @@
 
     /* ── Short landscape phones: compact one-row header so content starts on screen one ── */
     @media (max-height: 500px) and (orientation: landscape) {
-      .app-shell { padding-top: 12px; }
+      .app-shell { padding-top: var(--space-3); }
       .app-header {
         display: grid;
         grid-template-columns: minmax(0, 1fr) auto;
         align-items: center;
-        column-gap: 12px;
+        column-gap: var(--space-3);
         text-align: left;
         padding-top: 0;
-        margin-bottom: 14px;
+        margin-bottom: var(--space-3);
       }
-      .app-header h1 { grid-row: 1; grid-column: 1; font-size: 22px; letter-spacing: 3px; }
+      .app-header h1 { grid-row: 1; grid-column: 1; font-size: var(--fs-timer); letter-spacing: var(--tracking-wide); }
       .app-header h1 br:not(:nth-of-type(3)) { display: none; }
-      .app-header h1 .sub { font-size: 11px; }
+      .app-header h1 .sub { font-size: var(--fs-xs); }
       .header-actions { position: static; grid-row: 1; grid-column: 2; margin: 0; }
       .header-rule, .app-header .author-label { display: none; }
-      .active-packs-label { grid-column: 1 / -1; margin-top: 4px; }
-      .tab-nav { margin-bottom: 16px; }
+      .active-packs-label { grid-column: 1 / -1; margin-top: var(--space-1); }
+      .tab-nav { margin-bottom: var(--space-4); }
     }
 
     /* ── Wide screens: use the space instead of a phone column in a huge page ── */
     @media (min-width: 1024px) {
-      .app-shell { max-width: 1120px; padding-left: 24px; padding-right: 24px; }
+      .app-shell { max-width: 1120px; padding-left: var(--space-6); padding-right: var(--space-6); }
       #randomizerPage {
         display: grid;
         grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-        gap: 0 20px;
+        gap: 0 var(--space-5);
         align-items: start;
       }
       .sz-layout {
         display: grid;
         grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-        gap: 0 20px;
+        gap: 0 var(--space-5);
         align-items: start;
       }
       .history-toolbar { flex-direction: row; flex-wrap: wrap; align-items: center; }
@@ -2382,7 +2399,11 @@
     }
     /* Desktop: setup column stays in view while the mission card / log scroll */
     @media (min-width: 1024px) and (min-height: 640px) {
-      .rand-col-setup { position: sticky; top: 16px; }
+      .rand-col-setup { position: sticky; top: var(--space-4); }
+      /* Empty mission area fills the play column beside the setup panels instead of floating */
+      .rand-col-play { align-self: stretch; display: flex; flex-direction: column; }
+      #combinationDisplay:has(.combo-empty) { flex: 1; display: flex; }
+      .combo-empty { flex: 1; display: flex; flex-direction: column; justify-content: center; margin-bottom: 0; }
       .syzygy-mode-cards { max-width: 760px; }
       /* Comfortable measure for running text in wide panels */
       .panel > p:not(.panel-title):not(.section-heading),
@@ -2496,9 +2517,9 @@
 <!-- RULEBOOK MODAL -->
 <div class="modal-overlay" id="rulesModal">
   <div class="rules-box" role="dialog" aria-modal="true" aria-labelledby="rulesModalTitle">
-    <div class="rules-header">
+    <div class="rules-header dialog-header">
       <h2 id="rulesModalTitle">Rulebooks</h2>
-      <button class="btn btn-secondary btn-sm btn-compact" id="rulesClose">Close</button>
+      <button type="button" class="dialog-close" id="rulesClose" aria-label="Close">✕</button>
     </div>
     <div class="rules-tabs" id="rulesTabs"></div>
     <div class="rules-img-wrap">
@@ -2511,11 +2532,14 @@
 <!-- SETTINGS MODAL -->
 <div class="modal-overlay" id="settingsModal">
   <div class="settings-box" role="dialog" aria-modal="true" aria-labelledby="settingsModalTitle" aria-describedby="settingsModalDesc">
-    <h2 id="settingsModalTitle">My Collection</h2>
+    <div class="dialog-header">
+      <h2 id="settingsModalTitle">My Collection</h2>
+      <button type="button" class="dialog-close" id="settingsDismiss" aria-label="Close">✕</button>
+    </div>
     <p id="settingsModalDesc">Tick the Twin Stars products you own. Only their characters, scenarios and droids are used.</p>
     <div id="packList"></div>
     <p class="settings-warning" id="settingsWarning" role="alert"></p>
-    <div class="modal-actions" style="margin-top:20px;">
+    <div class="modal-actions settings-actions">
       <button class="btn btn-primary" id="settingsClose">Done</button>
     </div>
   </div>
@@ -2524,7 +2548,10 @@
 <!-- FAQ MODAL -->
 <div class="modal-overlay" id="faqModal">
   <div class="faq-box" role="dialog" aria-modal="true" aria-labelledby="faqModalTitle">
-    <h2 id="faqModalTitle">Rules FAQ</h2>
+    <div class="dialog-header">
+      <h2 id="faqModalTitle">Rules FAQ</h2>
+      <button type="button" class="dialog-close" id="faqClose" aria-label="Close">✕</button>
+    </div>
     <div class="faq-content" tabindex="-1">
 
       <h3 class="faq-section-header">General</h3>
@@ -2873,18 +2900,15 @@
       </details>
 
     </div>
-    <div class="modal-actions" style="margin-top:16px;flex-shrink:0;">
-      <button class="btn btn-secondary" id="faqClose">Close</button>
-    </div>
   </div>
 </div>
 
 <!-- DICE ROLLER MODAL -->
 <div class="modal-overlay" id="diceModal">
   <div class="modal-box dice-box" role="dialog" aria-modal="true" aria-labelledby="diceModalTitle">
-    <div class="dice-header">
+    <div class="dice-header dialog-header">
       <h2 class="dice-modal-title" id="diceModalTitle">Dice Roller</h2>
-      <button class="dice-close" id="diceModalClose" aria-label="Close">✕</button>
+      <button type="button" class="dice-close dialog-close" id="diceModalClose" aria-label="Close">✕</button>
     </div>
     <div class="dice-tray" id="diceTray">
       <div class="die-wrap" id="dieWrap0">
@@ -2929,9 +2953,9 @@
 
 <div class="modal-overlay" id="tipsModal">
   <div class="modal-box tips-box" role="dialog" aria-modal="true" aria-labelledby="tipsModalTitle">
-    <div class="tips-modal-header">
+    <div class="tips-modal-header dialog-header">
       <h2 id="tipsModalTitle">Tips &amp; Features</h2>
-      <button class="tips-modal-close" id="tipsModalClose" aria-label="Close">✕</button>
+      <button type="button" class="tips-modal-close dialog-close" id="tipsModalClose" aria-label="Close">✕</button>
     </div>
     <div class="tips-content" tabindex="0" role="region" aria-labelledby="tipsModalTitle">
       <h3 class="tips-section-heading">Randomizing</h3>
