@@ -171,7 +171,7 @@ test.describe("offline rulebooks", () => {
     await page.evaluate(() => navigator.serviceWorker.getRegistration().then(r => r.update()));
     await expect.poll(() => page.evaluate(() => caches.keys()).catch(() => []), { timeout: 15000 })
       .toContainEqual(expect.stringMatching(/-next$/));
-    await expect.poll(() => page.evaluate(async () => (await caches.keys()).filter(k => /^twin-stars-\d/.test(k)).length).catch(() => 0), { timeout: 15000 })
+    await expect.poll(() => page.evaluate(async () => (await caches.keys()).filter(k => !/^twin-stars-(fonts|rules)-/.test(k)).length).catch(() => 0), { timeout: 15000 })
       .toBe(1);                                         // the previous release's cache is gone
 
     await server.stop();
