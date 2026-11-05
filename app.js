@@ -1,5 +1,47 @@
 // Twin Stars Randomizer — application script (moved out of index.html so the CSP
 // can drop 'unsafe-inline' from script-src). Loaded at the end of <body>.
+  // ─── Privacy-safe usage analytics ───────────────────────────────────────────
+  // Anonymous event counts via the self-hosted Umami tag in index.html (see the Privacy
+  // dialog). track() is a no-op when Umami isn't loaded (blocked, offline, Do Not Track,
+  // or not on the production domain). Callers pass only fixed labels, counts and flags:
+  // never free text, character names or record contents. As a backstop, only numbers,
+  // booleans and short strings get through.
+  function track(name, data) {
+    try {
+      const u = window.umami;
+      if (!u || typeof u.track !== "function") return;
+      const clean = {};
+      if (data) {
+        for (const [k, v] of Object.entries(data)) {
+          if (typeof v === "number" || typeof v === "boolean") clean[k] = v;
+          else if (typeof v === "string") clean[k] = v.slice(0, 120);
+        }
+      }
+      u.track(name, clean);
+    } catch (e) { /* analytics must never break the app */ }
+  }
+
+  // Uncaught errors: report at most 3 per page load, truncated, with URLs and anything
+  // after the file name stripped so no query strings or local paths get sent.
+  let _errorsReported = 0;
+  function reportError(message, source, line) {
+    if (_errorsReported >= 3) return;
+    _errorsReported++;
+    const file = String(source || "").split(/[?#]/)[0].split("/").pop().slice(0, 60);
+    const msg = String(message || "unknown").replace(/\b(?:https?|blob|data|file):\S*/g, "[url]").slice(0, 120);
+    track("js_error", { message: msg, file, line: Number(line) || 0 });
+  }
+  window.addEventListener("error", e => {
+    // Cross-origin "Script error." carries nothing useful; skip it.
+    if (!e.filename && /^Script error\.?$/.test(e.message || "")) return;
+    reportError(e.message, e.filename, e.lineno);
+  });
+  window.addEventListener("unhandledrejection", e => {
+    const r = e.reason;
+    const where = r && typeof r.stack === "string" ? r.stack.match(/([^\/\s()@]+\.js)(?:\?[^:\s)]*)?:(\d+)/) : null;
+    reportError(r && r.message ? r.message : String(r), where ? where[1] : "", where ? where[2] : 0);
+  });
+
   // ─── Data ───────────────────────────────────────────────────────────────────
 
   const CONTENT_PACKS = [
@@ -205,6 +247,7 @@
     // buttons don't fade between themes while the page background snaps.
     root.classList.add("theme-switching");
     applyTheme(current === "dark" ? "light" : "dark");
+    track("theme_toggle", { theme: current === "dark" ? "light" : "dark" });
     void root.offsetHeight;
     requestAnimationFrame(() => requestAnimationFrame(() => root.classList.remove("theme-switching")));
   }
@@ -389,7 +432,7 @@
     _toastReturn = document.activeElement !== document.body ? document.activeElement : null;
     btn.focus();
   });
-  function undoToast(msg, onUndo) { toast(msg, "info", { label: "Undo", onClick: onUndo }); }
+  function undoToast(msg, onUndo) { toast(msg, "info", { label: "Undo", onClick: () => { track("undo"); onUndo(); } }); }
 
   // Ctrl/Cmd+Z reverses the last undoable action while its message is showing
   // (not while typing in a text field, where it must keep its normal meaning).
@@ -818,6 +861,7 @@ function getCurrentElapsed() {
       guardUnsaved(() => {
         showTab("randomizer");
         loadCombination(comb, { focusCard: true });
+        track("unplayed_play");
       });
     });
 
@@ -1533,6 +1577,7 @@ function getCurrentElapsed() {
     openModal("faqModal", "faqClose");
     const container = document.querySelector(".faq-content");
     container.scrollTop = 0;
+    track("faq_open", { anchor: /^[\w-]{1,60}$/.test(anchorId || "") ? anchorId : "" });
     if (anchorId) {
       // With a mission loaded, the mission card's ? buttons land on that
       // character's or scenario's block in "For this mission"; otherwise on the
@@ -1657,6 +1702,7 @@ function getCurrentElapsed() {
       toast("Characters locked — scenario re-rolled.");
     }
     loadCombination({ characters: [c1El.value, c2El.value], scenario: scEl.value });
+    track("randomize", { locked: [locks.char1, locks.char2, locks.scenario].filter(Boolean).length });
   }
 
   function handleLoadManualCombo() {
@@ -1664,7 +1710,7 @@ function getCurrentElapsed() {
     const char2    = document.getElementById("manualChar2").value;
     const scenario = document.getElementById("manualScenario").value;
     if (char1 === char2) { toast("Choose two different characters.", "error"); return; }
-    guardUnsaved(() => loadCombination({ characters: [char1, char2], scenario }));
+    guardUnsaved(() => { loadCombination({ characters: [char1, char2], scenario }); track("manual_pick"); });
   }
 
   function handleSaveRecord() {
@@ -1700,6 +1746,7 @@ function getCurrentElapsed() {
     status.classList.remove("hidden");
     statusText.focus();
     toast("Record saved to Mission Log.");
+    track("save_record", { result, difficulty });
   }
 
   function handleExport() {
@@ -1716,6 +1763,7 @@ function getCurrentElapsed() {
     document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(url), 1000);
     toast(`Exported ${records.length} record${records.length !== 1 ? "s" : ""} to ${a.download}.`);
+    track("export", { records: records.length });
   }
 
   let _pendingImport = null;
@@ -1762,6 +1810,7 @@ function getCurrentElapsed() {
       ? `Replaced your records with ${valid.length} imported. ${skipped} invalid skipped.`
       : `Replaced your records with ${valid.length} imported.`;
     undoToast(msg, () => { records = before; refreshAfterRecordsChange(); toast("Import undone. Your previous records are back."); });
+    track("import", { mode: "replace", imported: valid.length, skipped });
   });
 
   document.getElementById("importMerge").addEventListener("click", () => {
@@ -1782,6 +1831,7 @@ function getCurrentElapsed() {
     if (dupes   > 0) msg += ` ${dupes} already in your log.`;
     if (skipped > 0) msg += ` ${skipped} invalid skipped.`;
     toast(msg);
+    track("import", { mode: "merge", imported: toAdd.length, duplicates: dupes, skipped });
   });
 
   document.getElementById("restartCancel").addEventListener("click", closeRestartModal);
@@ -2016,6 +2066,7 @@ function getCurrentElapsed() {
         _diceRolling = false;
         const vals = [0, 1].map(i => toRoll.includes(i) ? finalVals[toRoll.indexOf(i)] : _diceValues[i]);
         _diceSay(`${isSkill ? "Skill check" : "Rolled"}: ${vals[0]} and ${vals[1]}${!isSkill && toRoll.length < 2 ? " (locked die kept)" : ""}`);
+        if (!isSkill) track("dice_roll", { dice: toRoll.length });
       }
     }, 60);
   }
@@ -2153,6 +2204,7 @@ function getCurrentElapsed() {
     audio.volume = getRadioVolume();
     audio.src = RADIO_STREAMS[0];
     audio.play().catch(() => {});
+    track("radio_play");
   }
 
   function stopRadio() {
@@ -2289,6 +2341,7 @@ function getCurrentElapsed() {
     saveSz();
     renderSz("szStageHeading");
     announce("Campaign started.");
+    track("sz_start", { mode });
   }
 
   function szRecordOutcome(result) {
@@ -2319,6 +2372,7 @@ function getCurrentElapsed() {
       c.completed  = true;
       c.finalRank  = szCalcRank();
       c.retrying   = false;
+      track("sz_complete", { mode: c.mode, rank: c.finalRank.rank });
     }
     saveSz();
     renderSz("szStageHeading");
@@ -2725,9 +2779,9 @@ function getCurrentElapsed() {
 
   // ─── Init ───────────────────────────────────────────────────────────────────
   document.getElementById("generateBtn")    .addEventListener("click", handleGenerate);
-  document.getElementById("lockChar1")      .addEventListener("click", () => { locks.char1    = !locks.char1;    updateLockButtons(); });
-  document.getElementById("lockChar2")      .addEventListener("click", () => { locks.char2    = !locks.char2;    updateLockButtons(); });
-  document.getElementById("lockScenario")   .addEventListener("click", () => { locks.scenario = !locks.scenario; updateLockButtons(); });
+  document.getElementById("lockChar1")      .addEventListener("click", () => { locks.char1    = !locks.char1;    updateLockButtons(); track("lock_toggle", { slot: "char1", locked: locks.char1 }); });
+  document.getElementById("lockChar2")      .addEventListener("click", () => { locks.char2    = !locks.char2;    updateLockButtons(); track("lock_toggle", { slot: "char2", locked: locks.char2 }); });
+  document.getElementById("lockScenario")   .addEventListener("click", () => { locks.scenario = !locks.scenario; updateLockButtons(); track("lock_toggle", { slot: "scenario", locked: locks.scenario }); });
   document.getElementById("loadManualCombo").addEventListener("click", handleLoadManualCombo);
   document.getElementById("saveRecordBtn")  .addEventListener("click", handleSaveRecord);
   document.getElementById("exportBtn")      .addEventListener("click", handleExport);
@@ -2809,6 +2863,7 @@ function getCurrentElapsed() {
     _diceMode = "skill";
     _diceApplyMode();
     rollDice(false);
+    track("skill_check");
     // The Skill Check button is now hidden; keep focus in the dialog.
     document.getElementById("skillDoneBtn").focus();
   });
@@ -2906,6 +2961,23 @@ function getCurrentElapsed() {
   window.addEventListener("online", () => {
     document.getElementById("radioBtn").disabled = false;
   });
+
+  // ─── Privacy dialog + rulebook analytics ─────────────────────────────────────
+  // Kept apart from the rulebook viewer code: reads the active tab after it is shown and
+  // only ever sends a label that appears in RULEBOOK_TABS (never arbitrary text).
+  document.getElementById("privacyBtn")       .addEventListener("click", () => openModal("privacyModal", "privacyModalClose"));
+  document.getElementById("privacyModalClose").addEventListener("click", () => closeModal("privacyModal"));
+  document.getElementById("privacyModal")     .addEventListener("click", e => { if (e.target === e.currentTarget) closeModal("privacyModal"); });
+  function trackRulesTab() {
+    const active = document.querySelector('#rulesTabs .active, #rulesTabs [aria-pressed="true"], #rulesTabs [aria-selected="true"]');
+    const label = active ? active.textContent.trim() : "";
+    const known = RULEBOOK_TABS.find(t => t.label === label);
+    if (known && document.getElementById("rulesModal").classList.contains("open")) {
+      track("rules_open", { tab: known.file.split("/").pop().replace(/\.\w+$/, "") });
+    }
+  }
+  document.getElementById("rulesBtn") .addEventListener("click", trackRulesTab);
+  document.getElementById("rulesTabs").addEventListener("click", e => { if (e.target.closest("button")) trackRulesTab(); });
 
   try {
     const lastResult     = localStorage.getItem("lastResult");
