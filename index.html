@@ -10,9 +10,9 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Twin Stars">
-  <link rel="icon" type="image/png" href="icon-192.png">
-  <link rel="apple-touch-icon" href="icon-192.png">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://umami.1jc.in; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src https://umami.1jc.in; img-src 'self' data:; manifest-src 'self'; worker-src 'self'; media-src https://*.somafm.com;">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://umami.1jc.in; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src https://umami.1jc.in; img-src 'self' data:; manifest-src 'self'; worker-src 'self'; media-src https://*.somafm.com;">
   <!-- Anti-clickjacking (OWASP frame-busting): hidden until head.js confirms we are top-level.
        GitHub Pages can't send frame-ancestors / X-Frame-Options, and meta CSP can't set frame-ancestors. -->
   <style id="antiClickjack">html{display:none !important}</style>
@@ -23,20 +23,69 @@
   <meta property="og:url" content="https://jamescochran.github.io/TwinStarsRando/">
   <meta property="og:title" content="Twin Stars Randomizer">
   <meta property="og:description" content="Free PWA companion for Twin Stars Adventure Series — randomizes character pairs and scenarios, times sessions, and tracks play history across all content packs.">
-  <meta property="og:image" content="https://jamescochran.github.io/TwinStarsRando/icon-512.png">
-  <meta property="og:image:width"  content="512">
-  <meta property="og:image:height" content="512">
+  <meta property="og:site_name" content="Twin Stars Randomizer">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:image" content="https://jamescochran.github.io/TwinStarsRando/og-image.jpg">
+  <meta property="og:image:type" content="image/jpeg">
+  <meta property="og:image:width"  content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Twin Stars Adventure Randomizer: random character pairs and scenarios, session timer, SYZYGY campaign and mission log.">
   <link rel="canonical" href="https://jamescochran.github.io/TwinStarsRando/">
-  <meta name="twitter:card" content="summary">
+  <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Twin Stars Randomizer">
   <meta name="twitter:description" content="Free PWA companion for Twin Stars Adventure Series — randomizes character pairs and scenarios, times sessions, and tracks play history across all content packs.">
-  <meta name="twitter:image" content="https://jamescochran.github.io/TwinStarsRando/icon-512.png">
+  <meta name="twitter:image" content="https://jamescochran.github.io/TwinStarsRando/og-image.jpg">
+  <meta name="twitter:image:alt" content="Twin Stars Adventure Randomizer: random character pairs and scenarios, session timer, SYZYGY campaign and mission log.">
+  <!-- Structured data (a non-executable data block, so the CSP's script-src does not apply). -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Twin Stars Randomizer",
+    "alternateName": "Twin Stars Adventure Series Randomizer",
+    "description": "Free, unofficial companion app for the Twin Stars Adventure Series by Button Shy Games: randomizes character pairs and scenarios, times sessions, runs the SYZYGY campaign and tracks play history across all content packs. Works offline.",
+    "url": "https://jamescochran.github.io/TwinStarsRando/",
+    "image": "https://jamescochran.github.io/TwinStarsRando/og-image.jpg",
+    "applicationCategory": "GameApplication",
+    "operatingSystem": "Web",
+    "browserRequirements": "Requires JavaScript",
+    "isAccessibleForFree": true,
+    "inLanguage": "en",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "author": { "@type": "Person", "name": "James Dean Cochran" }
+  }
+  </script>
   <script async src="https://umami.1jc.in/script.js" data-website-id="726ddc74-d419-4856-a3c8-cd5ce54f7093" data-domains="jamescochran.github.io" data-exclude-search="true" data-exclude-hash="true" data-do-not-track="true" integrity="sha384-LTPPwaLbU0osA3KlbZu0gbKM+OX2/iNJYVcdtY6ZFUJfsuj7LJ+40McwiPCPpKad" crossorigin="anonymous"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600&display=swap">
+  <!-- Self-hosted fonts (SIL OFL, see fonts/OFL.txt): no render-blocking third-party CSS, no visitor IPs sent to Google,
+       and the service worker precaches them so they render offline on the first visit too. -->
+  <link rel="preload" href="fonts/orbitron-latin.woff2" as="font" type="font/woff2" crossorigin>
   <style>
+    /* Variable fonts: one file covers every weight in the range. unicode-range lets the browser
+       skip latin-ext unless a page actually contains those characters (e.g. in a typed note). */
+    @font-face {
+      font-family: 'Orbitron';
+      font-style: normal;
+      font-weight: 400 900;
+      font-display: swap;
+      src: url(fonts/orbitron-latin.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+    @font-face {
+      font-family: 'Exo 2';
+      font-style: normal;
+      font-weight: 100 900;
+      font-display: swap;
+      src: url(fonts/exo2-latin-ext.woff2) format('woff2');
+      unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+    @font-face {
+      font-family: 'Exo 2';
+      font-style: normal;
+      font-weight: 100 900;
+      font-display: swap;
+      src: url(fonts/exo2-latin.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
     :root {
       color-scheme: dark;
       --bg-deep:      #07091a;
@@ -1578,6 +1627,24 @@
       min-height: 36px;
     }
     .btn-tip-dismiss:hover { background: var(--teal-hover); }
+    /* Install app (shown only after the browser offers installation) */
+    .btn-install {
+      background: none;
+      border: 1px solid var(--border-control);
+      border-radius: var(--radius);
+      color: var(--text-muted);
+      cursor: pointer;
+      line-height: 1;
+      padding: 8px 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.15s, border-color 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-install[hidden] { display: none; }
+    .btn-install:hover { color: var(--accent-teal); border-color: var(--accent-teal); background: var(--tint-teal); }
+    .install-hint-share { display: inline-block; vertical-align: -2px; }
     /* Settings modal */
     .settings-box {
       background: var(--bg-panel);
@@ -3759,6 +3826,7 @@
         <button class="btn-radio"  id="radioBtn"  title="SomaFM Mission Control" aria-label="Play ambient radio">♫</button>
         <button class="btn-volume" id="volumeBtn" title="Volume" aria-label="Adjust volume" aria-expanded="false" aria-controls="volumePopover">🔊</button>
         <button class="btn-theme"  id="themeBtn"  title="Switch theme" aria-label="Switch theme"></button>
+        <button class="btn-install" id="installBtn" type="button" title="Install app" aria-label="Install app" hidden><svg aria-hidden="true" focusable="false" width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1.5v7.5M3.8 6.2 7 9.3l3.2-3.1M2 12.5h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
         <button class="btn-settings" id="settingsBtn" title="My Collection">My Collection</button>
       </div>
       <div class="volume-popover" id="volumePopover">
@@ -3773,6 +3841,10 @@
       <p><strong aria-hidden="true">🔒</strong><span class="sr-only">Lock button</span> — lock a character or scenario to keep it when you randomize.</p>
       <p>Tap <strong>?</strong> anytime to see all features.</p>
       <button class="btn-tip-dismiss" id="tipDismiss">Got It</button>
+    </div>
+    <div class="onboarding-tip hidden" id="iosInstallHint" role="note" aria-labelledby="iosInstallHintTitle">
+      <p><strong id="iosInstallHintTitle">Install Twin Stars</strong> — tap <svg class="install-hint-share" aria-hidden="true" focusable="false" width="14" height="16" viewBox="0 0 14 16" fill="none"><path d="M7 1v9M4 4l3-3 3 3M3 7H2v8h10V7h-1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="sr-only">the</span> <strong>Share</strong> button, then <strong>Add to Home Screen</strong>. It opens full screen and works offline.</p>
+      <button class="btn-tip-dismiss" id="iosInstallHintDismiss" type="button">Got It</button>
     </div>
     <h1>Twin<br> Stars<br> <span>Adventure</span><br><span class="sub">Randomizer</span></h1>
     <div class="header-rule"></div>
@@ -3960,7 +4032,7 @@
 <section id="toastRegion" class="toast-region" aria-label="Notifications"></section>
 
 <audio id="radioAudio" preload="none"></audio>
-<script src="app.js"></script>
+<script src="app.js" defer></script>
 <noscript><p style="font-family:sans-serif;text-align:center;padding:40px;">Twin Stars Randomizer requires JavaScript to run.</p></noscript>
 </body>
 </html>

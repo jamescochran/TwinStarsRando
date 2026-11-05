@@ -31,6 +31,15 @@ grep -q 'id="buildStamp">2026-01-02 03:04 UTC · <a href="https://github.com/jam
 for f in $(grep -o 'BASE + "[^"]*"' "$root/service-worker.js" | sed 's/BASE + "//; s/"$//'); do
   [ -f "$out/$f" ] || fail "precached asset missing from build: $f"
 done
+# Every icon/screenshot the manifest lists, and every local file the <head> links
+# (icons, preloaded fonts, og:image), must be in the artifact.
+for f in $(grep -o '"src": *"[^"]*"' "$root/manifest.json" | sed 's/"src": *"//; s/"$//' | sort -u); do
+  [ -f "$out/$f" ] || fail "manifest file missing from build: $f"
+done
+for f in $(grep -oE '<link rel="(icon|apple-touch-icon|preload|manifest)"[^>]*href="[^":]*"' "$root/index.html" | sed -E 's/.*href="([^"]*)"/\1/' | sort -u) \
+         $(grep -oE 'https://jamescochran\.github\.io/TwinStarsRando/[A-Za-z0-9_./-]+\.(png|jpg)' "$root/index.html" | sed 's|.*/TwinStarsRando/||' | sort -u); do
+  [ -f "$out/$f" ] || fail "file linked from index.html missing from build: $f"
+done
 # Every rulebook image the app references must be in the artifact.
 for f in $(grep -o 'rules/[A-Za-z0-9_.-]*\.\(png\|webp\|jpg\|avif\)' "$root/app.js" | sort -u); do
   [ -f "$out/$f" ] || fail "rulebook image missing from build: $f"

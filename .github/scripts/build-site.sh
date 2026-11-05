@@ -25,8 +25,10 @@ if ! [[ "$run" =~ ^[0-9]+$ ]]; then echo "bad run number: $run" >&2; exit 1; fi
 root=$(cd "$(dirname "$0")/../.." && pwd)
 mkdir -p "$out"
 cp "$root"/index.html "$root"/app.js "$root"/head.js "$root"/service-worker.js \
-   "$root"/manifest.json "$root"/icon-192.png "$root"/icon-512.png "$out"/
+   "$root"/manifest.json "$root"/icon-*.png "$root"/apple-touch-icon.png "$root"/og-image.jpg "$out"/
 cp -R "$root"/rules "$out"/rules
+cp -R "$root"/fonts "$out"/fonts
+cp -R "$root"/screenshots "$out"/screenshots
 
 cache="twin-stars-${short}-${run}"
 sed -i -E "s/^const CACHE = \"[^\"]*\";/const CACHE = \"${cache}\";/" "$out/service-worker.js"

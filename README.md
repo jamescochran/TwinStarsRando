@@ -141,7 +141,7 @@ TwinStarsRando/
   tests/              ← Playwright e2e test suite
 ```
 
-**Fonts:** Orbitron (headings) and Exo 2 (body) from Google Fonts. Both are cached by the service worker on first visit — offline looks correct from the second load onward. Falls back to system sans-serif on the first offline load.
+**Fonts:** Orbitron (headings) and Exo 2 (body), self-hosted in `fonts/` as latin (and Exo 2 latin-ext) variable woff2 subsets from Google Fonts, under the SIL Open Font License (`fonts/OFL.txt`). The service worker precaches the latin files, so they render offline from the first visit; nothing is requested from Google.
 
 **Storage:** `localStorage` only. Nothing is ever sent to a server. There is no server.
 
@@ -199,7 +199,7 @@ All user-visible data passes through `esc()` before insertion via `innerHTML`. T
 
 ### Service Worker Cache
 
-The cache name in `service-worker.js` must change on every deployment or installed PWA users will receive stale content indefinitely. The deploy workflow does this automatically (`twin-stars-<shortsha>-<run>`, see Release / deploy); don't hand-edit the `const CACHE = "...";` line's format, because the build's `sed` relies on it. The fonts live in a separate persistent `FONTS_CACHE` that survives app cache rotations.
+The cache name in `service-worker.js` must change on every deployment or installed PWA users will receive stale content indefinitely. The deploy workflow does this automatically (`twin-stars-<shortsha>-<run>`, see Release / deploy); don't hand-edit the `const CACHE = "...";` line's format, because the build's `sed` relies on it. Fonts are precached with the app files. (The legacy `FONTS_CACHE` for Google Fonts is no longer written to; it is kept out of the activate cleanup only for older installs and can be removed.)
 
 ### Analytics and privacy
 
