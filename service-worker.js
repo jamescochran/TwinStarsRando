@@ -1,4 +1,4 @@
-const CACHE = "twin-stars-2026-11-05-0129";
+const CACHE = "twin-stars-dev";
 const FONTS_CACHE = "twin-stars-fonts-v1";
 // Rulebook images live in their own cache that survives releases: they are large and rarely
 // change, and players rely on them offline. Bump this only when the rulebook files change.
