@@ -32,6 +32,10 @@ const ALLOWED = {
   rail_toggle: ["on"],
   daily_play: [],
   daily_share: [],
+  lab_open: [],
+  gauntlet_start: ["scenarios"],
+  gauntlet_complete: ["wins", "total"],
+  gauntlet_share: [],
 };
 
 const rec = (i, extra = {}) => ({
