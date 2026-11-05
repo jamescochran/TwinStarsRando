@@ -278,20 +278,140 @@
   let historyDirty  = true;
   let unplayedDirty = true;
   let statsDirty    = true;
-  try {
-    const raw = localStorage.getItem("gameRecords");
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      records = parsed.filter(isValidRecord);
-      const dropped = parsed.length - records.length;
-      if (dropped > 0) {
-        console.warn(`Discarded ${dropped} invalid record(s) from localStorage.`);
-        // saveRecords() will overwrite "gameRecords" without the rejected entries, so keep
-        // the untouched original (first occurrence only) where it can still be recovered.
-        try { if (!localStorage.getItem("gameRecordsBackup")) localStorage.setItem("gameRecordsBackup", raw); } catch(e) {}
-        setTimeout(() => toast(`${dropped} saved record(s) could not be loaded and were skipped. A backup copy was kept.`, "error"), 300);
+
+  // Stored record schema. "gameRecords" stays a plain array of records so older app
+  // versions (which ignore unknown fields) can still read it; the version lives in its
+  // own key. v1 = no id/createdAt; v2 = every record has a stable id and an ISO createdAt
+  // (plus updatedAt once edited). The human "timestamp" is kept for display.
+  const RECORDS_VERSION = 2;
+  const BACKUP_CAP      = 500;   // most entries kept in "gameRecordsBackup"
+
+  function newId() {
+    try { if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID(); } catch(e) {}
+    const b = new Uint8Array(16);
+    try { crypto.getRandomValues(b); } catch(e) { for (let i = 0; i < 16; i++) b[i] = Math.floor(Math.random() * 256); }
+    b[6] = (b[6] & 0x0f) | 0x40; b[8] = (b[8] & 0x3f) | 0x80;
+    const h = [...b].map(x => x.toString(16).padStart(2, "0")).join("");
+    return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+  }
+
+  // Everything the player recorded, in a fixed order: identical content = identical signature.
+  function recordSignature(r) {
+    return JSON.stringify([r.timestamp, r.characters, r.scenario, r.result, r.difficulty, r.playtime ?? null, r.notes || "", r.droid || ""]);
+  }
+  // The pre-v2 import dedupe key.
+  function legacyKey(r) { return `${r.timestamp}|${r.characters.join("|")}|${r.scenario}`; }
+  // Records saved before ids existed get an id derived from their content, so two tabs
+  // migrating at once, or an old backup of the same records, arrive at the same ids.
+  function legacyId(r) {
+    let h = 0x811c9dc5;
+    const s = recordSignature(r);
+    for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
+    return "legacy-" + h.toString(16).padStart(8, "0");
+  }
+
+  // Field order of this browser's toLocaleString() ("mdy", "dmy", "ymd"), which most
+  // likely wrote the stored timestamps; used to read ambiguous dates like 03/04/2026.
+  const LOCALE_DATE_ORDER = (() => {
+    try {
+      const s = new Date(2033, 10, 22, 13, 4, 5).toLocaleString();
+      const pos = { y: s.indexOf("2033"), m: s.indexOf("11"), d: s.indexOf("22") };
+      if (Object.values(pos).some(p => p < 0)) return null;
+      return Object.keys(pos).sort((a, b) => pos[a] - pos[b]).join("");
+    } catch(e) { return null; }
+  })();
+  const STAMP_MIN = Date.UTC(2020, 0, 1);
+  // Best-effort parse of a toLocaleString() timestamp to epoch ms (NaN if unreadable).
+  function parseStamp(ts) {
+    if (typeof ts !== "string") return NaN;
+    const ok = t => (Number.isFinite(t) && t >= STAMP_MIN && t <= Date.now() + 864e5) ? t : NaN;
+    const m = ts.match(/(\d{1,4})\D{1,3}?(\d{1,2})\D{1,3}?(\d{1,4})\D+?(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+    if (m) {
+      const n = m.slice(1, 4).map(Number);
+      let y, mo, d;
+      if (m[1].length === 4)      { [y, mo, d] = n; }
+      else if (m[3].length === 4) {
+        y = n[2];
+        let mdy = LOCALE_DATE_ORDER === "mdy" ? true : LOCALE_DATE_ORDER === "dmy" ? false : /[ap]\.?\s?m\b/i.test(ts);
+        if (n[0] > 12) mdy = false; else if (n[1] > 12) mdy = true;
+        [mo, d] = mdy ? [n[0], n[1]] : [n[1], n[0]];
+      }
+      if (y) {
+        let hh = +m[4];
+        if (/p\.?\s?m\b|午後|오후/i.test(ts) && hh < 12) hh += 12;
+        if (/a\.?\s?m\b|午前|오전/i.test(ts) && hh === 12) hh = 0;
+        const dt = new Date(y, mo - 1, d, hh, +m[5], +(m[6] || 0));
+        if (dt.getMonth() === mo - 1 && dt.getDate() === d) return ok(dt.getTime());
       }
     }
+    return ok(Date.parse(ts));
+  }
+  const isIsoDate = s => typeof s === "string" && /^\d{4}-\d{2}-\d{2}T/.test(s) && Number.isFinite(Date.parse(s));
+
+  // Brings valid records up to v2 in place: unique ids, and createdAt from the timestamp
+  // where it can be read, else from the record's position (the array is in save order).
+  // Returns true if anything changed.
+  function migrateRecords(list) {
+    let changed = false;
+    const t = list.map(r => isIsoDate(r.createdAt) ? Date.parse(r.createdAt) : parseStamp(r.timestamp));
+    for (let i = 1; i < t.length; i++) if (!Number.isFinite(t[i]) && Number.isFinite(t[i - 1])) t[i] = t[i - 1] + 1;
+    for (let i = t.length - 2; i >= 0; i--) if (!Number.isFinite(t[i]) && Number.isFinite(t[i + 1])) t[i] = t[i + 1] - 1;
+    const base = Date.now() - t.length;
+    const seen = new Set();
+    list.forEach((r, i) => {
+      if (typeof r.id !== "string" || !r.id || r.id.length > 64 || seen.has(r.id)) {
+        let id = legacyId(r), n = 1;
+        while (seen.has(id)) id = legacyId(r) + "-" + n++;
+        r.id = id; changed = true;
+      }
+      seen.add(r.id);
+      if (!isIsoDate(r.createdAt)) {
+        r.createdAt = new Date(Number.isFinite(t[i]) ? t[i] : base + i).toISOString(); changed = true;
+      }
+      if (r.updatedAt != null && !isIsoDate(r.updatedAt)) { delete r.updatedAt; changed = true; }
+    });
+    return changed;
+  }
+
+  // Reads and migrates the stored log. Throws if storage can't be read.
+  function readStoredRecords() {
+    const raw = localStorage.getItem("gameRecords");
+    if (!raw) return { list: [], dropped: [], changed: false };
+    let parsed;
+    try { parsed = JSON.parse(raw); } catch(e) { parsed = null; }
+    if (!Array.isArray(parsed)) return { list: [], dropped: [raw], changed: true };
+    const list    = parsed.filter(isValidRecord);
+    const dropped = parsed.filter(r => !isValidRecord(r));
+    const changed = migrateRecords(list) || dropped.length > 0;
+    return { list, dropped, changed };
+  }
+
+  // Records that fail validation are appended (not just the first time) to a capped backup.
+  function backupDropped(dropped) {
+    try {
+      const raw = localStorage.getItem("gameRecordsBackup");
+      let entries = [];
+      if (raw) { try { const v = JSON.parse(raw); entries = Array.isArray(v) ? v : [v]; } catch(e) { entries = [raw]; } }
+      const have = new Set(entries.map(e => JSON.stringify(e)));
+      dropped.forEach(r => { const s = JSON.stringify(r); if (!have.has(s)) { have.add(s); entries.push(r); } });
+      localStorage.setItem("gameRecordsBackup", JSON.stringify(entries.slice(-BACKUP_CAP)));
+    } catch(e) {}
+  }
+
+  function writeRecords(list) {
+    localStorage.setItem("gameRecords", JSON.stringify(list));
+    try { localStorage.setItem("gameRecordsVersion", String(RECORDS_VERSION)); } catch(e) {}
+  }
+
+  try {
+    const { list, dropped, changed } = readStoredRecords();
+    records = list;
+    if (dropped.length > 0) {
+      console.warn(`Discarded ${dropped.length} invalid record(s) from localStorage.`);
+      backupDropped(dropped);
+      setTimeout(() => toast(`${dropped.length} saved record(s) could not be loaded and were skipped. A backup copy was kept.`, "error"), 300);
+    }
+    if (changed) { try { writeRecords(records); } catch(e) {} }
   } catch (e) {
     console.warn("Could not load saved records:", e);
   }
@@ -309,22 +429,93 @@
     document.getElementById("clearDataBtn").disabled = empty;
   }
 
-  function saveRecords() {
+  function markRecordsDirty() {
     historyDirty  = true;
     unplayedDirty = true;
     statsDirty    = true;
     syncExportBtn();
-    try {
-      localStorage.setItem("gameRecords", JSON.stringify(records));
-    } catch (e) {
-      toast("Could not save — storage may be full.", "error");
+  }
+
+  // Union by id, first list wins.
+  function mergeById(a, b) {
+    const ids = new Set(a.map(r => r.id));
+    return [...a, ...b.filter(r => !ids.has(r.id))];
+  }
+
+  // Every change to the log is applied to what is in storage *now* (read-modify-write),
+  // so a tab with a stale copy never erases records another tab saved. `change` gets a
+  // fresh copy of the stored records and returns the new list, or null to cancel.
+  // Returns true only once the new list is in storage; on failure the in-memory log is
+  // left as storage has it and a persistent error offers an export of the lost change.
+  function commitRecords(change) {
+    let base;
+    try { base = readStoredRecords().list; }
+    catch(e) { base = JSON.parse(JSON.stringify(records)); }
+    // `change` edits a copy, so a failed write can fall back to `base` untouched.
+    const next = change(JSON.parse(JSON.stringify(base)));
+    if (!next) return false;
+    if (!next.every(isValidRecord)) {
+      showStorageError("Couldn't save: the record is not valid.", next.filter(isValidRecord));
+      return false;
     }
+    try {
+      writeRecords(next);
+    } catch (e) {
+      records = base;
+      markRecordsDirty();
+      showStorageError("Couldn't save — your browser's storage is full or blocked. This change was not saved.", next);
+      return false;
+    }
+    records = next;
+    markRecordsDirty();
+    requestPersistentStorage();
+    return true;
+  }
+
+  // Ask the browser not to evict our data under storage pressure (once, after a save).
+  let _persistAsked = false;
+  function requestPersistentStorage() {
+    if (_persistAsked) return;
+    _persistAsked = true;
+    try {
+      if (navigator.storage && navigator.storage.persist) {
+        navigator.storage.persisted().then(p => p || navigator.storage.persist()).catch(() => {});
+      }
+    } catch(e) {}
+  }
+
+  // A failed save is shown in a banner that stays until dismissed (a toast can be
+  // replaced or time out unread), with an export of everything, including the change
+  // that couldn't be saved.
+  let _unsavedForExport = null;
+  function showStorageError(msg, attempted) {
+    _unsavedForExport = mergeById(attempted || [], records);
+    let bar = document.getElementById("storageError");
+    if (!bar) {
+      bar = document.createElement("div");
+      bar.id = "storageError";
+      bar.className = "storage-error";
+      bar.setAttribute("role", "alert");
+      bar.innerHTML = `<span id="storageErrorText"></span>
+        <span class="storage-error-actions">
+          <button type="button" class="toast-action" id="storageErrorExport">Export backup</button>
+          <button type="button" class="toast-action" id="storageErrorDismiss" aria-label="Dismiss storage error">Dismiss</button>
+        </span>`;
+      document.body.appendChild(bar);
+      bar.querySelector("#storageErrorExport").addEventListener("click", () => handleExport(_unsavedForExport || records));
+      bar.querySelector("#storageErrorDismiss").addEventListener("click", () => { bar.classList.add("hidden"); _unsavedForExport = null; });
+    }
+    bar.querySelector("#storageErrorText").textContent = msg + " Export a backup so nothing is lost.";
+    bar.classList.remove("hidden");
   }
 
   // ─── Helpers ────────────────────────────────────────────────────────────────
   // Stable unique key for a character+scenario combination.
   // Uses ASCII control characters (unit separator \x1F, record separator \x1E)
   // as delimiters — they can never appear in a character or scenario name.
+  // Chronological order by createdAt (ISO strings sort as text).
+  function byCreated(a, b) { return a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : 0; }
+
   function comboKey(comb) {
     return comb.characters.join("\x1F") + "\x1E" + comb.scenario;
   }
@@ -366,7 +557,13 @@
   let _undoAction = null;
 
   // toast(msg, type, action?) — action = { label, onClick } adds a button (e.g. Undo).
+  let _deferredToast = null;
   function toast(msg, type, action) {
+    // An error is never replaced by a non-error message: that one waits until the error goes.
+    if (type !== "error" && document.querySelector("#toastRegion .toast.error")) {
+      _deferredToast = [msg, type, action];
+      return;
+    }
     // One toast at a time (they share a position), shown long enough to read.
     document.querySelectorAll(".toast").forEach(el => el.remove());
     _undoAction = null;
@@ -376,7 +573,12 @@
     text.textContent = msg;
     t.appendChild(text);
     let timer;
-    const remove = () => { clearTimeout(timer); t.remove(); if (_undoAction === run) _undoAction = null; };
+    const remove = () => {
+      clearTimeout(timer); t.remove(); if (_undoAction === run) _undoAction = null;
+      if (type === "error" && _deferredToast && !document.querySelector("#toastRegion .toast.error")) {
+        const d = _deferredToast; _deferredToast = null; toast(...d);
+      }
+    };
     let run = null;
     _toastOffered = false;
     if (action) {
@@ -494,7 +696,7 @@ function stopTimer() {
     timerInterval = null;
   }
   // Fold the running segment in so the card keeps showing the final time.
-  if (startTime && !timerPaused) accumulatedTime += Date.now() - startTime;
+  if (startTime && !timerPaused) accumulatedTime += Math.max(0, Date.now() - startTime);
   timerPaused = false;
   startTime   = null;
   const el = document.getElementById("timerDisplay");
@@ -512,7 +714,7 @@ function togglePause() {
 
   if (!timerPaused) {
     timerPaused = true;
-    accumulatedTime += Date.now() - startTime;
+    accumulatedTime += Math.max(0, Date.now() - startTime); // never negative if the clock went back
   } else {
     timerPaused = false;
     startTime = Date.now();
@@ -535,7 +737,7 @@ function togglePause() {
 
 function updateDisplay() {
   if (timerPaused) return;
-  const elapsedMs = accumulatedTime + (Date.now() - startTime);
+  const elapsedMs = accumulatedTime + Math.max(0, Date.now() - startTime);
   const el = document.getElementById("timerDisplay");
   const text = formatTime(Math.floor(elapsedMs / 1000));
   if (el && el.textContent !== text) el.textContent = text;
@@ -543,7 +745,7 @@ function updateDisplay() {
 
 function getCurrentElapsed() {
   if (timerPaused || !startTime) return Math.floor(accumulatedTime / 1000);
-  return Math.floor((accumulatedTime + (Date.now() - startTime)) / 1000);
+  return Math.floor((accumulatedTime + Math.max(0, Date.now() - startTime)) / 1000);
 }
 
   // ─── Dropdowns ──────────────────────────────────────────────────────────────
@@ -734,14 +936,13 @@ function getCurrentElapsed() {
 
   function displayComboHistory(comb) {
     const div  = document.getElementById("comboHistory");
-    const recs = records.filter(r => comboKey(r) === comboKey(comb));
+    const recs = records.filter(r => comboKey(r) === comboKey(comb)).sort(byCreated);
 
     if (!recs.length) {
       div.innerHTML = `<div class="notice">No records yet for this combination.</div>`;
       return;
     }
     const rows = recs.map((rec) => {
-      const globalIdx = records.indexOf(rec);
       return `
       <tr>
         <td class="td-meta">
@@ -751,7 +952,7 @@ function getCurrentElapsed() {
         <td><span class="result-pill ${rec.result === "Win" ? "win" : "loss"}">${esc(rec.result)}</span></td>
         <td><span class="diff-pill">${esc(rec.difficulty)}</span></td>
         <td class="td-time">${rec.playtime != null ? formatTime(rec.playtime) : "—"}</td>
-        <td><button class="btn-delete-record" data-idx="${globalIdx}" title="Delete" aria-label="Delete record from ${esc(shortStamp(rec.timestamp))}">✕</button></td>
+        <td><button class="btn-delete-record" data-id="${esc(rec.id)}" title="Delete" aria-label="Delete record from ${esc(shortStamp(rec.timestamp))}">✕</button></td>
       </tr>`;}).join("");
 
     // Droid coverage summary for this combo
@@ -784,7 +985,7 @@ function getCurrentElapsed() {
       const deleteBtn = e.target.closest(".btn-delete-record");
       if (!deleteBtn) return;
       _deleteTrigger    = deleteBtn;
-      _pendingDeleteIdx = parseInt(deleteBtn.dataset.idx, 10);
+      _pendingDeleteId  = deleteBtn.dataset.id;
       _deleteCallback   = () => { displayCombination(currentCombination); displayComboHistory(currentCombination); };
       openDeleteModal();
     };
@@ -942,13 +1143,13 @@ function getCurrentElapsed() {
     const diffOrder = { Easy: 0, Medium: 1, Hard: 2 };
     displayed.sort((a, b) => {
       switch (sortBy) {
-        case "date-asc":    return a.idx - b.idx;
-        case "date-desc":   return b.idx - a.idx;
+        case "date-asc":    return byCreated(a.rec, b.rec) || a.idx - b.idx;
+        case "date-desc":   return byCreated(b.rec, a.rec) || b.idx - a.idx;
         case "result":      return a.rec.result.localeCompare(b.rec.result);
         case "difficulty":  return (diffOrder[a.rec.difficulty] ?? 1) - (diffOrder[b.rec.difficulty] ?? 1);
         case "characters":  return a.rec.characters.join(" & ").localeCompare(b.rec.characters.join(" & "));
         case "scenario":    return a.rec.scenario.localeCompare(b.rec.scenario);
-        default:            return b.idx - a.idx;
+        default:            return byCreated(b.rec, a.rec) || b.idx - a.idx;
       }
     });
 
@@ -968,7 +1169,7 @@ function getCurrentElapsed() {
       return;
     }
 
-    const rows = displayed.map(({ rec, idx }) => {
+    const rows = displayed.map(({ rec }) => {
       const notesRow = rec.notes
         ? `<tr class="notes-row"><td colspan="7">${esc(rec.notes)}</td></tr>`
         : "";
@@ -981,8 +1182,8 @@ function getCurrentElapsed() {
           <td><span class="diff-pill">${esc(rec.difficulty)}</span></td>
           <td class="td-time">${rec.playtime != null ? formatTime(rec.playtime) : "—"}</td>
           <td class="td-nowrap">
-            <button class="btn-edit-record"   data-idx="${idx}" title="Edit"   aria-label="Edit ${esc(recordLabel(rec))}">✎</button>
-            <button class="btn-delete-record" data-idx="${idx}" title="Delete" aria-label="Delete ${esc(recordLabel(rec))}">✕</button>
+            <button class="btn-edit-record"   data-id="${esc(rec.id)}" title="Edit"   aria-label="Edit ${esc(recordLabel(rec))}">✎</button>
+            <button class="btn-delete-record" data-id="${esc(rec.id)}" title="Delete" aria-label="Delete ${esc(recordLabel(rec))}">✕</button>
           </td>
         </tr>${notesRow}`;
     }).join("");
@@ -1001,12 +1202,12 @@ function getCurrentElapsed() {
     // (assigned, not added, because this function runs on every re-render).
     container.onclick = e => {
       const editBtn = e.target.closest(".btn-edit-record");
-      if (editBtn) { openEditModal(parseInt(editBtn.dataset.idx, 10)); return; }
+      if (editBtn) { openEditModal(editBtn.dataset.id); return; }
 
       const deleteBtn = e.target.closest(".btn-delete-record");
       if (deleteBtn) {
         _deleteTrigger    = deleteBtn;
-        _pendingDeleteIdx = parseInt(deleteBtn.dataset.idx, 10);
+        _pendingDeleteId  = deleteBtn.dataset.id;
         _deleteCallback   = () => { displayHistory(); displayUnplayed(); displayStats(); if (currentCombination) { displayCombination(currentCombination); displayComboHistory(currentCombination); } };
         openDeleteModal();
       }
@@ -1110,13 +1311,23 @@ function getCurrentElapsed() {
   }
 
   // ─── Content packs ──────────────────────────────────────────────────────────
-  let enabledPacks;
-  try {
-    const raw = localStorage.getItem("enabledPacks");
-    enabledPacks = raw ? new Set(JSON.parse(raw)) : new Set(["series1"]);
-  } catch(e) {
-    enabledPacks = new Set(["series1"]);
+  // Reads the stored pack list, accepting a JSON array or a legacy plain/comma-separated
+  // string; unknown ids are ignored, and a list too small to play falls back to Series 1.
+  function parseEnabledPacks(raw) {
+    const fallback = new Set(["series1"]);
+    if (!raw) return fallback;
+    let ids;
+    try { const v = JSON.parse(raw); ids = Array.isArray(v) ? v : typeof v === "string" ? v.split(",") : []; }
+    catch(e) { ids = String(raw).split(","); }
+    const known = new Set(CONTENT_PACKS.map(p => p.id));
+    const set = new Set(ids.filter(id => typeof id === "string").map(id => id.trim()).filter(id => known.has(id)));
+    const active = CONTENT_PACKS.filter(p => set.has(p.id));
+    const playable = new Set(active.flatMap(p => p.characters)).size >= 2 && active.some(p => p.scenarios.length);
+    return playable ? set : fallback;
   }
+  let enabledPacks;
+  try { enabledPacks = parseEnabledPacks(localStorage.getItem("enabledPacks")); }
+  catch(e) { enabledPacks = new Set(["series1"]); }
 
   function saveEnabledPacks() {
     try { localStorage.setItem("enabledPacks", JSON.stringify([...enabledPacks])); } catch(e) {}
@@ -1185,8 +1396,18 @@ function getCurrentElapsed() {
 
   function closeSettings() {
     // Re-derive active content from the new pack selection before closing.
-    buildActiveContent();
     saveEnabledPacks();
+    applyPacks();
+    closeModal("settingsModal");
+    if (_packsAtOpen && _packsAtOpen !== [...enabledPacks].sort().join()) {
+      announce(`Collection updated: ${characters.length} characters, ${scenarios.length} scenarios${droids.length ? `, ${droids.length} droids` : ""}.`);
+    }
+    _packsAtOpen = "";
+  }
+
+  // Rebuilds everything that depends on the enabled packs (My Collection, another tab).
+  function applyPacks() {
+    buildActiveContent();
     populateSelectors();
     if (currentCombination) {
       const valid =
@@ -1207,11 +1428,6 @@ function getCurrentElapsed() {
     displayHistory();
     displayUnplayed();
     displayStats();
-    closeModal("settingsModal");
-    if (_packsAtOpen && _packsAtOpen !== [...enabledPacks].sort().join()) {
-      announce(`Collection updated: ${characters.length} characters, ${scenarios.length} scenarios${droids.length ? `, ${droids.length} droids` : ""}.`);
-    }
-    _packsAtOpen = "";
   }
 
   // ─── Generic modal helpers ───────────────────────────────────────────────────
@@ -1230,6 +1446,9 @@ function getCurrentElapsed() {
     const openOverlay = document.querySelector(".modal-overlay.open");
     const shell = document.querySelector(".app-shell");
     if (shell) shell.inert = !!openOverlay;
+    // An Undo acting behind an open dialog would change records under it: hide toasts' actions meanwhile.
+    const region = document.getElementById("toastRegion");
+    if (region) region.inert = !!openOverlay;
   }
 
   // A trigger re-rendered while its dialog was open (e.g. the Edit button of a table
@@ -1237,8 +1456,8 @@ function getCurrentElapsed() {
   function refindTrigger(el) {
     if (!el || el.isConnected) return el;
     if (el.id) return document.getElementById(el.id);
-    if (el.dataset && el.dataset.idx != null && el.classList[0]) {
-      return document.querySelector(`.${el.classList[0]}[data-idx="${el.dataset.idx}"]`);
+    if (el.dataset && el.dataset.id != null && el.classList[0]) {
+      return document.querySelector(`.${el.classList[0]}[data-id="${CSS.escape(el.dataset.id)}"]`);
     }
     return null;
   }
@@ -1270,21 +1489,22 @@ function getCurrentElapsed() {
   // ─── Per-modal state ─────────────────────────────────────────────────────────
   // Some modals carry pending state that must be cleared when they close.
   let _deleteTrigger    = null; // element that opened the delete modal (for focus return via delegated handler)
-  let _pendingDeleteIdx = null; // record index waiting to be confirmed for deletion
+  let _pendingDeleteId  = null; // id of the record waiting to be confirmed for deletion
   let _deleteCallback   = null; // called after deletion to refresh whichever view triggered it
-  let _editIdx          = null; // record index currently open in the edit modal
+  let _editId           = null; // id of the record open in the edit modal (ids survive Undo re-inserting a record)
 
   function openDeleteModal() {
-    const rec = records[_pendingDeleteIdx];
+    const rec = records.find(r => r.id === _pendingDeleteId);
     document.getElementById("deleteRecordMsg").textContent = rec
       ? `Delete the record for ${rec.characters.join(" & ")} — ${scenarioText(rec.scenario)} (${rec.result}, ${rec.timestamp})?`
       : "Delete this mission record?";
     openModal("deleteRecordModal", "deleteRecordCancel");
   }
 
-  function openEditModal(idx) {
-    _editIdx = idx;
-    const rec = records[idx];
+  function openEditModal(id) {
+    const rec = records.find(r => r.id === id);
+    if (!rec) return;
+    _editId = id;
     document.getElementById("editRecordSummary").textContent =
       `${rec.characters.join(" & ")} — ${scenarioText(rec.scenario)} · ${rec.timestamp}`;
     document.getElementById("editResult").value     = rec.result;
@@ -1294,7 +1514,7 @@ function getCurrentElapsed() {
   }
 
   function closeEditModal() {
-    _editIdx = null;
+    _editId = null;
     closeModal("editRecordModal");
   }
 
@@ -1506,7 +1726,7 @@ function getCurrentElapsed() {
   }
 
   function closeDeleteModal() {
-    _pendingDeleteIdx = null;
+    _pendingDeleteId  = null;
     _deleteCallback   = null;
     // The delete button that triggered this modal was stored directly; return
     // focus to it rather than going through the _modalTriggers map.
@@ -1778,13 +1998,20 @@ function getCurrentElapsed() {
     announce(`Mission loaded: ${comb.characters[0]} and ${comb.characters[1]}, ${scenarioText(comb.scenario)}. Timer started.`);
     if (opts && opts.focusCard) document.getElementById("comboHeading").focus({ preventScroll: true });
 
-    // Sync manual selectors — put locked character back in its original slot
+    // Selectors show exactly the loaded mission (Character 1 = Primary). A lock the
+    // mission doesn't match is released, and the player is told.
     const c1 = document.getElementById("manualChar1");
     const c2 = document.getElementById("manualChar2");
     const sc = document.getElementById("manualScenario");
-    let [a, b] = comb.characters;
-    if      (locks.char1 && b === c1.value) { [a, b] = [b, a]; }
-    else if (locks.char2 && a === c2.value) { [a, b] = [b, a]; }
+    const [a, b] = comb.characters;
+    const released = [];
+    if (locks.char1    && c1.value !== a)             { locks.char1    = false; released.push("Character 1"); }
+    if (locks.char2    && c2.value !== b)             { locks.char2    = false; released.push("Character 2"); }
+    if (locks.scenario && sc.value !== comb.scenario) { locks.scenario = false; released.push("Scenario"); }
+    if (released.length) {
+      updateLockButtons();
+      toast(`${released.join(" and ")} lock released to match the loaded mission.`);
+    }
     c1.value = a;
     syncDropdown("manualChar1", "manualChar2");
     c2.value = b;
@@ -1861,20 +2088,25 @@ function getCurrentElapsed() {
     const playtime = getCurrentElapsed();
     const notesEl  = document.getElementById("recordNotes");
     const notes    = notesEl.value.trim().slice(0, 2000); // matches isValidRecord
-    stopTimer();
-    records.push({
-      characters: currentCombination.characters,
+    const now      = new Date();
+    const rec = {
+      id:         newId(),
+      createdAt:  now.toISOString(),
+      characters: [...currentCombination.characters],
       scenario:   currentCombination.scenario,
       result,
       difficulty,
       playtime,
-      timestamp: new Date().toLocaleString(),
+      timestamp: now.toLocaleString(),
       ...(_currentDroid ? { droid: _currentDroid } : {}),
       ...(notes ? { notes } : {})
-    });
+    };
+    if (!isValidRecord(rec)) { toast("Couldn't save: this record isn't valid. Check the result and difficulty.", "error"); return; }
+    stopTimer();
+    // On failure a persistent error is showing; keep the notes and the Save button for a retry.
+    if (!commitRecords(list => [...list, rec])) return;
     notesEl.value = "";
     try { localStorage.setItem("lastResult", result); localStorage.setItem("lastDifficulty", difficulty); } catch(e) {}
-    saveRecords();
     const saveBtn = document.getElementById("saveRecordBtn");
     saveBtn.disabled = true;
     saveBtn.textContent = "Saved";
@@ -1890,11 +2122,13 @@ function getCurrentElapsed() {
     track("save_record", { result, difficulty });
   }
 
-  function handleExport() {
-    if (!records.length) { toast("No records to export.", "error"); return; }
+  // `list` overrides what is exported (the storage-error banner exports unsaved changes too).
+  function handleExport(list) {
+    const recs = Array.isArray(list) ? list : records;
+    if (!recs.length) { toast("No records to export.", "error"); return; }
     const now      = new Date();
     const date     = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-    const blob     = new Blob([JSON.stringify(records, null, 2)], { type: "application/json" });
+    const blob     = new Blob([JSON.stringify(recs, null, 2)], { type: "application/json" });
     const url      = URL.createObjectURL(blob);
     const a        = document.createElement("a");
     a.href         = url;
@@ -1903,11 +2137,43 @@ function getCurrentElapsed() {
     a.click();
     document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(url), 1000);
-    toast(`Exported ${records.length} record${records.length !== 1 ? "s" : ""} to ${a.download}.`);
-    track("export", { records: records.length });
+    toast(`Exported ${recs.length} record${recs.length !== 1 ? "s" : ""} to ${a.download}.`);
+    track("export", { records: recs.length });
   }
 
   let _pendingImport = null;
+
+  // Merge rules (records are already migrated, so all have ids):
+  // - identical content to a record already in the log (or earlier in the file) → duplicate;
+  // - an imported record that carried an id matching one in the log → the copy with the
+  //   newer updatedAt/createdAt wins (an edit made on another device is applied);
+  // - a record without an id whose old key (timestamp + characters + scenario) matches a
+  //   log record but whose content differs → kept as well and counted as a conflict, since
+  //   there is no way to tell which copy is newer and dropping either could lose an edit.
+  function mergeImport(list, imported, hadId) {
+    const byId = new Map(list.map((r, i) => [r.id, i]));
+    const sigs = new Set(list.map(recordSignature));
+    const keys = new Set(list.map(legacyKey));
+    let added = 0, dupes = 0, updated = 0, conflicts = 0;
+    imported.forEach(r => {
+      const sig = recordSignature(r);
+      if (hadId.has(r.id) && byId.has(r.id)) {
+        const i = byId.get(r.id), cur = list[i];
+        if (recordSignature(cur) === sig) { dupes++; return; }
+        if ((r.updatedAt || r.createdAt) > (cur.updatedAt || cur.createdAt)) { list[i] = r; sigs.add(sig); updated++; }
+        else dupes++;
+        return;
+      }
+      if (sigs.has(sig)) { dupes++; return; }
+      if (!hadId.has(r.id) && keys.has(legacyKey(r))) conflicts++;
+      let id = r.id, n = 1;
+      while (byId.has(id)) id = r.id + "-" + n++;
+      const rec = { ...r, id };
+      byId.set(id, list.length); list.push(rec); sigs.add(sig); keys.add(legacyKey(rec));
+      added++;
+    });
+    return { list, added, dupes, updated, conflicts };
+  }
 
   document.getElementById("importBtn").addEventListener("click", () => document.getElementById("importFile").click());
   document.getElementById("importFile").addEventListener("change", function () {
@@ -1918,10 +2184,14 @@ function getCurrentElapsed() {
       try {
         const parsed = JSON.parse(e.target.result);
         if (!Array.isArray(parsed)) { toast("Couldn't import: this file isn't a Mission Log backup.", "error"); return; }
-        const valid   = parsed.filter(isValidRecord);
+        // Copies, so fields added by migration don't touch the parsed file; remember
+        // which records came with an id (ids added here are only for records without one).
+        const valid   = parsed.filter(isValidRecord).map(r => ({ ...r, characters: [...r.characters] }));
+        const hadId   = new Set(valid.filter(r => typeof r.id === "string" && r.id && r.id.length <= 64).map(r => r.id));
         const skipped = parsed.length - valid.length;
+        migrateRecords(valid);
         if (valid.length === 0) { toast("Couldn't import: no valid records in this file.", "error"); return; }
-        _pendingImport = { valid, skipped };
+        _pendingImport = { valid, skipped, hadId };
         const skipNote = skipped > 0 ? ` ${skipped} invalid record(s) will be skipped.` : "";
         const existing = records.length;
         document.getElementById("importConfirmMsg").textContent =
@@ -1939,10 +2209,11 @@ function getCurrentElapsed() {
     if (!_pendingImport) return;
     const { valid, skipped } = _pendingImport;
     closeImportModal();
-    const before = records;
-    records = valid;
-    saveRecords();
-    statsDirty = true;
+    // Replace what this tab shows; records another tab saved meanwhile (unseen here) stay.
+    const before   = records;
+    const shownIds = new Set(before.map(r => r.id));
+    const imported = new Set(valid.map(r => r.id));
+    if (!commitRecords(list => mergeById(valid, list.filter(r => !shownIds.has(r.id))))) { refreshRecordViews(); return; }
     displayHistory();
     displayUnplayed();
     displayStats();
@@ -1950,29 +2221,31 @@ function getCurrentElapsed() {
     const msg = skipped > 0
       ? `Replaced your records with ${valid.length} imported. ${skipped} invalid skipped.`
       : `Replaced your records with ${valid.length} imported.`;
-    undoToast(msg, () => { records = before; refreshAfterRecordsChange(); toast("Import undone. Your previous records are back."); });
+    undoToast(msg, () => {
+      if (!commitRecords(list => mergeById(before, list.filter(r => !imported.has(r.id))))) { refreshRecordViews(); return; }
+      refreshRecordViews(); toast("Import undone. Your previous records are back.");
+    });
     track("import", { mode: "replace", imported: valid.length, skipped });
   });
 
   document.getElementById("importMerge").addEventListener("click", () => {
     if (!_pendingImport) return;
-    const { valid, skipped } = _pendingImport;
+    const { valid, skipped, hadId } = _pendingImport;
     closeImportModal();
-    const existingKeys = new Set(records.map(r => `${r.timestamp}|${r.characters.join("|")}|${r.scenario}`));
-    const toAdd = valid.filter(r => !existingKeys.has(`${r.timestamp}|${r.characters.join("|")}|${r.scenario}`));
-    const dupes = valid.length - toAdd.length;
-    records = [...records, ...toAdd];
-    saveRecords();
-    statsDirty = true;
+    let res;
+    if (!commitRecords(list => { res = mergeImport(list, valid, hadId); return res.list; })) { refreshRecordViews(); return; }
+    const { added, dupes, updated, conflicts } = res;
     displayHistory();
     displayUnplayed();
     displayStats();
     if (currentCombination) { displayCombination(currentCombination); displayComboHistory(currentCombination); }
-    let msg = `Added ${toAdd.length} new record${toAdd.length !== 1 ? "s" : ""}.`;
+    let msg = `Added ${added} new record${added !== 1 ? "s" : ""}.`;
+    if (updated > 0) msg += ` ${updated} updated to a newer edit.`;
     if (dupes   > 0) msg += ` ${dupes} already in your log.`;
+    if (conflicts > 0) msg += ` ${conflicts} differ from a record with the same date and were kept as well — check for duplicates.`;
     if (skipped > 0) msg += ` ${skipped} invalid skipped.`;
     toast(msg);
-    track("import", { mode: "merge", imported: toAdd.length, duplicates: dupes, skipped });
+    track("import", { mode: "merge", imported: added, duplicates: dupes, skipped });
   });
 
   document.getElementById("restartCancel").addEventListener("click", closeRestartModal);
@@ -1981,9 +2254,9 @@ function getCurrentElapsed() {
     startTimer();
   });
 
-  // Re-render every view that depends on records[] (after undo, clear, import).
-  function refreshAfterRecordsChange() {
-    saveRecords();
+  // Re-render every view that depends on records[] (after undo, clear, import, another tab).
+  function refreshRecordViews() {
+    markRecordsDirty();
     displayHistory();
     displayUnplayed();
     displayStats();
@@ -1997,14 +2270,18 @@ function getCurrentElapsed() {
   });
   document.getElementById("modalCancel").addEventListener("click", closeConfirmModal);
   document.getElementById("modalConfirm").addEventListener("click", () => {
-    const before = records;
-    records = [];
-    refreshAfterRecordsChange();
+    // Deletes the records this tab listed; any saved meanwhile in another tab stay.
+    const before   = records;
+    const shownIds = new Set(before.map(r => r.id));
+    const ok = commitRecords(list => list.filter(r => !shownIds.has(r.id)));
+    refreshRecordViews();
     closeConfirmModal();
+    if (!ok) return;
     // Clear All is now disabled, so focus can't return to it.
     document.getElementById("missionLogHeading").focus();
     undoToast(`Cleared ${before.length} record${before.length !== 1 ? "s" : ""}.`, () => {
-      records = before; refreshAfterRecordsChange(); toast("Records restored.");
+      if (!commitRecords(list => mergeById(before, list))) { refreshRecordViews(); return; }
+      refreshRecordViews(); toast("Records restored.");
     });
   });
 
@@ -2014,7 +2291,7 @@ function getCurrentElapsed() {
 
   document.getElementById("deleteRecordCancel").addEventListener("click", closeDeleteModal);
   document.getElementById("deleteRecordConfirm").addEventListener("click", () => {
-    const idx = _pendingDeleteIdx;
+    const id  = _pendingDeleteId;
     const cb  = _deleteCallback;
     const trigger = _deleteTrigger;
     const inLog   = !!(trigger && trigger.closest("#historyTableContainer"));
@@ -2023,10 +2300,19 @@ function getCurrentElapsed() {
     if (inLog) pos = [...document.querySelectorAll("#historyTableContainer .btn-delete-record")].indexOf(trigger);
     _deleteTrigger = null; // its row is about to disappear
     closeDeleteModal();
-    if (idx == null) return;
-    const [removed] = records.splice(idx, 1);
-    saveRecords();
+    if (id == null) return;
+    let removed = null, at = -1;
+    const ok = commitRecords(list => {
+      at = list.findIndex(r => r.id === id);
+      if (at < 0) return null;
+      [removed] = list.splice(at, 1);
+      return list;
+    });
     if (cb) cb();
+    if (!ok) {
+      if (!removed) toast("That record was already deleted (in another tab or window).", "error");
+      return;
+    }
     const scope = inLog ? "#historyTableContainer" : "#comboHistory";
     const btns  = [...document.querySelectorAll(`${scope} .btn-delete-record`)];
     const next  = btns[Math.min(Math.max(pos, 0), btns.length - 1)];
@@ -2034,8 +2320,10 @@ function getCurrentElapsed() {
     else if (inLog) document.getElementById("missionLogHeading").focus();
     else if (document.getElementById("comboHeading")) document.getElementById("comboHeading").focus();
     undoToast("Record deleted.", () => {
-      records.splice(Math.min(idx, records.length), 0, removed);
-      saveRecords();
+      if (!commitRecords(list => {
+        if (!list.some(r => r.id === removed.id)) list.splice(Math.min(at, list.length), 0, removed);
+        return list;
+      })) { refreshRecordViews(); return; }
       displayHistory(); displayUnplayed(); displayStats();
       if (currentCombination) { displayCombination(currentCombination); displayComboHistory(currentCombination); }
       toast("Record restored.");
@@ -2053,14 +2341,27 @@ function getCurrentElapsed() {
 
   document.getElementById("editRecordCancel").addEventListener("click", closeEditModal);
   document.getElementById("editRecordSave").addEventListener("click", () => {
-    if (_editIdx == null) return;
-    const rec = records[_editIdx];
-    rec.result     = document.getElementById("editResult").value;
-    rec.difficulty = document.getElementById("editDifficulty").value;
-    const notes    = document.getElementById("editNotes").value.trim().slice(0, 2000); // matches isValidRecord
-    if (notes) rec.notes = notes; else delete rec.notes;
-    saveRecords();
-    statsDirty = true;
+    if (_editId == null) return;
+    const id         = _editId;
+    const result     = document.getElementById("editResult").value;
+    const difficulty = document.getElementById("editDifficulty").value;
+    const notes      = document.getElementById("editNotes").value.trim().slice(0, 2000); // matches isValidRecord
+    let found = false;
+    const ok = commitRecords(list => {
+      const rec = list.find(r => r.id === id);
+      if (!rec) return null;
+      found = true;
+      rec.result = result; rec.difficulty = difficulty;
+      if (notes) rec.notes = notes; else delete rec.notes;
+      rec.updatedAt = new Date().toISOString();
+      return list;
+    });
+    if (!ok) {
+      closeEditModal();
+      refreshRecordViews();
+      if (!found) toast("That record was deleted in another tab or window, so it couldn't be updated.", "error");
+      return;
+    }
     const scrollY = window.scrollY;
     displayHistory();
     displayStats();
@@ -3124,12 +3425,41 @@ function getCurrentElapsed() {
   try {
     const lastResult     = localStorage.getItem("lastResult");
     const lastDifficulty = localStorage.getItem("lastDifficulty");
-    if (lastResult)     document.getElementById("result").value     = lastResult;
-    if (lastDifficulty) document.getElementById("difficulty").value = lastDifficulty;
+    // A corrupt value would leave the select blank and save an invalid record.
+    if (VALID_RESULTS.has(lastResult))          document.getElementById("result").value     = lastResult;
+    if (VALID_DIFFICULTIES.has(lastDifficulty)) document.getElementById("difficulty").value = lastDifficulty;
   } catch(e) {}
 
   document.getElementById("radioVolume").value = getRadioVolume();
   if (!navigator.onLine) document.getElementById("radioBtn").disabled = true;
+
+  // ─── Other tabs ─────────────────────────────────────────────────────────────
+  // Another tab or window of the app changed storage: pick up its records and packs so
+  // this tab shows them and its next save builds on them (saves are read-modify-write).
+  // The SYZYGY campaign is not reloaded here (it is being reworked separately); it stays
+  // last-writer-wins.
+  function reloadRecordsFromStorage() {
+    try { records = readStoredRecords().list; } catch(e) { return; }
+    refreshRecordViews();
+    // A dialog for a record that no longer exists can't do anything useful.
+    if (_editId != null && !records.some(r => r.id === _editId)) {
+      closeEditModal(); toast("That record was deleted in another tab or window.", "error");
+    }
+    if (_pendingDeleteId != null && !records.some(r => r.id === _pendingDeleteId)) closeDeleteModal();
+  }
+  function reloadPacksFromStorage() {
+    if (document.getElementById("settingsModal").classList.contains("open")) return; // this tab is editing them
+    let next;
+    try { next = parseEnabledPacks(localStorage.getItem("enabledPacks")); } catch(e) { return; }
+    if ([...next].sort().join() === [...enabledPacks].sort().join()) return;
+    enabledPacks = next;
+    applyPacks();
+  }
+  window.addEventListener("storage", e => {
+    if (e.storageArea && e.storageArea !== localStorage) return;
+    if (e.key === null || e.key === "gameRecords")  reloadRecordsFromStorage();
+    if (e.key === null || e.key === "enabledPacks") reloadPacksFromStorage();
+  });
 
   buildActiveContent();
   populateSelectors();
