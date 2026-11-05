@@ -357,8 +357,7 @@ test.describe("SYZYGY keyboard only", () => {
     throw new Error("Tab never reached " + selector);
   }
 
-  test("a Mode II campaign can be set up, played and finished with the keyboard alone", async ({ page, browserName }) => {
-    test.skip(browserName === "webkit", "WebKit's default Tab order skips buttons (Safari's option-Tab setting)");
+  test("a Mode II campaign can be set up, played and finished with the keyboard alone", async ({ page }) => {
     await seed()(page);
     await page.goto("/");
     await page.locator("#syzygyCampaignTab").focus();
