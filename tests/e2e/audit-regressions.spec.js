@@ -283,7 +283,33 @@ test.describe("colour contrast (WCAG AA, 4.5:1)", () => {
   }
 });
 
+test.describe("non-text contrast and disabled legibility (WCAG 1.4.11 / design system)", () => {
+  for (const theme of ["dark", "light"]) {
+    test(`form-control borders >= 3:1 and disabled buttons stay legible in ${theme} theme`, async ({ page }) => {
+      await seed({ theme })(page);
+      await page.goto("/");
+      await page.getByRole("tab", { name: "Mission Log" }).click(); // no records → Export is disabled
+      await page.waitForFunction(() => document.getAnimations().length === 0);
+      const r = await page.evaluate(() => {
+        const cs = (sel) => getComputedStyle(document.querySelector(sel));
+        const panelBg = getComputedStyle(document.querySelector("#historyPage .panel")).backgroundColor;
+        return {
+          select: [cs("#historySortBy").borderTopColor, panelBg],
+          manual: [cs("#manualChar1").borderTopColor, getComputedStyle(document.querySelector("#manualPanel")).backgroundColor],
+          exportDisabled: document.querySelector("#exportBtn").disabled,
+          exportText: [cs("#exportBtn").color, panelBg],
+        };
+      });
+      expect(r.exportDisabled).toBe(true);
+      expect(contrast(parseRgb(r.select[0]), parseRgb(r.select[1])), "filter select border").toBeGreaterThanOrEqual(3);
+      expect(contrast(parseRgb(r.manual[0]), parseRgb(r.manual[1])), "form select border").toBeGreaterThanOrEqual(3);
+      expect(contrast(parseRgb(r.exportText[0]), parseRgb(r.exportText[1])), "disabled Export label").toBeGreaterThanOrEqual(4.5);
+    });
+  }
+});
+
 test.describe("phone layout", () => {
+
   test.use({ viewport: { width: 375, height: 812 } });
 
   test("Mission Log rows fit the screen: result and delete are visible without sideways scrolling", async ({ page }) => {
