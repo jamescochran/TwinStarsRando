@@ -1,37 +1,71 @@
 {
+  "id": "./",
   "name": "Twin Stars Adventure Series Randomizer",
   "short_name": "Twin Stars",
   "description": "An unofficial fan-made companion app for the Twin Stars Adventure Series by Button Shy Games.",
+  "lang": "en",
+  "dir": "ltr",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "launch_handler": { "client_mode": ["navigate-existing", "auto"] },
   "orientation": "portrait",
   "background_color": "#07091a",
   "theme_color": "#07091a",
+  "categories": ["games", "entertainment"],
   "icons": [
+    { "src": "icon-144.png", "sizes": "144x144", "type": "image/png", "purpose": "any" },
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-384.png", "sizes": "384x384", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
     {
-      "src": "icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
+      "name": "Randomize a mission",
+      "short_name": "Randomize",
+      "description": "Open the randomizer",
+      "url": "./#randomizer",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192", "type": "image/png" }]
     },
     {
-      "src": "icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable"
+      "name": "Mission Log",
+      "short_name": "Mission Log",
+      "description": "Your play history and statistics",
+      "url": "./#log",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192", "type": "image/png" }]
     },
     {
-      "src": "icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
+      "name": "SYZYGY campaign",
+      "short_name": "SYZYGY",
+      "description": "Continue your SYZYGY campaign",
+      "url": "./#syzygy",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "screenshots/screenshot-narrow-randomizer.jpg",
+      "sizes": "1080x1920",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "A randomized mission with the session timer running"
     },
     {
-      "src": "icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
+      "src": "screenshots/screenshot-narrow-log.jpg",
+      "sizes": "1080x1920",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "Mission Log statistics in the light theme"
+    },
+    {
+      "src": "screenshots/screenshot-wide.jpg",
+      "sizes": "1920x1080",
+      "type": "image/jpeg",
+      "form_factor": "wide",
+      "label": "Randomizer and outcome form side by side on a wide screen"
     }
   ]
 }

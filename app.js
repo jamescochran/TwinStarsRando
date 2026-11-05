@@ -1,5 +1,47 @@
 // Twin Stars Randomizer — application script (moved out of index.html so the CSP
 // can drop 'unsafe-inline' from script-src). Loaded at the end of <body>.
+  // ─── Privacy-safe usage analytics ───────────────────────────────────────────
+  // Anonymous event counts via the self-hosted Umami tag in index.html (see the Privacy
+  // dialog). track() is a no-op when Umami isn't loaded (blocked, offline, Do Not Track,
+  // or not on the production domain). Callers pass only fixed labels, counts and flags:
+  // never free text, character names or record contents. As a backstop, only numbers,
+  // booleans and short strings get through.
+  function track(name, data) {
+    try {
+      const u = window.umami;
+      if (!u || typeof u.track !== "function") return;
+      const clean = {};
+      if (data) {
+        for (const [k, v] of Object.entries(data)) {
+          if (typeof v === "number" || typeof v === "boolean") clean[k] = v;
+          else if (typeof v === "string") clean[k] = v.slice(0, 120);
+        }
+      }
+      u.track(name, clean);
+    } catch (e) { /* analytics must never break the app */ }
+  }
+
+  // Uncaught errors: report at most 3 per page load, truncated, with URLs and anything
+  // after the file name stripped so no query strings or local paths get sent.
+  let _errorsReported = 0;
+  function reportError(message, source, line) {
+    if (_errorsReported >= 3) return;
+    _errorsReported++;
+    const file = String(source || "").split(/[?#]/)[0].split("/").pop().slice(0, 60);
+    const msg = String(message || "unknown").replace(/\b(?:https?|blob|data|file):\S*/g, "[url]").slice(0, 120);
+    track("js_error", { message: msg, file, line: Number(line) || 0 });
+  }
+  window.addEventListener("error", e => {
+    // Cross-origin "Script error." carries nothing useful; skip it.
+    if (!e.filename && /^Script error\.?$/.test(e.message || "")) return;
+    reportError(e.message, e.filename, e.lineno);
+  });
+  window.addEventListener("unhandledrejection", e => {
+    const r = e.reason;
+    const where = r && typeof r.stack === "string" ? r.stack.match(/([^\/\s()@]+\.js)(?:\?[^:\s)]*)?:(\d+)/) : null;
+    reportError(r && r.message ? r.message : String(r), where ? where[1] : "", where ? where[2] : 0);
+  });
+
   // ─── Data ───────────────────────────────────────────────────────────────────
 
   const CONTENT_PACKS = [
@@ -98,20 +140,38 @@
     "Save the Spacewhales!": "14"
   };
 
+  // Every character in CONTENT_PACKS has a heading with this id in #faqModal
+  // (characters without published rulings get a short "none yet" note).
   const CHAR_FAQ_ANCHOR = {
     "Bood":              "faq-char-bood",
-    "Brenimov-X":        "faq-char-brenimov-x",
+    "Stag Solar":        "faq-char-stag-solar",
     "Fanoobia":          "faq-char-fanoobia",
-    "Grant Rockgardner": "faq-char-grant",
     "Inpon Gol":         "faq-char-inpon-gol",
-    "Inzill Mey":        "faq-char-inzill-mey",
-    "Kinglan":           "faq-char-kinglan",
-    "Phaeton":           "faq-char-phaeton",
+    "Grant Rockgardner": "faq-char-grant",
     "Roux Jaezmina":     "faq-char-roux",
-    "Smiff":             "faq-char-smiff",
-    "Strezelsior":       "faq-char-strezelsior",
     "Yanfred Jima":      "faq-char-yanfred",
+    "Saaze":             "faq-char-saaze",
+    "Inzill Mey":        "faq-char-inzill-mey",
+    "Strezelsior":       "faq-char-strezelsior",
+    "Kinglan":           "faq-char-kinglan",
+    "Brenimov-X":        "faq-char-brenimov-x",
+    "Dain Taubo":        "faq-char-dain-taubo",
+    "Grulexon":          "faq-char-grulexon",
+    "Gari Obul":         "faq-char-gari-obul",
+    "Smiff":             "faq-char-smiff",
     "Zoaze":             "faq-char-zoaze",
+    "Tumbug Firo":       "faq-char-tumbug-firo",
+    "Mzerzo":            "faq-char-mzerzo",
+    "Phaeton":           "faq-char-phaeton",
+    "Hebolt Rom":        "faq-char-hebolt-rom",
+    "Tarla Voke":        "faq-char-tarla-voke",
+    "Gruffles":          "faq-char-gruffles",
+    "\"Mad\" Anxy":       "faq-char-mad-anxy",
+    "Feth Doriet":       "faq-char-feth-doriet",
+    "Pummtoggs":         "faq-char-pummtoggs",
+    "Striker":           "faq-char-striker",
+    "Bippinnidip":       "faq-char-bippinnidip",
+    "Captain Crag":      "faq-char-captain-crag",
   };
 
   const RADIO_STREAMS = [
@@ -187,6 +247,7 @@
     // buttons don't fade between themes while the page background snaps.
     root.classList.add("theme-switching");
     applyTheme(current === "dark" ? "light" : "dark");
+    track("theme_toggle", { theme: current === "dark" ? "light" : "dark" });
     void root.offsetHeight;
     requestAnimationFrame(() => requestAnimationFrame(() => root.classList.remove("theme-switching")));
   }
@@ -217,20 +278,140 @@
   let historyDirty  = true;
   let unplayedDirty = true;
   let statsDirty    = true;
-  try {
-    const raw = localStorage.getItem("gameRecords");
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      records = parsed.filter(isValidRecord);
-      const dropped = parsed.length - records.length;
-      if (dropped > 0) {
-        console.warn(`Discarded ${dropped} invalid record(s) from localStorage.`);
-        // saveRecords() will overwrite "gameRecords" without the rejected entries, so keep
-        // the untouched original (first occurrence only) where it can still be recovered.
-        try { if (!localStorage.getItem("gameRecordsBackup")) localStorage.setItem("gameRecordsBackup", raw); } catch(e) {}
-        setTimeout(() => toast(`${dropped} saved record(s) could not be loaded and were skipped. A backup copy was kept.`, "error"), 300);
+
+  // Stored record schema. "gameRecords" stays a plain array of records so older app
+  // versions (which ignore unknown fields) can still read it; the version lives in its
+  // own key. v1 = no id/createdAt; v2 = every record has a stable id and an ISO createdAt
+  // (plus updatedAt once edited). The human "timestamp" is kept for display.
+  const RECORDS_VERSION = 2;
+  const BACKUP_CAP      = 500;   // most entries kept in "gameRecordsBackup"
+
+  function newId() {
+    try { if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID(); } catch(e) {}
+    const b = new Uint8Array(16);
+    try { crypto.getRandomValues(b); } catch(e) { for (let i = 0; i < 16; i++) b[i] = Math.floor(Math.random() * 256); }
+    b[6] = (b[6] & 0x0f) | 0x40; b[8] = (b[8] & 0x3f) | 0x80;
+    const h = [...b].map(x => x.toString(16).padStart(2, "0")).join("");
+    return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+  }
+
+  // Everything the player recorded, in a fixed order: identical content = identical signature.
+  function recordSignature(r) {
+    return JSON.stringify([r.timestamp, r.characters, r.scenario, r.result, r.difficulty, r.playtime ?? null, r.notes || "", r.droid || ""]);
+  }
+  // The pre-v2 import dedupe key.
+  function legacyKey(r) { return `${r.timestamp}|${r.characters.join("|")}|${r.scenario}`; }
+  // Records saved before ids existed get an id derived from their content, so two tabs
+  // migrating at once, or an old backup of the same records, arrive at the same ids.
+  function legacyId(r) {
+    let h = 0x811c9dc5;
+    const s = recordSignature(r);
+    for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
+    return "legacy-" + h.toString(16).padStart(8, "0");
+  }
+
+  // Field order of this browser's toLocaleString() ("mdy", "dmy", "ymd"), which most
+  // likely wrote the stored timestamps; used to read ambiguous dates like 03/04/2026.
+  const LOCALE_DATE_ORDER = (() => {
+    try {
+      const s = new Date(2033, 10, 22, 13, 4, 5).toLocaleString();
+      const pos = { y: s.indexOf("2033"), m: s.indexOf("11"), d: s.indexOf("22") };
+      if (Object.values(pos).some(p => p < 0)) return null;
+      return Object.keys(pos).sort((a, b) => pos[a] - pos[b]).join("");
+    } catch(e) { return null; }
+  })();
+  const STAMP_MIN = Date.UTC(2020, 0, 1);
+  // Best-effort parse of a toLocaleString() timestamp to epoch ms (NaN if unreadable).
+  function parseStamp(ts) {
+    if (typeof ts !== "string") return NaN;
+    const ok = t => (Number.isFinite(t) && t >= STAMP_MIN && t <= Date.now() + 864e5) ? t : NaN;
+    const m = ts.match(/(\d{1,4})\D{1,3}?(\d{1,2})\D{1,3}?(\d{1,4})\D+?(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+    if (m) {
+      const n = m.slice(1, 4).map(Number);
+      let y, mo, d;
+      if (m[1].length === 4)      { [y, mo, d] = n; }
+      else if (m[3].length === 4) {
+        y = n[2];
+        let mdy = LOCALE_DATE_ORDER === "mdy" ? true : LOCALE_DATE_ORDER === "dmy" ? false : /[ap]\.?\s?m\b/i.test(ts);
+        if (n[0] > 12) mdy = false; else if (n[1] > 12) mdy = true;
+        [mo, d] = mdy ? [n[0], n[1]] : [n[1], n[0]];
+      }
+      if (y) {
+        let hh = +m[4];
+        if (/p\.?\s?m\b|午後|오후/i.test(ts) && hh < 12) hh += 12;
+        if (/a\.?\s?m\b|午前|오전/i.test(ts) && hh === 12) hh = 0;
+        const dt = new Date(y, mo - 1, d, hh, +m[5], +(m[6] || 0));
+        if (dt.getMonth() === mo - 1 && dt.getDate() === d) return ok(dt.getTime());
       }
     }
+    return ok(Date.parse(ts));
+  }
+  const isIsoDate = s => typeof s === "string" && /^\d{4}-\d{2}-\d{2}T/.test(s) && Number.isFinite(Date.parse(s));
+
+  // Brings valid records up to v2 in place: unique ids, and createdAt from the timestamp
+  // where it can be read, else from the record's position (the array is in save order).
+  // Returns true if anything changed.
+  function migrateRecords(list) {
+    let changed = false;
+    const t = list.map(r => isIsoDate(r.createdAt) ? Date.parse(r.createdAt) : parseStamp(r.timestamp));
+    for (let i = 1; i < t.length; i++) if (!Number.isFinite(t[i]) && Number.isFinite(t[i - 1])) t[i] = t[i - 1] + 1;
+    for (let i = t.length - 2; i >= 0; i--) if (!Number.isFinite(t[i]) && Number.isFinite(t[i + 1])) t[i] = t[i + 1] - 1;
+    const base = Date.now() - t.length;
+    const seen = new Set();
+    list.forEach((r, i) => {
+      if (typeof r.id !== "string" || !r.id || r.id.length > 64 || seen.has(r.id)) {
+        let id = legacyId(r), n = 1;
+        while (seen.has(id)) id = legacyId(r) + "-" + n++;
+        r.id = id; changed = true;
+      }
+      seen.add(r.id);
+      if (!isIsoDate(r.createdAt)) {
+        r.createdAt = new Date(Number.isFinite(t[i]) ? t[i] : base + i).toISOString(); changed = true;
+      }
+      if (r.updatedAt != null && !isIsoDate(r.updatedAt)) { delete r.updatedAt; changed = true; }
+    });
+    return changed;
+  }
+
+  // Reads and migrates the stored log. Throws if storage can't be read.
+  function readStoredRecords() {
+    const raw = localStorage.getItem("gameRecords");
+    if (!raw) return { list: [], dropped: [], changed: false };
+    let parsed;
+    try { parsed = JSON.parse(raw); } catch(e) { parsed = null; }
+    if (!Array.isArray(parsed)) return { list: [], dropped: [raw], changed: true };
+    const list    = parsed.filter(isValidRecord);
+    const dropped = parsed.filter(r => !isValidRecord(r));
+    const changed = migrateRecords(list) || dropped.length > 0;
+    return { list, dropped, changed };
+  }
+
+  // Records that fail validation are appended (not just the first time) to a capped backup.
+  function backupDropped(dropped) {
+    try {
+      const raw = localStorage.getItem("gameRecordsBackup");
+      let entries = [];
+      if (raw) { try { const v = JSON.parse(raw); entries = Array.isArray(v) ? v : [v]; } catch(e) { entries = [raw]; } }
+      const have = new Set(entries.map(e => JSON.stringify(e)));
+      dropped.forEach(r => { const s = JSON.stringify(r); if (!have.has(s)) { have.add(s); entries.push(r); } });
+      localStorage.setItem("gameRecordsBackup", JSON.stringify(entries.slice(-BACKUP_CAP)));
+    } catch(e) {}
+  }
+
+  function writeRecords(list) {
+    localStorage.setItem("gameRecords", JSON.stringify(list));
+    try { localStorage.setItem("gameRecordsVersion", String(RECORDS_VERSION)); } catch(e) {}
+  }
+
+  try {
+    const { list, dropped, changed } = readStoredRecords();
+    records = list;
+    if (dropped.length > 0) {
+      console.warn(`Discarded ${dropped.length} invalid record(s) from localStorage.`);
+      backupDropped(dropped);
+      setTimeout(() => toast(`${dropped.length} saved record(s) could not be loaded and were skipped. A backup copy was kept.`, "error"), 300);
+    }
+    if (changed) { try { writeRecords(records); } catch(e) {} }
   } catch (e) {
     console.warn("Could not load saved records:", e);
   }
@@ -248,22 +429,93 @@
     document.getElementById("clearDataBtn").disabled = empty;
   }
 
-  function saveRecords() {
+  function markRecordsDirty() {
     historyDirty  = true;
     unplayedDirty = true;
     statsDirty    = true;
     syncExportBtn();
-    try {
-      localStorage.setItem("gameRecords", JSON.stringify(records));
-    } catch (e) {
-      toast("Could not save — storage may be full.", "error");
+  }
+
+  // Union by id, first list wins.
+  function mergeById(a, b) {
+    const ids = new Set(a.map(r => r.id));
+    return [...a, ...b.filter(r => !ids.has(r.id))];
+  }
+
+  // Every change to the log is applied to what is in storage *now* (read-modify-write),
+  // so a tab with a stale copy never erases records another tab saved. `change` gets a
+  // fresh copy of the stored records and returns the new list, or null to cancel.
+  // Returns true only once the new list is in storage; on failure the in-memory log is
+  // left as storage has it and a persistent error offers an export of the lost change.
+  function commitRecords(change) {
+    let base;
+    try { base = readStoredRecords().list; }
+    catch(e) { base = JSON.parse(JSON.stringify(records)); }
+    // `change` edits a copy, so a failed write can fall back to `base` untouched.
+    const next = change(JSON.parse(JSON.stringify(base)));
+    if (!next) return false;
+    if (!next.every(isValidRecord)) {
+      showStorageError("Couldn't save: the record is not valid.", next.filter(isValidRecord));
+      return false;
     }
+    try {
+      writeRecords(next);
+    } catch (e) {
+      records = base;
+      markRecordsDirty();
+      showStorageError("Couldn't save — your browser's storage is full or blocked. This change was not saved.", next);
+      return false;
+    }
+    records = next;
+    markRecordsDirty();
+    requestPersistentStorage();
+    return true;
+  }
+
+  // Ask the browser not to evict our data under storage pressure (once, after a save).
+  let _persistAsked = false;
+  function requestPersistentStorage() {
+    if (_persistAsked) return;
+    _persistAsked = true;
+    try {
+      if (navigator.storage && navigator.storage.persist) {
+        navigator.storage.persisted().then(p => p || navigator.storage.persist()).catch(() => {});
+      }
+    } catch(e) {}
+  }
+
+  // A failed save is shown in a banner that stays until dismissed (a toast can be
+  // replaced or time out unread), with an export of everything, including the change
+  // that couldn't be saved.
+  let _unsavedForExport = null;
+  function showStorageError(msg, attempted) {
+    _unsavedForExport = mergeById(attempted || [], records);
+    let bar = document.getElementById("storageError");
+    if (!bar) {
+      bar = document.createElement("div");
+      bar.id = "storageError";
+      bar.className = "storage-error";
+      bar.setAttribute("role", "alert");
+      bar.innerHTML = `<span id="storageErrorText"></span>
+        <span class="storage-error-actions">
+          <button type="button" class="toast-action" id="storageErrorExport">Export backup</button>
+          <button type="button" class="toast-action" id="storageErrorDismiss" aria-label="Dismiss storage error">Dismiss</button>
+        </span>`;
+      document.body.appendChild(bar);
+      bar.querySelector("#storageErrorExport").addEventListener("click", () => handleExport(_unsavedForExport || records));
+      bar.querySelector("#storageErrorDismiss").addEventListener("click", () => { bar.classList.add("hidden"); _unsavedForExport = null; });
+    }
+    bar.querySelector("#storageErrorText").textContent = msg + " Export a backup so nothing is lost.";
+    bar.classList.remove("hidden");
   }
 
   // ─── Helpers ────────────────────────────────────────────────────────────────
   // Stable unique key for a character+scenario combination.
   // Uses ASCII control characters (unit separator \x1F, record separator \x1E)
   // as delimiters — they can never appear in a character or scenario name.
+  // Chronological order by createdAt (ISO strings sort as text).
+  function byCreated(a, b) { return a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : 0; }
+
   function comboKey(comb) {
     return comb.characters.join("\x1F") + "\x1E" + comb.scenario;
   }
@@ -305,7 +557,13 @@
   let _undoAction = null;
 
   // toast(msg, type, action?) — action = { label, onClick } adds a button (e.g. Undo).
+  let _deferredToast = null;
   function toast(msg, type, action) {
+    // An error is never replaced by a non-error message: that one waits until the error goes.
+    if (type !== "error" && document.querySelector("#toastRegion .toast.error")) {
+      _deferredToast = [msg, type, action];
+      return;
+    }
     // One toast at a time (they share a position), shown long enough to read.
     document.querySelectorAll(".toast").forEach(el => el.remove());
     _undoAction = null;
@@ -315,7 +573,12 @@
     text.textContent = msg;
     t.appendChild(text);
     let timer;
-    const remove = () => { clearTimeout(timer); t.remove(); if (_undoAction === run) _undoAction = null; };
+    const remove = () => {
+      clearTimeout(timer); t.remove(); if (_undoAction === run) _undoAction = null;
+      if (type === "error" && _deferredToast && !document.querySelector("#toastRegion .toast.error")) {
+        const d = _deferredToast; _deferredToast = null; toast(...d);
+      }
+    };
     let run = null;
     _toastOffered = false;
     if (action) {
@@ -371,7 +634,7 @@
     _toastReturn = document.activeElement !== document.body ? document.activeElement : null;
     btn.focus();
   });
-  function undoToast(msg, onUndo) { toast(msg, "info", { label: "Undo", onClick: onUndo }); }
+  function undoToast(msg, onUndo) { toast(msg, "info", { label: "Undo", onClick: () => { track("undo"); onUndo(); } }); }
 
   // Ctrl/Cmd+Z reverses the last undoable action while its message is showing
   // (not while typing in a text field, where it must keep its normal meaning).
@@ -433,7 +696,7 @@ function stopTimer() {
     timerInterval = null;
   }
   // Fold the running segment in so the card keeps showing the final time.
-  if (startTime && !timerPaused) accumulatedTime += Date.now() - startTime;
+  if (startTime && !timerPaused) accumulatedTime += Math.max(0, Date.now() - startTime);
   timerPaused = false;
   startTime   = null;
   const el = document.getElementById("timerDisplay");
@@ -451,7 +714,7 @@ function togglePause() {
 
   if (!timerPaused) {
     timerPaused = true;
-    accumulatedTime += Date.now() - startTime;
+    accumulatedTime += Math.max(0, Date.now() - startTime); // never negative if the clock went back
   } else {
     timerPaused = false;
     startTime = Date.now();
@@ -474,7 +737,7 @@ function togglePause() {
 
 function updateDisplay() {
   if (timerPaused) return;
-  const elapsedMs = accumulatedTime + (Date.now() - startTime);
+  const elapsedMs = accumulatedTime + Math.max(0, Date.now() - startTime);
   const el = document.getElementById("timerDisplay");
   const text = formatTime(Math.floor(elapsedMs / 1000));
   if (el && el.textContent !== text) el.textContent = text;
@@ -482,7 +745,7 @@ function updateDisplay() {
 
 function getCurrentElapsed() {
   if (timerPaused || !startTime) return Math.floor(accumulatedTime / 1000);
-  return Math.floor((accumulatedTime + (Date.now() - startTime)) / 1000);
+  return Math.floor((accumulatedTime + Math.max(0, Date.now() - startTime)) / 1000);
 }
 
   // ─── Dropdowns ──────────────────────────────────────────────────────────────
@@ -610,7 +873,7 @@ function getCurrentElapsed() {
         <div class="combo-characters">
           <span class="combo-char-wrap"><span class="char-role primary-role">Primary</span>${esc(comb.characters[0])}${CHAR_FAQ_ANCHOR[comb.characters[0]] ? faqHelpBtn(CHAR_FAQ_ANCHOR[comb.characters[0]], comb.characters[0]) : ""}</span><span class="combo-vs">&amp;</span><span class="combo-char-wrap"><span class="char-role secondary-role">Secondary</span>${esc(comb.characters[1])}${CHAR_FAQ_ANCHOR[comb.characters[1]] ? faqHelpBtn(CHAR_FAQ_ANCHOR[comb.characters[1]], comb.characters[1]) : ""}</span>
         </div>
-        <div class="combo-scenario">${scenarioHTML(comb.scenario)}${SCENARIO_NUMBER[comb.scenario] && parseInt(SCENARIO_NUMBER[comb.scenario]) <= 12 ? faqHelpBtn("faq-sc-" + SCENARIO_NUMBER[comb.scenario], scenarioText(comb.scenario)) : ""}</div>
+        <div class="combo-scenario">${scenarioHTML(comb.scenario)}${SCENARIO_NUMBER[comb.scenario] ? faqHelpBtn("faq-sc-" + SCENARIO_NUMBER[comb.scenario], scenarioText(comb.scenario)) : ""}</div>
         <div class="combo-play-count"><span>${esc(countText)}</span></div>
         ${droids.length ? `
         <div class="droid-row">
@@ -673,14 +936,13 @@ function getCurrentElapsed() {
 
   function displayComboHistory(comb) {
     const div  = document.getElementById("comboHistory");
-    const recs = records.filter(r => comboKey(r) === comboKey(comb));
+    const recs = records.filter(r => comboKey(r) === comboKey(comb)).sort(byCreated);
 
     if (!recs.length) {
       div.innerHTML = `<div class="notice">No records yet for this combination.</div>`;
       return;
     }
     const rows = recs.map((rec) => {
-      const globalIdx = records.indexOf(rec);
       return `
       <tr>
         <td class="td-meta">
@@ -690,7 +952,7 @@ function getCurrentElapsed() {
         <td><span class="result-pill ${rec.result === "Win" ? "win" : "loss"}">${esc(rec.result)}</span></td>
         <td><span class="diff-pill">${esc(rec.difficulty)}</span></td>
         <td class="td-time">${rec.playtime != null ? formatTime(rec.playtime) : "—"}</td>
-        <td><button class="btn-delete-record" data-idx="${globalIdx}" title="Delete" aria-label="Delete record from ${esc(shortStamp(rec.timestamp))}">✕</button></td>
+        <td><button class="btn-delete-record" data-id="${esc(rec.id)}" title="Delete" aria-label="Delete record from ${esc(shortStamp(rec.timestamp))}">✕</button></td>
       </tr>`;}).join("");
 
     // Droid coverage summary for this combo
@@ -723,7 +985,7 @@ function getCurrentElapsed() {
       const deleteBtn = e.target.closest(".btn-delete-record");
       if (!deleteBtn) return;
       _deleteTrigger    = deleteBtn;
-      _pendingDeleteIdx = parseInt(deleteBtn.dataset.idx, 10);
+      _pendingDeleteId  = deleteBtn.dataset.id;
       _deleteCallback   = () => { displayCombination(currentCombination); displayComboHistory(currentCombination); };
       openDeleteModal();
     };
@@ -800,6 +1062,7 @@ function getCurrentElapsed() {
       guardUnsaved(() => {
         showTab("randomizer");
         loadCombination(comb, { focusCard: true });
+        track("unplayed_play");
       });
     });
 
@@ -880,13 +1143,13 @@ function getCurrentElapsed() {
     const diffOrder = { Easy: 0, Medium: 1, Hard: 2 };
     displayed.sort((a, b) => {
       switch (sortBy) {
-        case "date-asc":    return a.idx - b.idx;
-        case "date-desc":   return b.idx - a.idx;
+        case "date-asc":    return byCreated(a.rec, b.rec) || a.idx - b.idx;
+        case "date-desc":   return byCreated(b.rec, a.rec) || b.idx - a.idx;
         case "result":      return a.rec.result.localeCompare(b.rec.result);
         case "difficulty":  return (diffOrder[a.rec.difficulty] ?? 1) - (diffOrder[b.rec.difficulty] ?? 1);
         case "characters":  return a.rec.characters.join(" & ").localeCompare(b.rec.characters.join(" & "));
         case "scenario":    return a.rec.scenario.localeCompare(b.rec.scenario);
-        default:            return b.idx - a.idx;
+        default:            return byCreated(b.rec, a.rec) || b.idx - a.idx;
       }
     });
 
@@ -906,7 +1169,7 @@ function getCurrentElapsed() {
       return;
     }
 
-    const rows = displayed.map(({ rec, idx }) => {
+    const rows = displayed.map(({ rec }) => {
       const notesRow = rec.notes
         ? `<tr class="notes-row"><td colspan="7">${esc(rec.notes)}</td></tr>`
         : "";
@@ -919,8 +1182,8 @@ function getCurrentElapsed() {
           <td><span class="diff-pill">${esc(rec.difficulty)}</span></td>
           <td class="td-time">${rec.playtime != null ? formatTime(rec.playtime) : "—"}</td>
           <td class="td-nowrap">
-            <button class="btn-edit-record"   data-idx="${idx}" title="Edit"   aria-label="Edit ${esc(recordLabel(rec))}">✎</button>
-            <button class="btn-delete-record" data-idx="${idx}" title="Delete" aria-label="Delete ${esc(recordLabel(rec))}">✕</button>
+            <button class="btn-edit-record"   data-id="${esc(rec.id)}" title="Edit"   aria-label="Edit ${esc(recordLabel(rec))}">✎</button>
+            <button class="btn-delete-record" data-id="${esc(rec.id)}" title="Delete" aria-label="Delete ${esc(recordLabel(rec))}">✕</button>
           </td>
         </tr>${notesRow}`;
     }).join("");
@@ -939,12 +1202,12 @@ function getCurrentElapsed() {
     // (assigned, not added, because this function runs on every re-render).
     container.onclick = e => {
       const editBtn = e.target.closest(".btn-edit-record");
-      if (editBtn) { openEditModal(parseInt(editBtn.dataset.idx, 10)); return; }
+      if (editBtn) { openEditModal(editBtn.dataset.id); return; }
 
       const deleteBtn = e.target.closest(".btn-delete-record");
       if (deleteBtn) {
         _deleteTrigger    = deleteBtn;
-        _pendingDeleteIdx = parseInt(deleteBtn.dataset.idx, 10);
+        _pendingDeleteId  = deleteBtn.dataset.id;
         _deleteCallback   = () => { displayHistory(); displayUnplayed(); displayStats(); if (currentCombination) { displayCombination(currentCombination); displayComboHistory(currentCombination); } };
         openDeleteModal();
       }
@@ -1048,13 +1311,23 @@ function getCurrentElapsed() {
   }
 
   // ─── Content packs ──────────────────────────────────────────────────────────
-  let enabledPacks;
-  try {
-    const raw = localStorage.getItem("enabledPacks");
-    enabledPacks = raw ? new Set(JSON.parse(raw)) : new Set(["series1"]);
-  } catch(e) {
-    enabledPacks = new Set(["series1"]);
+  // Reads the stored pack list, accepting a JSON array or a legacy plain/comma-separated
+  // string; unknown ids are ignored, and a list too small to play falls back to Series 1.
+  function parseEnabledPacks(raw) {
+    const fallback = new Set(["series1"]);
+    if (!raw) return fallback;
+    let ids;
+    try { const v = JSON.parse(raw); ids = Array.isArray(v) ? v : typeof v === "string" ? v.split(",") : []; }
+    catch(e) { ids = String(raw).split(","); }
+    const known = new Set(CONTENT_PACKS.map(p => p.id));
+    const set = new Set(ids.filter(id => typeof id === "string").map(id => id.trim()).filter(id => known.has(id)));
+    const active = CONTENT_PACKS.filter(p => set.has(p.id));
+    const playable = new Set(active.flatMap(p => p.characters)).size >= 2 && active.some(p => p.scenarios.length);
+    return playable ? set : fallback;
   }
+  let enabledPacks;
+  try { enabledPacks = parseEnabledPacks(localStorage.getItem("enabledPacks")); }
+  catch(e) { enabledPacks = new Set(["series1"]); }
 
   function saveEnabledPacks() {
     try { localStorage.setItem("enabledPacks", JSON.stringify([...enabledPacks])); } catch(e) {}
@@ -1123,8 +1396,18 @@ function getCurrentElapsed() {
 
   function closeSettings() {
     // Re-derive active content from the new pack selection before closing.
-    buildActiveContent();
     saveEnabledPacks();
+    applyPacks();
+    closeModal("settingsModal");
+    if (_packsAtOpen && _packsAtOpen !== [...enabledPacks].sort().join()) {
+      announce(`Collection updated: ${characters.length} characters, ${scenarios.length} scenarios${droids.length ? `, ${droids.length} droids` : ""}.`);
+    }
+    _packsAtOpen = "";
+  }
+
+  // Rebuilds everything that depends on the enabled packs (My Collection, another tab).
+  function applyPacks() {
+    buildActiveContent();
     populateSelectors();
     if (currentCombination) {
       const valid =
@@ -1145,11 +1428,6 @@ function getCurrentElapsed() {
     displayHistory();
     displayUnplayed();
     displayStats();
-    closeModal("settingsModal");
-    if (_packsAtOpen && _packsAtOpen !== [...enabledPacks].sort().join()) {
-      announce(`Collection updated: ${characters.length} characters, ${scenarios.length} scenarios${droids.length ? `, ${droids.length} droids` : ""}.`);
-    }
-    _packsAtOpen = "";
   }
 
   // ─── Generic modal helpers ───────────────────────────────────────────────────
@@ -1168,6 +1446,9 @@ function getCurrentElapsed() {
     const openOverlay = document.querySelector(".modal-overlay.open");
     const shell = document.querySelector(".app-shell");
     if (shell) shell.inert = !!openOverlay;
+    // An Undo acting behind an open dialog would change records under it: hide toasts' actions meanwhile.
+    const region = document.getElementById("toastRegion");
+    if (region) region.inert = !!openOverlay;
   }
 
   // A trigger re-rendered while its dialog was open (e.g. the Edit button of a table
@@ -1175,8 +1456,8 @@ function getCurrentElapsed() {
   function refindTrigger(el) {
     if (!el || el.isConnected) return el;
     if (el.id) return document.getElementById(el.id);
-    if (el.dataset && el.dataset.idx != null && el.classList[0]) {
-      return document.querySelector(`.${el.classList[0]}[data-idx="${el.dataset.idx}"]`);
+    if (el.dataset && el.dataset.id != null && el.classList[0]) {
+      return document.querySelector(`.${el.classList[0]}[data-id="${CSS.escape(el.dataset.id)}"]`);
     }
     return null;
   }
@@ -1208,21 +1489,22 @@ function getCurrentElapsed() {
   // ─── Per-modal state ─────────────────────────────────────────────────────────
   // Some modals carry pending state that must be cleared when they close.
   let _deleteTrigger    = null; // element that opened the delete modal (for focus return via delegated handler)
-  let _pendingDeleteIdx = null; // record index waiting to be confirmed for deletion
+  let _pendingDeleteId  = null; // id of the record waiting to be confirmed for deletion
   let _deleteCallback   = null; // called after deletion to refresh whichever view triggered it
-  let _editIdx          = null; // record index currently open in the edit modal
+  let _editId           = null; // id of the record open in the edit modal (ids survive Undo re-inserting a record)
 
   function openDeleteModal() {
-    const rec = records[_pendingDeleteIdx];
+    const rec = records.find(r => r.id === _pendingDeleteId);
     document.getElementById("deleteRecordMsg").textContent = rec
       ? `Delete the record for ${rec.characters.join(" & ")} — ${scenarioText(rec.scenario)} (${rec.result}, ${rec.timestamp})?`
       : "Delete this mission record?";
     openModal("deleteRecordModal", "deleteRecordCancel");
   }
 
-  function openEditModal(idx) {
-    _editIdx = idx;
-    const rec = records[idx];
+  function openEditModal(id) {
+    const rec = records.find(r => r.id === id);
+    if (!rec) return;
+    _editId = id;
     document.getElementById("editRecordSummary").textContent =
       `${rec.characters.join(" & ")} — ${scenarioText(rec.scenario)} · ${rec.timestamp}`;
     document.getElementById("editResult").value     = rec.result;
@@ -1232,7 +1514,7 @@ function getCurrentElapsed() {
   }
 
   function closeEditModal() {
-    _editIdx = null;
+    _editId = null;
     closeModal("editRecordModal");
   }
 
@@ -1240,12 +1522,19 @@ function getCurrentElapsed() {
     closeModal("faqModal");
   }
 
+  // `file` is the full-resolution PNG (fallback for browsers without AVIF/WebP). Books with
+  // `optimized` also ship 1600px-wide .avif and .webp copies next to it (see rules/README.md).
+  // `official` is where to read the rules when our copy is missing or incomplete.
+  const RULES_OFFICIAL_URL = "https://buttonshygames.com/pages/twin-stars";
   const RULEBOOK_TABS = [
-    { packId: "series1",     label: "Series 1",  file: "rules/twinstars1.png" },
-    { packId: "series1",     label: "SYZYGY I",  file: "rules/twinstars1-syzygy.png" },
-    { packId: "series2",     label: "Series 2",  file: "rules/twinstars2.png" },
-    { packId: "series2",     label: "SYZYGY II", file: "rules/twinstars2-syzygy.png" },
-    { packId: "captaincrag", label: "Cpt. Crag", file: "rules/twinstars-crag.png" },
+    { packId: "series1",     label: "Series 1",  file: "rules/twinstars1.png",        optimized: true },
+    { packId: "series1",     label: "SYZYGY I",  file: "rules/twinstars1-syzygy.png", optimized: true },
+    { packId: "series2",     label: "Series 2",  file: "rules/twinstars2.png",        optimized: true },
+    { packId: "series2",     label: "SYZYGY II", file: "rules/twinstars2-syzygy.png", optimized: true },
+    // Our copy of this PNG is truncated (see rules/README.md); the viewer detects that and links
+    // to the publisher's file on BoardGameGeek instead of showing the cut-off image.
+    { packId: "captaincrag", label: "Cpt. Crag", file: "rules/twinstars-crag.png",
+      official: "https://boardgamegeek.com/filepage/217405/official-rules-button-shy" },
   ];
 
   function openRules() {
@@ -1271,18 +1560,152 @@ function getCurrentElapsed() {
     });
     showRulebook(available[0]);
     openModal("rulesModal", "rulesClose");
+    refreshRulesOffline();
   }
 
-  // Rulebook images are large (several MB); say so while they load, and if they fail.
+  // Which image format this browser shows: the same choice <picture> makes. Probed once with a
+  // 1×1 AVIF (data: images are allowed by the CSP); WebP is universal in supported browsers.
+  const AVIF_PROBE = "data:image/avif;base64,AAAAHGZ0eXBhdmlmAAAAAG1pZjFhdmlmbWlhZgAAANZtZXRhAAAAAAAAACFoZGxyAAAAAAAAAABwaWN0AAAAAAAAAAAAAAAAAAAAACJpbG9jAAAAAERAAAEAAQAAAAAA+gABAAAAAAAAAB8AAAAjaWluZgAAAAAAAQAAABVpbmZlAgAAAAABAABhdjAxAAAAAA5waXRtAAAAAAABAAAAVmlwcnAAAAA4aXBjbwAAAAxhdjFDgSACAAAAABRpc3BlAAAAAAAAAAEAAAABAAAAEHBpeGkAAAAAAwgICAAAABZpcG1hAAAAAAAAAAEAAQOBAgMAAAAnbWRhdBIACgc4AAaQENBpMhIZQmMEw88880EgAJBAyRxhQr4=";
+  let rulesFormatPromise = null;
+  function rulesFormat() {
+    if (!rulesFormatPromise) {
+      rulesFormatPromise = new Promise(resolve => {
+        const probe = new Image();
+        probe.onload  = () => resolve(probe.naturalWidth > 0 ? "avif" : "webp");
+        probe.onerror = () => resolve("webp");
+        probe.src = AVIF_PROBE;
+      });
+    }
+    return rulesFormatPromise;
+  }
+  function rulebookUrl(tab, format) {
+    return tab.optimized && format !== "png" ? tab.file.replace(/\.png$/, "." + format) : tab.file;
+  }
+
+  // Ask the service worker about rulebook files (see the "message" handler in service-worker.js).
+  // Resolves to null when no worker controls the page.
+  function askRulesWorker(msg, onMessage) {
+    const sw = navigator.serviceWorker && navigator.serviceWorker.controller;
+    if (!sw) return Promise.resolve(null);
+    return new Promise(resolve => {
+      const channel = new MessageChannel();
+      channel.port1.onmessage = e => {
+        if (onMessage && e.data && e.data.progress) { onMessage(e.data.progress); return; }
+        resolve(e.data);
+      };
+      sw.postMessage(msg, [channel.port2]);
+    });
+  }
+  const absUrl = file => new URL(file, document.baseURI).href;
+
+  // Rulebook images are large; say so while they load, and if they fail. A file cut off mid-download
+  // still fires "load" and draws its top part, so the image stays hidden until it decodes and the
+  // service worker confirms the bytes are whole.
+  let rulesLoadToken = 0;
   function showRulebook(tab) {
     const img    = document.getElementById("rulesImage");
     const status = document.getElementById("rulesStatus");
+    const token  = ++rulesLoadToken;
     img.alt = `${tab.label} rulebook`;
     status.textContent = `Loading the ${tab.label} rulebook…`;
-    img.onload  = () => { status.textContent = ""; };
-    img.onerror = () => { status.textContent = `Couldn't load the ${tab.label} rulebook. Check your connection and try again.`; };
-    img.src = tab.file;
-    if (img.complete && img.naturalWidth) status.textContent = "";
+    img.classList.add("rules-img-pending");
+    img.classList.remove("rules-img-broken");
+    [["rulesSourceAvif", "avif"], ["rulesSourceWebp", "webp"]].forEach(([id, fmt]) => {
+      const source = document.getElementById(id);
+      if (tab.optimized) source.srcset = rulebookUrl(tab, fmt);
+      else source.removeAttribute("srcset");
+    });
+    img.onload  = () => { if (token === rulesLoadToken) verifyRulebook(tab, img, token); };
+    img.onerror = () => {
+      if (token !== rulesLoadToken) return;
+      img.classList.remove("rules-img-pending");
+      img.classList.add("rules-img-broken");
+      status.textContent = `Couldn't load the ${tab.label} rulebook. Check your connection and try again.`;
+    };
+    if (img.getAttribute("src") !== tab.file) img.src = tab.file;
+    else if (img.complete && img.naturalWidth) verifyRulebook(tab, img, token);
+  }
+
+  async function verifyRulebook(tab, img, token) {
+    const status = document.getElementById("rulesStatus");
+    let state = "ok";
+    try { await img.decode(); } catch (e) { state = "incomplete"; }
+    if (state === "ok") {
+      const reply = await askRulesWorker({ type: "rules-check", url: img.currentSrc || img.src });
+      if (reply && reply.state === "incomplete") state = "incomplete";
+    }
+    if (token !== rulesLoadToken) return;
+    img.classList.remove("rules-img-pending");
+    if (state === "ok") {
+      status.textContent = "";
+      refreshRulesOffline();
+      return;
+    }
+    img.classList.add("rules-img-broken");
+    const link = document.createElement("a");
+    link.href = tab.official || RULES_OFFICIAL_URL;
+    link.target = "_blank";
+    link.rel = "noopener";
+    link.textContent = "the official rules";
+    status.replaceChildren(`The ${tab.label} rulebook image in this app is incomplete, so it isn't shown. See `, link, ".");
+  }
+
+  // "Save all for offline": stores the current format of every rulebook for the enabled packs in
+  // the service worker's persistent rulebook cache, and says which ones are already stored.
+  let rulesSaving = false;
+  async function rulesOfflineTargets() {
+    const format = await rulesFormat();
+    return RULEBOOK_TABS.filter(t => enabledPacks.has(t.packId)).map(t => ({ tab: t, url: absUrl(rulebookUrl(t, format)) }));
+  }
+  async function refreshRulesOffline() {
+    const btn = document.getElementById("rulesSaveAll");
+    const out = document.getElementById("rulesOfflineStatus");
+    if (rulesSaving) return;
+    if (!("serviceWorker" in navigator)) {
+      btn.disabled = true;
+      out.textContent = "This browser can't keep rulebooks for offline use.";
+      return;
+    }
+    const targets = await rulesOfflineTargets();
+    const reply = await askRulesWorker({ type: "rules-status", urls: targets.map(t => t.url) });
+    if (rulesSaving) return;
+    if (!reply) { btn.disabled = false; out.textContent = ""; return; }
+    const saved = targets.filter(t => reply.saved.includes(t.url));
+    if (saved.length === targets.length) {
+      out.textContent = `All ${targets.length} rulebooks are saved for offline use.`;
+    } else if (saved.length) {
+      out.textContent = `Saved for offline: ${saved.map(t => t.tab.label).join(", ")} (${saved.length} of ${targets.length}).`;
+    } else {
+      out.textContent = "No rulebooks saved for offline use yet.";
+    }
+    btn.disabled = saved.length === targets.length;
+  }
+  async function saveAllRulebooks() {
+    const btn = document.getElementById("rulesSaveAll");
+    const out = document.getElementById("rulesOfflineStatus");
+    if (rulesSaving) return;
+    if (!navigator.serviceWorker || !navigator.serviceWorker.controller) {
+      out.textContent = "Offline saving isn't ready yet. Reload the app once while online, then try again.";
+      return;
+    }
+    rulesSaving = true;
+    btn.disabled = true;
+    const targets = await rulesOfflineTargets();
+    out.textContent = `Saving rulebooks… 0 of ${targets.length}`;
+    const reply = await askRulesWorker({ type: "rules-save", urls: targets.map(t => t.url) },
+      p => { out.textContent = `Saving rulebooks… ${p.done} of ${p.total}`; });
+    rulesSaving = false;
+    const results = (reply && reply.results) || {};
+    const label = state => targets.filter(t => results[t.url] === state).map(t => t.tab.label);
+    const ok = label("ok"), incomplete = label("incomplete");
+    const failed = targets.filter(t => !["ok", "incomplete"].includes(results[t.url])).map(t => t.tab.label);
+    const parts = [ok.length === targets.length
+      ? `All ${targets.length} rulebooks are saved for offline use.`
+      : `Saved ${ok.length} of ${targets.length} rulebooks for offline use.`];
+    if (incomplete.length) parts.push(`${incomplete.join(", ")}: the image in this app is incomplete, so it can't be saved.`);
+    if (failed.length) parts.push(`Couldn't download ${failed.join(", ")}. Check your connection and try again.`);
+    out.textContent = parts.join(" ");
+    btn.disabled = ok.length === targets.length;
   }
 
   function closeRules() {
@@ -1303,7 +1726,7 @@ function getCurrentElapsed() {
   }
 
   function closeDeleteModal() {
-    _pendingDeleteIdx = null;
+    _pendingDeleteId  = null;
     _deleteCallback   = null;
     // The delete button that triggered this modal was stored directly; return
     // focus to it rather than going through the _modalTriggers map.
@@ -1315,15 +1738,216 @@ function getCurrentElapsed() {
     if (trigger && trigger.isConnected) trigger.focus();
   }
 
+  // ─── Rules Oracle: the FAQ dialog's mission view and offline search ─────────
+  // The FAQ itself is static HTML in #faqAll (indexable, and the source of the
+  // FAQPage JSON-LD). Each .faq-item belongs to the .faq-group it sits in and may
+  // name extra groups in data-faq-for; data-faq-common marks the general rulings
+  // players ask about most.
+  const FAQ_GROUP_OF = el => (el.closest(".faq-group") || {}).dataset?.faqGroup || "";
+  const faqFor = el => [FAQ_GROUP_OF(el), ...(el.dataset.faqFor || "").split(" ")].filter(Boolean);
+  const faqItems = () => [...document.querySelectorAll("#faqAll details.faq-item")];
+
+  function faqGroupHTML(title, items, emptyText, anchor) {
+    const wrap = document.createElement("div");
+    wrap.className = "faq-group";
+    if (anchor) wrap.dataset.faqMissionAnchor = anchor;
+    const h = document.createElement("h4");
+    h.className = "faq-char-header";
+    h.textContent = title;
+    wrap.appendChild(h);
+    if (items.length) {
+      items.forEach(it => {
+        const c = it.cloneNode(true);
+        c.open = false;
+        c.removeAttribute("data-faq-auto-open");
+        c.querySelectorAll("mark").forEach(m => m.replaceWith(m.textContent));
+        wrap.appendChild(c);
+      });
+    } else {
+      const p = document.createElement("p");
+      p.className = "faq-none";
+      p.textContent = emptyText;
+      wrap.appendChild(p);
+    }
+    return wrap;
+  }
+
+  // "For this mission": the scenario's rulings, then each character's, then the
+  // most-asked general rules. Rebuilt on every open so it follows the loaded mission.
+  function buildFaqMission() {
+    const box = document.getElementById("faqMission");
+    box.innerHTML = "";
+    box.hidden = true;
+    const c = currentCombination;
+    if (!c) return;
+    const num = SCENARIO_NUMBER[c.scenario];
+    const targets = [
+      num ? { anchor: "faq-sc-" + num, title: (document.getElementById("faq-sc-" + num) || {}).textContent || scenarioText(c.scenario) } : null,
+      ...c.characters.map(ch => CHAR_FAQ_ANCHOR[ch] ? { anchor: CHAR_FAQ_ANCHOR[ch], title: ch } : null),
+    ].filter(Boolean);
+    const used = new Set();
+    const section = document.createElement("section");
+    section.className = "faq-section";
+    section.setAttribute("aria-labelledby", "faq-s-mission");
+    section.innerHTML = `<h3 class="faq-section-header" id="faq-s-mission">For this mission</h3>
+      <p class="faq-mission-intro">Rulings for ${esc(c.characters.join(" & "))} on ${esc(scenarioText(c.scenario))}, then the most-asked general rules. The full FAQ follows.</p>`;
+    const all = faqItems();
+    targets.forEach(t => {
+      // The block's own entries first, then related ones from other sections.
+      const items = all.filter(it => !used.has(it) && faqFor(it).includes(t.anchor))
+        .sort((a, b) => (FAQ_GROUP_OF(b) === t.anchor) - (FAQ_GROUP_OF(a) === t.anchor));
+      items.forEach(it => used.add(it));
+      section.appendChild(faqGroupHTML(t.title, items, `No rulings specific to ${t.title} have been published yet.`, t.anchor));
+    });
+    const common = all.filter(it => !used.has(it) && it.hasAttribute("data-faq-common"));
+    section.appendChild(faqGroupHTML("Most-asked general rules", common, ""));
+    box.appendChild(section);
+    box.hidden = false;
+  }
+
+  // Search index, built on first use: question + answer + the headings of every
+  // group the entry belongs to (so "Bood" or "Hunt the Bounty" finds its rulings).
+  let _faqIndex = null;
+  function faqIndex() {
+    if (_faqIndex) return _faqIndex;
+    const headingText = id => { const h = document.getElementById(id); return h ? h.textContent : ""; };
+    _faqIndex = faqItems().map(el => {
+      const summary = el.querySelector("summary");
+      const answer  = el.querySelector(".faq-answer");
+      let text = [summary.textContent, answer.textContent, ...faqFor(el).map(headingText)].join(" ").toLowerCase();
+      if (text.includes("★")) text += " star stars";
+      if (text.includes("✓")) text += " check checks";
+      return { el, summary, answer, text, loose: text.replace(/-/g, ""), sumText: summary.textContent.toLowerCase(),
+               sumHTML: summary.innerHTML, ansHTML: answer.innerHTML };
+    });
+    return _faqIndex;
+  }
+
+  function faqHighlight(root, terms) {
+    if (!terms.length) return;
+    const re = new RegExp("(" + terms.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|") + ")", "gi");
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode: n => n.parentElement.closest(".faq-meta, .sr-only") ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT,
+    });
+    const nodes = [];
+    while (walker.nextNode()) nodes.push(walker.currentNode);
+    nodes.forEach(node => {
+      const parts = node.nodeValue.split(re);
+      if (parts.length < 2) return;
+      const frag = document.createDocumentFragment();
+      parts.forEach((part, i) => {
+        if (!part) return;
+        if (i % 2) { const m = document.createElement("mark"); m.textContent = part; frag.appendChild(m); }
+        else frag.appendChild(document.createTextNode(part));
+      });
+      node.replaceWith(frag);
+    });
+  }
+
+  function levenshtein(a, b) {
+    if (Math.abs(a.length - b.length) > 3) return 99;
+    let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+    for (let i = 1; i <= a.length; i++) {
+      const cur = [i];
+      for (let j = 1; j <= b.length; j++)
+        cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+      prev = cur;
+    }
+    return prev[b.length];
+  }
+
+  // Closest spelling of each query word among the words used in the FAQ.
+  function faqSuggestion(terms) {
+    const vocab = new Set();
+    faqIndex().forEach(r => r.text.split(/[^a-z0-9'-]+/).forEach(w => { if (w.length >= 3) vocab.add(w); }));
+    let changed = false;
+    const out = terms.map(t => {
+      if (vocab.has(t) || t.length < 3) return t;
+      let best = null, bestD = Math.max(1, Math.floor(t.length / 3)) + 1;
+      vocab.forEach(w => { const d = levenshtein(t, w); if (d < bestD) { bestD = d; best = w; } });
+      if (best) { changed = true; return best; }
+      return t;
+    });
+    return changed ? out.join(" ") : null;
+  }
+
+  let _faqStatusTimer = null;
+  function runFaqSearch(raw) {
+    const q = raw.trim().toLowerCase();
+    const terms = q.split(/\s+/).filter(Boolean);
+    const content = document.querySelector(".faq-content");
+    const status  = document.getElementById("faqSearchStatus");
+    const empty   = document.getElementById("faqEmpty");
+    let count = 0;
+    faqIndex().forEach(r => {
+      // Reset any earlier highlighting before matching again.
+      if (r.summary.querySelector("mark")) r.summary.innerHTML = r.sumHTML;
+      if (r.answer.querySelector("mark"))  r.answer.innerHTML  = r.ansHTML;
+      // "reroll" finds "re-roll" too.
+      const hit = terms.every(t => r.text.includes(t) || r.loose.includes(t.replace(/-/g, "")));
+      r.el.classList.toggle("faq-hidden", terms.length > 0 && !hit);
+      if (terms.length && hit) {
+        count++;
+        faqHighlight(r.summary, terms);
+        faqHighlight(r.answer, terms);
+        // Show the answer when the match is only in it, so the reason is visible.
+        if (!r.el.open && !terms.every(t => r.sumText.includes(t))) { r.el.open = true; r.el.dataset.faqAutoOpen = ""; }
+      } else if (r.el.hasAttribute("data-faq-auto-open")) {
+        r.el.open = false;
+        r.el.removeAttribute("data-faq-auto-open");
+      }
+    });
+    document.querySelectorAll("#faqAll .faq-group, #faqAll .faq-section").forEach(g => {
+      g.classList.toggle("faq-hidden", terms.length > 0 && !g.querySelector("details.faq-item:not(.faq-hidden)"));
+    });
+    const mission = document.getElementById("faqMission");
+    mission.classList.toggle("faq-hidden", terms.length > 0);
+    document.querySelector("#faqModal .faq-credit").classList.toggle("faq-hidden", terms.length > 0);
+
+    empty.innerHTML = "";
+    empty.hidden = !(terms.length && count === 0);
+    if (!empty.hidden) {
+      const suggestion = faqSuggestion(terms);
+      empty.innerHTML = `<p>No rulings match “${esc(raw.trim())}”.</p>` +
+        (suggestion ? `<p>Did you mean <button type="button" class="faq-suggest" data-faq-suggest="${esc(suggestion)}">${esc(suggestion)}</button>?</p>` : "") +
+        `<p>Try one keyword (like “reduce”, “energy” or “skill check”), a character's name or a scenario number, or check the rulebooks under Rules at the bottom of the page.</p>`;
+      const btn = empty.querySelector(".faq-suggest");
+      if (btn) btn.addEventListener("click", () => {
+        const input = document.getElementById("faqSearch");
+        input.value = btn.dataset.faqSuggest;
+        runFaqSearch(input.value);
+        input.focus();
+      });
+    }
+    if (terms.length) content.scrollTop = 0;
+
+    const msg = !terms.length ? "" :
+      count === 0 ? "No rulings match." :
+      count === 1 ? "1 ruling matches." : `${count} rulings match.`;
+    clearTimeout(_faqStatusTimer);
+    // Wait for a pause in typing so screen readers announce one count, not every keystroke.
+    if (!msg) status.textContent = "";
+    else _faqStatusTimer = setTimeout(() => { status.textContent = msg; }, 350);
+    return count;
+  }
+
   function openFaq(anchorId) {
+    const input = document.getElementById("faqSearch");
+    if (input.value) { input.value = ""; runFaqSearch(""); }
+    buildFaqMission();
     openModal("faqModal", "faqClose");
+    const container = document.querySelector(".faq-content");
+    container.scrollTop = 0;
+    track("faq_open", { anchor: /^[\w-]{1,60}$/.test(anchorId || "") ? anchorId : "" });
     if (anchorId) {
-      const target = document.getElementById(anchorId);
+      // With a mission loaded, the mission card's ? buttons land on that
+      // character's or scenario's block in "For this mission"; otherwise on the
+      // full FAQ heading with this id.
+      const target = document.querySelector(`#faqMission [data-faq-mission-anchor="${anchorId}"]`) || document.getElementById(anchorId);
       if (target) {
         const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
         setTimeout(() => {
-          const container = document.querySelector(".faq-content");
-          const stickyHeader = container.querySelector(".faq-section-header");
+          const stickyHeader = target.closest(".faq-section")?.querySelector(".faq-section-header");
           // Offset by the sticky section header so the target isn't hidden under it.
           const clearance = (stickyHeader ? stickyHeader.offsetHeight : 0) + 8;
           const scrollTop = target.getBoundingClientRect().top - container.getBoundingClientRect().top + container.scrollTop - clearance;
@@ -1374,13 +1998,20 @@ function getCurrentElapsed() {
     announce(`Mission loaded: ${comb.characters[0]} and ${comb.characters[1]}, ${scenarioText(comb.scenario)}. Timer started.`);
     if (opts && opts.focusCard) document.getElementById("comboHeading").focus({ preventScroll: true });
 
-    // Sync manual selectors — put locked character back in its original slot
+    // Selectors show exactly the loaded mission (Character 1 = Primary). A lock the
+    // mission doesn't match is released, and the player is told.
     const c1 = document.getElementById("manualChar1");
     const c2 = document.getElementById("manualChar2");
     const sc = document.getElementById("manualScenario");
-    let [a, b] = comb.characters;
-    if      (locks.char1 && b === c1.value) { [a, b] = [b, a]; }
-    else if (locks.char2 && a === c2.value) { [a, b] = [b, a]; }
+    const [a, b] = comb.characters;
+    const released = [];
+    if (locks.char1    && c1.value !== a)             { locks.char1    = false; released.push("Character 1"); }
+    if (locks.char2    && c2.value !== b)             { locks.char2    = false; released.push("Character 2"); }
+    if (locks.scenario && sc.value !== comb.scenario) { locks.scenario = false; released.push("Scenario"); }
+    if (released.length) {
+      updateLockButtons();
+      toast(`${released.join(" and ")} lock released to match the loaded mission.`);
+    }
     c1.value = a;
     syncDropdown("manualChar1", "manualChar2");
     c2.value = b;
@@ -1439,6 +2070,7 @@ function getCurrentElapsed() {
       toast("Characters locked — scenario re-rolled.");
     }
     loadCombination({ characters: [c1El.value, c2El.value], scenario: scEl.value });
+    track("randomize", { locked: [locks.char1, locks.char2, locks.scenario].filter(Boolean).length });
   }
 
   function handleLoadManualCombo() {
@@ -1446,7 +2078,7 @@ function getCurrentElapsed() {
     const char2    = document.getElementById("manualChar2").value;
     const scenario = document.getElementById("manualScenario").value;
     if (char1 === char2) { toast("Choose two different characters.", "error"); return; }
-    guardUnsaved(() => loadCombination({ characters: [char1, char2], scenario }));
+    guardUnsaved(() => { loadCombination({ characters: [char1, char2], scenario }); track("manual_pick"); });
   }
 
   function handleSaveRecord() {
@@ -1456,20 +2088,25 @@ function getCurrentElapsed() {
     const playtime = getCurrentElapsed();
     const notesEl  = document.getElementById("recordNotes");
     const notes    = notesEl.value.trim().slice(0, 2000); // matches isValidRecord
-    stopTimer();
-    records.push({
-      characters: currentCombination.characters,
+    const now      = new Date();
+    const rec = {
+      id:         newId(),
+      createdAt:  now.toISOString(),
+      characters: [...currentCombination.characters],
       scenario:   currentCombination.scenario,
       result,
       difficulty,
       playtime,
-      timestamp: new Date().toLocaleString(),
+      timestamp: now.toLocaleString(),
       ...(_currentDroid ? { droid: _currentDroid } : {}),
       ...(notes ? { notes } : {})
-    });
+    };
+    if (!isValidRecord(rec)) { toast("Couldn't save: this record isn't valid. Check the result and difficulty.", "error"); return; }
+    stopTimer();
+    // On failure a persistent error is showing; keep the notes and the Save button for a retry.
+    if (!commitRecords(list => [...list, rec])) return;
     notesEl.value = "";
     try { localStorage.setItem("lastResult", result); localStorage.setItem("lastDifficulty", difficulty); } catch(e) {}
-    saveRecords();
     const saveBtn = document.getElementById("saveRecordBtn");
     saveBtn.disabled = true;
     saveBtn.textContent = "Saved";
@@ -1482,13 +2119,16 @@ function getCurrentElapsed() {
     status.classList.remove("hidden");
     statusText.focus();
     toast("Record saved to Mission Log.");
+    track("save_record", { result, difficulty });
   }
 
-  function handleExport() {
-    if (!records.length) { toast("No records to export.", "error"); return; }
+  // `list` overrides what is exported (the storage-error banner exports unsaved changes too).
+  function handleExport(list) {
+    const recs = Array.isArray(list) ? list : records;
+    if (!recs.length) { toast("No records to export.", "error"); return; }
     const now      = new Date();
     const date     = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-    const blob     = new Blob([JSON.stringify(records, null, 2)], { type: "application/json" });
+    const blob     = new Blob([JSON.stringify(recs, null, 2)], { type: "application/json" });
     const url      = URL.createObjectURL(blob);
     const a        = document.createElement("a");
     a.href         = url;
@@ -1497,10 +2137,43 @@ function getCurrentElapsed() {
     a.click();
     document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(url), 1000);
-    toast(`Exported ${records.length} record${records.length !== 1 ? "s" : ""} to ${a.download}.`);
+    toast(`Exported ${recs.length} record${recs.length !== 1 ? "s" : ""} to ${a.download}.`);
+    track("export", { records: recs.length });
   }
 
   let _pendingImport = null;
+
+  // Merge rules (records are already migrated, so all have ids):
+  // - identical content to a record already in the log (or earlier in the file) → duplicate;
+  // - an imported record that carried an id matching one in the log → the copy with the
+  //   newer updatedAt/createdAt wins (an edit made on another device is applied);
+  // - a record without an id whose old key (timestamp + characters + scenario) matches a
+  //   log record but whose content differs → kept as well and counted as a conflict, since
+  //   there is no way to tell which copy is newer and dropping either could lose an edit.
+  function mergeImport(list, imported, hadId) {
+    const byId = new Map(list.map((r, i) => [r.id, i]));
+    const sigs = new Set(list.map(recordSignature));
+    const keys = new Set(list.map(legacyKey));
+    let added = 0, dupes = 0, updated = 0, conflicts = 0;
+    imported.forEach(r => {
+      const sig = recordSignature(r);
+      if (hadId.has(r.id) && byId.has(r.id)) {
+        const i = byId.get(r.id), cur = list[i];
+        if (recordSignature(cur) === sig) { dupes++; return; }
+        if ((r.updatedAt || r.createdAt) > (cur.updatedAt || cur.createdAt)) { list[i] = r; sigs.add(sig); updated++; }
+        else dupes++;
+        return;
+      }
+      if (sigs.has(sig)) { dupes++; return; }
+      if (!hadId.has(r.id) && keys.has(legacyKey(r))) conflicts++;
+      let id = r.id, n = 1;
+      while (byId.has(id)) id = r.id + "-" + n++;
+      const rec = { ...r, id };
+      byId.set(id, list.length); list.push(rec); sigs.add(sig); keys.add(legacyKey(rec));
+      added++;
+    });
+    return { list, added, dupes, updated, conflicts };
+  }
 
   document.getElementById("importBtn").addEventListener("click", () => document.getElementById("importFile").click());
   document.getElementById("importFile").addEventListener("change", function () {
@@ -1511,10 +2184,14 @@ function getCurrentElapsed() {
       try {
         const parsed = JSON.parse(e.target.result);
         if (!Array.isArray(parsed)) { toast("Couldn't import: this file isn't a Mission Log backup.", "error"); return; }
-        const valid   = parsed.filter(isValidRecord);
+        // Copies, so fields added by migration don't touch the parsed file; remember
+        // which records came with an id (ids added here are only for records without one).
+        const valid   = parsed.filter(isValidRecord).map(r => ({ ...r, characters: [...r.characters] }));
+        const hadId   = new Set(valid.filter(r => typeof r.id === "string" && r.id && r.id.length <= 64).map(r => r.id));
         const skipped = parsed.length - valid.length;
+        migrateRecords(valid);
         if (valid.length === 0) { toast("Couldn't import: no valid records in this file.", "error"); return; }
-        _pendingImport = { valid, skipped };
+        _pendingImport = { valid, skipped, hadId };
         const skipNote = skipped > 0 ? ` ${skipped} invalid record(s) will be skipped.` : "";
         const existing = records.length;
         document.getElementById("importConfirmMsg").textContent =
@@ -1532,10 +2209,11 @@ function getCurrentElapsed() {
     if (!_pendingImport) return;
     const { valid, skipped } = _pendingImport;
     closeImportModal();
-    const before = records;
-    records = valid;
-    saveRecords();
-    statsDirty = true;
+    // Replace what this tab shows; records another tab saved meanwhile (unseen here) stay.
+    const before   = records;
+    const shownIds = new Set(before.map(r => r.id));
+    const imported = new Set(valid.map(r => r.id));
+    if (!commitRecords(list => mergeById(valid, list.filter(r => !shownIds.has(r.id))))) { refreshRecordViews(); return; }
     displayHistory();
     displayUnplayed();
     displayStats();
@@ -1543,27 +2221,31 @@ function getCurrentElapsed() {
     const msg = skipped > 0
       ? `Replaced your records with ${valid.length} imported. ${skipped} invalid skipped.`
       : `Replaced your records with ${valid.length} imported.`;
-    undoToast(msg, () => { records = before; refreshAfterRecordsChange(); toast("Import undone. Your previous records are back."); });
+    undoToast(msg, () => {
+      if (!commitRecords(list => mergeById(before, list.filter(r => !imported.has(r.id))))) { refreshRecordViews(); return; }
+      refreshRecordViews(); toast("Import undone. Your previous records are back.");
+    });
+    track("import", { mode: "replace", imported: valid.length, skipped });
   });
 
   document.getElementById("importMerge").addEventListener("click", () => {
     if (!_pendingImport) return;
-    const { valid, skipped } = _pendingImport;
+    const { valid, skipped, hadId } = _pendingImport;
     closeImportModal();
-    const existingKeys = new Set(records.map(r => `${r.timestamp}|${r.characters.join("|")}|${r.scenario}`));
-    const toAdd = valid.filter(r => !existingKeys.has(`${r.timestamp}|${r.characters.join("|")}|${r.scenario}`));
-    const dupes = valid.length - toAdd.length;
-    records = [...records, ...toAdd];
-    saveRecords();
-    statsDirty = true;
+    let res;
+    if (!commitRecords(list => { res = mergeImport(list, valid, hadId); return res.list; })) { refreshRecordViews(); return; }
+    const { added, dupes, updated, conflicts } = res;
     displayHistory();
     displayUnplayed();
     displayStats();
     if (currentCombination) { displayCombination(currentCombination); displayComboHistory(currentCombination); }
-    let msg = `Added ${toAdd.length} new record${toAdd.length !== 1 ? "s" : ""}.`;
+    let msg = `Added ${added} new record${added !== 1 ? "s" : ""}.`;
+    if (updated > 0) msg += ` ${updated} updated to a newer edit.`;
     if (dupes   > 0) msg += ` ${dupes} already in your log.`;
+    if (conflicts > 0) msg += ` ${conflicts} differ from a record with the same date and were kept as well — check for duplicates.`;
     if (skipped > 0) msg += ` ${skipped} invalid skipped.`;
     toast(msg);
+    track("import", { mode: "merge", imported: added, duplicates: dupes, skipped });
   });
 
   document.getElementById("restartCancel").addEventListener("click", closeRestartModal);
@@ -1572,9 +2254,9 @@ function getCurrentElapsed() {
     startTimer();
   });
 
-  // Re-render every view that depends on records[] (after undo, clear, import).
-  function refreshAfterRecordsChange() {
-    saveRecords();
+  // Re-render every view that depends on records[] (after undo, clear, import, another tab).
+  function refreshRecordViews() {
+    markRecordsDirty();
     displayHistory();
     displayUnplayed();
     displayStats();
@@ -1588,14 +2270,18 @@ function getCurrentElapsed() {
   });
   document.getElementById("modalCancel").addEventListener("click", closeConfirmModal);
   document.getElementById("modalConfirm").addEventListener("click", () => {
-    const before = records;
-    records = [];
-    refreshAfterRecordsChange();
+    // Deletes the records this tab listed; any saved meanwhile in another tab stay.
+    const before   = records;
+    const shownIds = new Set(before.map(r => r.id));
+    const ok = commitRecords(list => list.filter(r => !shownIds.has(r.id)));
+    refreshRecordViews();
     closeConfirmModal();
+    if (!ok) return;
     // Clear All is now disabled, so focus can't return to it.
     document.getElementById("missionLogHeading").focus();
     undoToast(`Cleared ${before.length} record${before.length !== 1 ? "s" : ""}.`, () => {
-      records = before; refreshAfterRecordsChange(); toast("Records restored.");
+      if (!commitRecords(list => mergeById(before, list))) { refreshRecordViews(); return; }
+      refreshRecordViews(); toast("Records restored.");
     });
   });
 
@@ -1605,7 +2291,7 @@ function getCurrentElapsed() {
 
   document.getElementById("deleteRecordCancel").addEventListener("click", closeDeleteModal);
   document.getElementById("deleteRecordConfirm").addEventListener("click", () => {
-    const idx = _pendingDeleteIdx;
+    const id  = _pendingDeleteId;
     const cb  = _deleteCallback;
     const trigger = _deleteTrigger;
     const inLog   = !!(trigger && trigger.closest("#historyTableContainer"));
@@ -1614,10 +2300,19 @@ function getCurrentElapsed() {
     if (inLog) pos = [...document.querySelectorAll("#historyTableContainer .btn-delete-record")].indexOf(trigger);
     _deleteTrigger = null; // its row is about to disappear
     closeDeleteModal();
-    if (idx == null) return;
-    const [removed] = records.splice(idx, 1);
-    saveRecords();
+    if (id == null) return;
+    let removed = null, at = -1;
+    const ok = commitRecords(list => {
+      at = list.findIndex(r => r.id === id);
+      if (at < 0) return null;
+      [removed] = list.splice(at, 1);
+      return list;
+    });
     if (cb) cb();
+    if (!ok) {
+      if (!removed) toast("That record was already deleted (in another tab or window).", "error");
+      return;
+    }
     const scope = inLog ? "#historyTableContainer" : "#comboHistory";
     const btns  = [...document.querySelectorAll(`${scope} .btn-delete-record`)];
     const next  = btns[Math.min(Math.max(pos, 0), btns.length - 1)];
@@ -1625,8 +2320,10 @@ function getCurrentElapsed() {
     else if (inLog) document.getElementById("missionLogHeading").focus();
     else if (document.getElementById("comboHeading")) document.getElementById("comboHeading").focus();
     undoToast("Record deleted.", () => {
-      records.splice(Math.min(idx, records.length), 0, removed);
-      saveRecords();
+      if (!commitRecords(list => {
+        if (!list.some(r => r.id === removed.id)) list.splice(Math.min(at, list.length), 0, removed);
+        return list;
+      })) { refreshRecordViews(); return; }
       displayHistory(); displayUnplayed(); displayStats();
       if (currentCombination) { displayCombination(currentCombination); displayComboHistory(currentCombination); }
       toast("Record restored.");
@@ -1644,14 +2341,27 @@ function getCurrentElapsed() {
 
   document.getElementById("editRecordCancel").addEventListener("click", closeEditModal);
   document.getElementById("editRecordSave").addEventListener("click", () => {
-    if (_editIdx == null) return;
-    const rec = records[_editIdx];
-    rec.result     = document.getElementById("editResult").value;
-    rec.difficulty = document.getElementById("editDifficulty").value;
-    const notes    = document.getElementById("editNotes").value.trim().slice(0, 2000); // matches isValidRecord
-    if (notes) rec.notes = notes; else delete rec.notes;
-    saveRecords();
-    statsDirty = true;
+    if (_editId == null) return;
+    const id         = _editId;
+    const result     = document.getElementById("editResult").value;
+    const difficulty = document.getElementById("editDifficulty").value;
+    const notes      = document.getElementById("editNotes").value.trim().slice(0, 2000); // matches isValidRecord
+    let found = false;
+    const ok = commitRecords(list => {
+      const rec = list.find(r => r.id === id);
+      if (!rec) return null;
+      found = true;
+      rec.result = result; rec.difficulty = difficulty;
+      if (notes) rec.notes = notes; else delete rec.notes;
+      rec.updatedAt = new Date().toISOString();
+      return list;
+    });
+    if (!ok) {
+      closeEditModal();
+      refreshRecordViews();
+      if (!found) toast("That record was deleted in another tab or window, so it couldn't be updated.", "error");
+      return;
+    }
     const scrollY = window.scrollY;
     displayHistory();
     displayStats();
@@ -1798,6 +2508,7 @@ function getCurrentElapsed() {
         _diceRolling = false;
         const vals = [0, 1].map(i => toRoll.includes(i) ? finalVals[toRoll.indexOf(i)] : _diceValues[i]);
         _diceSay(`${isSkill ? "Skill check" : "Rolled"}: ${vals[0]} and ${vals[1]}${!isSkill && toRoll.length < 2 ? " (locked die kept)" : ""}`);
+        if (!isSkill) track("dice_roll", { dice: toRoll.length });
       }
     }, 60);
   }
@@ -1935,6 +2646,7 @@ function getCurrentElapsed() {
     audio.volume = getRadioVolume();
     audio.src = RADIO_STREAMS[0];
     audio.play().catch(() => {});
+    track("radio_play");
   }
 
   function stopRadio() {
@@ -1958,155 +2670,197 @@ function getCurrentElapsed() {
   }
 
   // ─── SYZYGY Campaign ────────────────────────────────────────────────────────
+  // Campaign model v2, following the two SYZYGY booklets (rules/twinstars1-syzygy.png and
+  // rules/twinstars2-syzygy.png). szNewCampaign / szApply / szRank are pure (no DOM, no
+  // storage) so tests can run every win/loss sequence through them.
 
   const SYZYGY1_RANKS = [
-    { rank: "LEGENDS",   desc: "Word spreads across the galaxy. There's apparently a song.",        wins: 3, maxLosses: 0 },
-    { rank: "FREE",      desc: "Debt paid off. Where's your next adventure?",                       wins: 3, maxLosses: 1 },
-    { rank: "ALIVE",     desc: "The Grosksh aren't about to waste a perfectly good servant.",        wins: 2 },
-    { rank: "GROSKSH'D", desc: "Not the best outcome, all things considered." }
+    { rank: "LEGENDS",   desc: "You pay off the Grosksh, and word of your adventures spreads across the galaxy. There's even a song about you." },
+    { rank: "FREE",      desc: "Thanks to some skill and a lot of luck, your debt is paid off. Where will your next adventure take you?" },
+    { rank: "ALIVE",     desc: "The Grosksh are proud of their ruthless reputation, but they aren't about to waste a perfectly good servant." },
+    { rank: "GROSKSH'D", desc: "Your time is up. You have failed the mission." }
   ];
   const SYZYGY2_RANKS = [
-    { rank: "LOADED",            desc: "The only thing that slowed you down was all the loot you brought home.", wins: 3, maxLosses: 0 },
-    { rank: "SAFE",              desc: "Home with one nifty new scar.",                                          wins: 3, maxLosses: 1 },
-    { rank: "BACK TO SQUARE ONE",desc: "Home, broken, and broke, but home.",                                     wins: 1, maxLosses: 2 },
-    { rank: "LOST IN THE UNIVERSE", desc: "The universe is a big place. Someone will find you eventually." }
+    { rank: "LOADED",               desc: "The only thing that slowed you down at all was the extra loot you brought home." },
+    { rank: "SAFE",                 desc: "Home safely, with one nifty new scar to talk about over a round of drinks." },
+    { rank: "BACK TO SQUARE ONE",   desc: "Well, you're home. Broken, and broke, but home." },
+    { rank: "LOST IN THE UNIVERSE", desc: "Way off point: you must accept your fate of being lost in the universe." }
   ];
+  // SYZYGY I: the six cards are dealt 1-2-2-1 into sections A, B, C, D (indexes into cards[]).
+  const SZ1_SECTIONS = [[0], [1, 2], [3, 4], [5]];
+  const SZ1_LABELS   = ["A", "B", "C", "D"];
+  // SYZYGY II "Waypoint": six cards in a right-aligned pyramid  S / a b / x y z.
+  // Black arrows (win) and red arrows (loss) from the booklet's diagram.
+  const SZ2 = { S: { W: "b", L: "a" }, a: { W: "b", L: "x" }, b: { W: "z", L: "y" },
+                x: { W: "y", L: "LOST" }, y: { W: "z", L: "LOST" }, z: { W: "HOME", L: "LOST" } };
+  const SZ2_NODES = ["S", "a", "b", "x", "y", "z"];   // cards[i] sits at node SZ2_NODES[i]
+  const SZ_MODE_LABEL = { syzygy1: "SYZYGY Mode I", syzygy2: "SYZYGY Mode II: Waypoint" };
 
-  let _sz = null;           // active campaign object
+  let _sz       = null;     // active v2 campaign
+  let _szLegacy = null;     // a v1 campaign found in storage (finished: shown; unfinished: migration prompt)
+  let _szKept   = null;     // an unfinished v1 campaign the player chose to keep read-only
   let _szMode   = null;     // setup: "syzygy1" | "syzygy2"
+  let _szSet    = null;     // setup (Mode II): which Adventure Series' six scenarios to use
   let _szChars  = [];       // setup: selected character names
+  let _szLossPending = false; // the "who hit 0 health?" question is showing
 
-  // Guards against an old or hand-edited saved campaign crashing the SYZYGY tab on every visit.
+  const szZero = () => [0, 1, 2].map(() => ({ health: 0, energy: 0 }));
+
+  function szNewCampaign(mode, chars, cards, set) {
+    return {
+      v: 2, mode, set: set || (mode === "syzygy1" ? "series1" : "series2"),
+      characters: [...chars], eliminated: [false, false, false], cards: [...cards],
+      node: mode === "syzygy1" ? 0 : "S", card: 0,
+      wins: 0, losses: 0, retry: false,
+      playing: null, alloc: szZero(), carry: szZero(),
+      results: [], started: new Date().toLocaleString(), completed: false, rank: null
+    };
+  }
+
+  const szAlive   = c => [0, 1, 2].filter(i => !c.eliminated[i]);
+  const szPool    = c => c.retry ? 3 : 5;
+  const szPlaying = c => Array.isArray(c.playing) ? c.playing : [];
+  const szNodeLabel = c => c.mode === "syzygy1" ? SZ1_LABELS[c.node] : c.node;
+
+  function szRank(c) {
+    if (c.mode === "syzygy1") {
+      if (c.wins >= 4) return SYZYGY1_RANKS[c.losses === 0 ? 0 : 1];
+      return SYZYGY1_RANKS[c.wins >= 3 ? 2 : 3];
+    }
+    return c.node === "HOME" ? SYZYGY2_RANKS[Math.min(c.losses, 2)] : SYZYGY2_RANKS[3];
+  }
+
+  // Apply one result to a campaign and return the new campaign (the input is not changed).
+  // elim: indexes of playing characters whose 0 health caused a loss (they leave the campaign).
+  function szApply(c0, result, elim) {
+    const c = JSON.parse(JSON.stringify(c0));
+    const win = result === "Win";
+    const playing = szPlaying(c).length === 2 ? szPlaying(c) : szAlive(c).slice(0, 2);
+    const out = win ? [] : [...new Set(elim || [])].filter(i => playing.includes(i) && !c.eliminated[i]);
+    c.results.push({ node: szNodeLabel(c), scenario: c.cards[c.card], chars: playing, result: win ? "Win" : "Loss",
+                     eliminated: out, retry: c.retry, ts: new Date().toLocaleString() });
+    out.forEach(i => { c.eliminated[i] = true; c.carry[i] = { health: 0, energy: 0 }; });
+    c.alloc = szZero();
+    if (win) c.wins++; else c.losses++;
+    const alive = szAlive(c);
+
+    if (c.mode === "syzygy1") {
+      if (win) {
+        c.retry = false;
+        c.node++;
+        if (c.node >= SZ1_SECTIONS.length) c.completed = true;
+        else c.card = SZ1_SECTIONS[c.node].length === 1 ? SZ1_SECTIONS[c.node][0] : null; // B, C: player picks a card
+      } else if (c.losses >= 2 || alive.length < 2) {
+        c.completed = true;          // a second loss ends the game (or too few characters are left to play)
+      } else {
+        c.retry = true;              // retry the section with 3 resources; in B or C the other card may be chosen
+      }
+    } else {
+      const next = SZ2[c.node][win ? "W" : "L"];
+      if (next === "HOME" || next === "LOST" || alive.length < 2) {
+        c.node = next === "HOME" ? "HOME" : "LOST";   // a bottom-row loss or losing 2 characters: lost
+        c.completed = true;
+      } else {
+        c.node = next;
+        c.card = SZ2_NODES.indexOf(next);
+      }
+    }
+    if (c.completed) { c.retry = false; c.rank = szRank(c); }
+    c.playing = alive.length === 2 ? alive : null;   // the player chooses again who plays next
+    return c;
+  }
+
+  // Only v2 campaigns are accepted; anything else is either a v1 campaign (see isLegacySz) or reset.
   function isValidSz(c) {
+    const isInt = (x, lo, hi) => Number.isInteger(x) && x >= lo && x <= hi;
+    const isCounts = a => Array.isArray(a) && a.length === 3 && a.every(x => x && isInt(x.energy, 0, 99) && isInt(x.health, 0, 99));
+    if (!c || typeof c !== "object" || c.v !== 2) return false;
+    if (c.mode !== "syzygy1" && c.mode !== "syzygy2") return false;
+    if (!Array.isArray(c.characters) || c.characters.length !== 3 || !c.characters.every(s => typeof s === "string")) return false;
+    if (!Array.isArray(c.eliminated) || c.eliminated.length !== 3 || !c.eliminated.every(b => typeof b === "boolean")) return false;
+    if (!Array.isArray(c.cards) || c.cards.length !== 6 || !c.cards.every(s => typeof s === "string")) return false;
+    if (!isInt(c.wins, 0, 4) || !isInt(c.losses, 0, 3) || typeof c.retry !== "boolean" || typeof c.completed !== "boolean") return false;
+    if (!isCounts(c.alloc) || !isCounts(c.carry) || !Array.isArray(c.results)) return false;
+    if (c.playing !== null && !(Array.isArray(c.playing) && c.playing.length === 2 && c.playing[0] !== c.playing[1] &&
+        c.playing.every(i => isInt(i, 0, 2) && !c.eliminated[i]))) return false;
+    if (c.mode === "syzygy1") {
+      if (!isInt(c.node, 0, c.completed ? 4 : 3)) return false;
+      if (!c.completed && !(c.card === null ? SZ1_SECTIONS[c.node].length === 2 : SZ1_SECTIONS[c.node].includes(c.card))) return false;
+    } else {
+      if (c.completed ? !(c.node === "HOME" || c.node === "LOST") : SZ2_NODES.indexOf(c.node) !== c.card) return false;
+    }
+    return true;
+  }
+
+  // The pre-rulebook (v1) campaign shape. Never converted: shown read-only or abandoned.
+  function isLegacySz(c) {
     const isCounts = a => Array.isArray(a) && a.length === 3 && a.every(x => x && Number.isFinite(x.energy) && Number.isFinite(x.health));
-    return !!c && typeof c === "object" &&
+    return !!c && typeof c === "object" && c.v === undefined &&
       (c.mode === "syzygy1" || c.mode === "syzygy2") &&
       Array.isArray(c.characters) && c.characters.length === 3 &&
       Array.isArray(c.removed) && c.removed.length === 3 &&
       isCounts(c.carryover) &&
       Array.isArray(c.scenarios) && c.scenarios.length >= 3 &&
-      Array.isArray(c.stageResults) &&
+      Array.isArray(c.stageResults) && c.stageResults.every(r => r && typeof r.scenario === "string" && Array.isArray(r.chars)) &&
       Number.isInteger(c.stage) && Number.isInteger(c.losses);
   }
 
-  (function loadSzCampaign() {
+  function loadSzCampaign(initial) {
+    _sz = null; _szLegacy = null; _szKept = null;
     try {
       const raw = localStorage.getItem("syzygyCampaign");
-      _sz = raw ? JSON.parse(raw) : null;
-      if (_sz && !isValidSz(_sz)) {
-        _sz = null;
-        setTimeout(() => toast("A saved SYZYGY campaign could not be read and was reset.", "error"), 500);
-      }
-    } catch(e) { _sz = null; }
-  })();
+      const obj = raw ? JSON.parse(raw) : null;
+      if (isValidSz(obj))       _sz = obj;
+      else if (isLegacySz(obj)) _szLegacy = obj;
+      else if (obj && initial)  setTimeout(() => toast("A saved SYZYGY campaign could not be read and was reset.", "error"), 500);
+    } catch(e) {}
+    try {
+      const kept = JSON.parse(localStorage.getItem("syzygyCampaignV1"));
+      if (isLegacySz(kept)) _szKept = kept;
+    } catch(e) {}
+  }
+  loadSzCampaign(true);
 
   function saveSz() {
     try {
-      if (_sz) localStorage.setItem("syzygyCampaign", JSON.stringify(_sz));
+      const obj = _sz || _szLegacy;
+      if (obj) localStorage.setItem("syzygyCampaign", JSON.stringify(obj));
       else     localStorage.removeItem("syzygyCampaign");
-    } catch(e) {}
-  }
-
-  function szActivePlayers() {
-    const alive = [0,1,2].filter(i => !_sz.removed[i]);
-    if (alive.length < 2) return alive;
-    const benchSlot = _sz.stage % alive.length;
-    return alive.filter((_, i) => i !== benchSlot);
-  }
-
-  function szBenchedPlayer() {
-    const alive = [0,1,2].filter(i => !_sz.removed[i]);
-    if (alive.length < 2) return null;
-    return alive[_sz.stage % alive.length];
-  }
-
-  function szCurrentScenario() {
-    if (!_sz) return null;
-    const { mode, stage, branchChosen, scenarios } = _sz;
-    if (mode === "syzygy1") {
-      if (stage === 0) return scenarios[0];
-      if (stage === 1) return branchChosen === null ? null : (branchChosen === 0 ? scenarios[1] : scenarios[2]);
-      if (stage === 2) return scenarios[3];
+      if (_szKept) localStorage.setItem("syzygyCampaignV1", JSON.stringify(_szKept));
+      else         localStorage.removeItem("syzygyCampaignV1");
+      return true;
+    } catch(e) {
+      // Never fail silently: the campaign stays in memory, but tell the player it isn't stored.
+      showStorageError("Couldn't save your SYZYGY campaign progress: browser storage is full or blocked.", []);
+      return false;
     }
-    return scenarios[stage] || null;
   }
 
-  function szCalcRank() {
-    const c = _sz;
-    const wins   = c.stageResults.filter(r => r.result === "Win").length;
-    const losses = c.losses;
-    const table  = c.mode === "syzygy1" ? SYZYGY1_RANKS : SYZYGY2_RANKS;
-    for (const entry of table) {
-      if (entry.wins    !== undefined && wins < entry.wins)          continue;
-      if (entry.maxLosses !== undefined && losses > entry.maxLosses) continue;
-      return { rank: entry.rank, desc: entry.desc };
-    }
-    return table[table.length - 1];
-  }
-
-  function szStart(mode, chars) {
-    const s1Scenarios = shuffle([...CONTENT_PACKS.find(p => p.id === "series1").scenarios]);
-    let picked;
-    if (mode === "syzygy1") {
-      picked = s1Scenarios.slice(0, 4); // A, B, C, D
-    } else {
-      picked = shuffle([...scenarios]).slice(0, 3);
-    }
-    _sz = {
-      mode,
-      characters: chars,
-      removed:   [false, false, false],
-      stage:      0,
-      branchChosen: null,
-      scenarios:  picked,
-      carryover:  [{energy:0,health:0},{energy:0,health:0},{energy:0,health:0}],
-      alloc:      null,
-      stageResults: [],
-      losses:     0,
-      retrying:   false,
-      started:    new Date().toLocaleString(),
-      completed:  false,
-      finalRank:  null
-    };
+  function szStart(mode, chars, set) {
+    const useSet = mode === "syzygy1" ? "series1" : (set || "series2");
+    const cards = shuffle([...CONTENT_PACKS.find(p => p.id === useSet).scenarios]);
+    _sz = szNewCampaign(mode, chars, cards, useSet);
+    _szLossPending = false;
     saveSz();
+    track("sz_start", { mode });
     renderSz("szStageHeading");
-    announce("Campaign started.");
+    announce("Campaign started. Choose the two characters who play the first scenario.");
   }
 
-  function szRecordOutcome(result) {
+  function szRecordOutcome(result, elim) {
     const before = JSON.stringify(_sz);
-    const c   = _sz;
-    const sc  = szCurrentScenario();
-    const playing = szActivePlayers();
-    c.stageResults.push({ stage: c.stage, scenario: sc, chars: playing, result, ts: new Date().toLocaleString() });
-
-    if (result === "Win") {
-      c.retrying = false;
-      if (c.mode === "syzygy1") {
-        c.stage = c.stage === 1 ? 2 : c.stage + 1;
-      } else {
-        c.stage++;
-      }
-    } else {
-      c.losses++;
-      if (c.mode === "syzygy2") c.stage++; // red-arrow path still advances
-      c.retrying = true;
-    }
-
-    c.alloc = null;
-
-    const totalStages = c.mode === "syzygy1" ? 3 : 3;
-    const tooManyLosses = c.losses >= 2;
-    if (c.stage >= totalStages || tooManyLosses) {
-      c.completed  = true;
-      c.finalRank  = szCalcRank();
-      c.retrying   = false;
-    }
+    _sz = szApply(_sz, result, elim);
+    _szLossPending = false;
+    const c = _sz;
     saveSz();
     renderSz("szStageHeading");
+    if (c.completed) track("sz_complete", { mode: c.mode, rank: c.rank.rank });
     const word = result === "Win" ? "Victory" : "Defeat";
-    const next = c.completed ? `Campaign complete: ${c.finalRank.rank}.` : "";
-    undoToast(`${word} recorded. ${next}`.trim(), () => {
+    const gone = (c.results[c.results.length - 1].eliminated || []).map(i => c.characters[i]);
+    const msg = [`${word} recorded.`,
+      gone.length ? `${gone.join(" and ")} ${gone.length > 1 ? "are" : "is"} out of the campaign.` : "",
+      c.completed ? `Campaign complete: ${c.rank.rank}.` : (c.retry ? "Retry with 3 resources." : "")].filter(Boolean).join(" ");
+    undoToast(msg, () => {
       _sz = JSON.parse(before);
       saveSz();
       renderSz("szStageHeading");
@@ -2116,7 +2870,7 @@ function getCurrentElapsed() {
 
   function szAbandon() {
     const before = JSON.stringify(_sz);
-    _sz = null;
+    _sz = null; _szLossPending = false;
     saveSz();
     renderSz();
     const h = document.querySelector("#syzygyCampaignContent .panel-title");
@@ -2133,7 +2887,7 @@ function getCurrentElapsed() {
   function szFocusKey(el) {
     if (!el || !el.closest || !el.closest("#syzygyCampaignContent")) return null;
     if (el.id) return "#" + el.id;
-    for (const attr of ["data-char", "data-ai", "data-ci"]) {
+    for (const attr of ["data-char", "data-player", "data-ai", "data-ci"]) {
       if (el.hasAttribute(attr)) {
         const extra = attr === "data-ai" ? `[data-t="${el.dataset.t}"][data-d="${el.dataset.d}"]`
                     : attr === "data-ci" ? `[data-ct="${el.dataset.ct}"][data-cd="${el.dataset.cd}"]` : "";
@@ -2147,9 +2901,10 @@ function getCurrentElapsed() {
     const el = document.getElementById("syzygyCampaignContent");
     if (!el) return;
     const key = focusTarget ? "#" + focusTarget : szFocusKey(document.activeElement);
-    if (!_sz)             szRenderSetup(el);
+    if (_szLegacy && !_sz)  szRenderLegacy(el);
+    else if (!_sz)          szRenderSetup(el);
     else if (_sz.completed) szRenderComplete(el);
-    else                  szRenderActive(el);
+    else                    szRenderActive(el);
     if (!key) return;
     let target = el.querySelector(key);
     // A stepper that just hit its limit is disabled; fall back to its partner.
@@ -2158,31 +2913,122 @@ function getCurrentElapsed() {
     if (target && !target.disabled) target.focus({ preventScroll: !focusTarget });
   }
 
+  const szShort = name => String(name).replace(/!$/, "");
+
+  // The campaign map: Mode I as its four sections, Mode II as the Waypoint pyramid.
+  // Every node says its state in text (and a ✓/✗ mark), not by colour alone.
+  function szMapHTML(c) {
+    const node = (cls, mark, title, name, state) =>
+      `<li class="sz-node ${cls}">${mark ? `<span class="sz-node-mark" aria-hidden="true">${mark}</span>` : ""}` +
+      `<span class="sz-node-title">${esc(title)}</span>` +
+      (name ? `<span class="sz-node-name">${esc(szShort(name))}</span>` : "") +
+      `<span class="sz-node-state">${esc(state)}</span></li>`;
+    const played = k => c.results.filter(r => r.scenario === c.cards[k]);
+    const history = rs => rs.map(r => r.result === "Win" ? "Won" : "Lost").join(", then ");
+    const marks   = rs => rs.map(r => r.result === "Win" ? "✓" : "✗").join("");
+
+    if (c.mode === "syzygy1") {
+      let html = `<ol class="sz-map sz-map-1" aria-label="Campaign map: sections A to D">`;
+      SZ1_SECTIONS.forEach((cardsIn, s) => {
+        html += `<li class="sz-map-row"><span class="sz-map-sec" aria-hidden="true">${SZ1_LABELS[s]}</span><ul class="sz-map-cards" aria-label="Section ${SZ1_LABELS[s]}">`;
+        cardsIn.forEach(k => {
+          const rs = played(k);
+          const last = rs[rs.length - 1];
+          const live = !c.completed && s === c.node;
+          let cls = "", state;
+          if (live && c.card === k)                      { cls = "is-current"; state = rs.length ? `${history(rs)} · retry now` : "Playing now"; }
+          else if (live && c.card === null)              { cls = "is-next"; state = "Choose this or the other card"; }
+          else if (live && c.retry && cardsIn.length > 1) { cls = "is-next"; state = "Can switch to this card"; }
+          else if (last)                                 { cls = last.result === "Win" ? "is-win" : "is-loss"; state = history(rs); }
+          else if (!c.completed && s === c.node + 1 && c.card !== null) { cls = "is-next"; state = cardsIn.length > 1 ? "Next if you win (choose one)" : "Next if you win"; }
+          else if (s < c.node || c.completed)           { cls = "is-skipped"; state = "Not played"; }
+          else                                           { state = "Ahead"; }
+          html += node(cls, marks(rs), `${SZ1_LABELS[s]}${cardsIn.length > 1 ? (k === cardsIn[0] ? " left" : " right") : ""}`, c.cards[k], state);
+        });
+        html += `</ul></li>`;
+      });
+      return html + `</ol>`;
+    }
+
+    const visited = new Set(c.results.map(r => r.node));
+    const nextW = !c.completed ? SZ2[c.node].W : null;
+    const nextL = !c.completed ? SZ2[c.node].L : null;
+    let html = `<ol class="sz-map sz-map-2" aria-label="Campaign map: Waypoint pyramid">`;
+    SZ2_NODES.forEach((n, k) => {
+      const rs = played(k);
+      const last = rs[rs.length - 1];
+      let cls = "", state;
+      if (!c.completed && c.node === n) { cls = "is-current"; state = "Playing now"; }
+      else if (last)                    { cls = last.result === "Win" ? "is-win" : "is-loss"; state = history(rs); }
+      else if (n === nextW)             { cls = "is-next"; state = "Next if you win"; }
+      else if (n === nextL)             { cls = "is-next is-next-loss"; state = "Next if you lose"; }
+      else                              { state = visited.size && (c.completed || !szReachable(c.node).has(n)) ? "Off your path" : "Ahead"; }
+      html += node(`sz-pos-${n} ${cls}`, marks(rs), n === "S" ? "Start" : `Waypoint ${n}`, c.cards[k], state);
+    });
+    // The three exits under the bottom row: x and y lose to the LOST under them, z loses to the middle one.
+    const lostCol = c.node === "x" ? 1 : 2;
+    [["LOST", 1], ["LOST", 2], ["HOME", 3]].forEach(([end, col]) => {
+      let cls = "", state = end === "HOME" ? "3 wins" : "Bottom-row loss";
+      if (c.completed && c.node === end && (end === "HOME" || col === szLostCol(c))) { cls = end === "HOME" ? "is-win" : "is-loss"; state = end === "HOME" ? "You made it" : "You ended here"; }
+      else if (!c.completed && end === "HOME" && nextW === "HOME")              { cls = "is-next"; state = "Next if you win"; }
+      else if (!c.completed && end === "LOST" && nextL === "LOST" && col === lostCol) { cls = "is-next is-next-loss"; state = "Next if you lose"; }
+      html += node(`sz-end sz-end-${col} ${cls}`, cls === "is-win" ? "✓" : cls === "is-loss" ? "✗" : "", end, "", state);
+    });
+    return html + `</ol>`;
+  }
+
+  function szReachable(from) {
+    const seen = new Set(), stack = [from];
+    while (stack.length) { const n = stack.pop(); if (!SZ2[n] || seen.has(n)) continue; seen.add(n); stack.push(SZ2[n].W, SZ2[n].L); }
+    return seen;
+  }
+  // Which LOST exit a finished Mode II campaign took (2 = middle, the default for z and for losing 2 characters).
+  function szLostCol(c) {
+    const last = c.results[c.results.length - 1];
+    return last && last.node === "x" && last.result === "Loss" ? 1 : 2;
+  }
+
   function szRenderSetup(el) {
     const hasSeries1 = enabledPacks.has("series1");
-    const hasSeries2 = enabledPacks.has("series1") || enabledPacks.has("series2");
-    const allChars   = characters;
+    const hasSeries2 = enabledPacks.has("series2");
+    const canMode2   = hasSeries1 || hasSeries2;
+    if (_szMode === "syzygy1" && !hasSeries1) _szMode = null;
+    if (_szMode === "syzygy2" && !canMode2)   _szMode = null;
+    if (!_szSet || !enabledPacks.has(_szSet)) _szSet = hasSeries2 ? "series2" : "series1";
+    const allChars = characters;
 
+    const modeCard = (id, mode, title, desc, req, ok) => `
+        <div class="syzygy-mode-card${!ok ? " disabled" : ""}${_szMode === mode ? " selected" : ""}" id="${id}" role="button" aria-pressed="${_szMode === mode}" aria-disabled="${!ok}" tabindex="${ok ? "0" : "-1"}">
+          <div class="syzygy-mode-card-title">${title}</div>
+          <div class="syzygy-mode-card-desc">${desc}</div>
+          <div class="sz-mode-req">Requires the SYZYGY booklet<br>${req}</div>
+          ${_szMode === mode ? `<span class="syzygy-mode-card-check" aria-hidden="true">✓ Selected</span>` : ""}
+        </div>`;
     const modeHTML = `
       <div class="syzygy-mode-cards">
-        <div class="syzygy-mode-card${!hasSeries1 ? " disabled" : ""}${_szMode === "syzygy1" ? " selected" : ""}" id="szSel1" role="button" aria-pressed="${_szMode === "syzygy1"}" aria-disabled="${!hasSeries1}" tabindex="${hasSeries1 ? "0" : "-1"}">
-          <div class="syzygy-mode-card-title">SYZYGY I</div>
-          <div class="syzygy-mode-card-desc">Three stages: A, then B or C, then D. Pay off your debt to the Grosksh.${!hasSeries1 ? "<br><em>Requires Series 1</em>" : ""}</div>
-          ${_szMode === "syzygy1" ? `<span class="syzygy-mode-card-check" aria-hidden="true">✓ Selected</span>` : ""}
-        </div>
-        <div class="syzygy-mode-card${!hasSeries2 ? " disabled" : ""}${_szMode === "syzygy2" ? " selected" : ""}" id="szSel2" role="button" aria-pressed="${_szMode === "syzygy2"}" aria-disabled="${!hasSeries2}" tabindex="${hasSeries2 ? "0" : "-1"}">
-          <div class="syzygy-mode-card-title">SYZYGY II</div>
-          <div class="syzygy-mode-card-desc">Three scenarios in a row. Stranded across the universe — find your way home.</div>
-          ${_szMode === "syzygy2" ? `<span class="syzygy-mode-card-check" aria-hidden="true">✓ Selected</span>` : ""}
-        </div>
+        ${modeCard("szSel1", "syzygy1", "SYZYGY I", "Pay off your debt to the Grosksh. Four scenarios: A, then one card in B, one in C, then D. Lose once and you retry with 3 resources; lose twice and it's over.",
+          hasSeries1 ? "Uses the 6 Series 1 scenarios" : "<em>Needs Series 1 (turn it on in My Collection)</em>", hasSeries1)}
+        ${modeCard("szSel2", "syzygy2", "SYZYGY II: Waypoint", "Stranded across the universe. Six scenarios in a pyramid: win 3 to get home, a loss sends you down the red arrows. No retries.",
+          canMode2 ? "Uses the 6 scenarios of one Adventure Series" : "<em>Needs an Adventure Series (turn on Series 1 or 2 in My Collection)</em>", canMode2)}
       </div>`;
+
+    let setHTML = "";
+    if (_szMode === "syzygy2" && hasSeries1 && hasSeries2) {
+      setHTML = `
+        <h3 class="section-heading" id="szSetHeading">Scenario Cards</h3>
+        <div class="sz-set-choice" role="group" aria-labelledby="szSetHeading">
+          <button type="button" class="syzygy-char-btn${_szSet === "series2" ? " sel-1" : ""}" id="szSetS2" aria-pressed="${_szSet === "series2"}">Series 2 (as in the booklet)</button>
+          <button type="button" class="syzygy-char-btn${_szSet === "series1" ? " sel-1" : ""}" id="szSetS1" aria-pressed="${_szSet === "series1"}">Series 1</button>
+        </div>`;
+    }
 
     let charHTML = "";
     if (_szMode) {
       const selClasses = ["", "sel-1", "sel-2", "sel-3"];
       charHTML = `
+        ${setHTML}
         <h3 class="section-heading" id="szCharHeading">Choose 3 Characters</h3>
-        <p class="sz-hint">The first two you pick play the first scenario; the third sits it out.</p>
+        <p class="sz-hint">All three start at half health, rounded up. Before each scenario you choose which two play; the third sits out and heals to full.</p>
         <div class="syzygy-char-grid">
           ${allChars.map(c => {
             const si = _szChars.indexOf(c);
@@ -2199,12 +3045,13 @@ function getCurrentElapsed() {
     el.innerHTML = `
       <div class="panel">
         <h2 class="panel-title">SYZYGY Mode</h2>
-        <p class="panel-intro">A multi-scenario cooperative campaign. Three characters work together across linked missions with health and resources carrying over between scenarios.</p>
+        <p class="panel-intro">A solo campaign from the SYZYGY booklets. Guide three characters through linked scenarios; left-over health and energy carry over from one to the next.</p>
         ${modeHTML}
         ${charHTML}
         ${startHint ? `<p class="sz-hint" id="szStartHint">${startHint}</p>` : ""}
         <button class="btn btn-primary" id="szStartBtn"${canStart ? "" : " disabled"}${startHint ? ` aria-describedby="szStartHint"` : ""}>Begin Campaign</button>
-      </div>`;
+      </div>
+      ${_szKept ? szLegacyPanelHTML(_szKept, true) : ""}`;
 
     const sel1 = document.getElementById("szSel1");
     const sel2 = document.getElementById("szSel2");
@@ -2215,9 +3062,13 @@ function getCurrentElapsed() {
       if (changed) announce(`${m === "syzygy1" ? "SYZYGY I" : "SYZYGY II"} selected. Now choose 3 characters.`);
     }
     if (sel1 && hasSeries1) { sel1.addEventListener("click", () => pickMode("syzygy1")); sel1.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); sel1.click(); } }); }
-    if (sel2 && hasSeries2) { sel2.addEventListener("click", () => pickMode("syzygy2")); sel2.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); sel2.click(); } }); }
+    if (sel2 && canMode2)   { sel2.addEventListener("click", () => pickMode("syzygy2")); sel2.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); sel2.click(); } }); }
+    [["szSetS1", "series1"], ["szSetS2", "series2"]].forEach(([id, set]) => {
+      const b = document.getElementById(id);
+      if (b) b.addEventListener("click", () => { _szSet = set; renderSz(); announce(`${set === "series1" ? "Series 1" : "Series 2"} scenario cards.`); });
+    });
 
-    el.querySelectorAll(".syzygy-char-btn").forEach(btn => {
+    el.querySelectorAll(".syzygy-char-btn[data-char]").forEach(btn => {
       btn.addEventListener("click", () => {
         const ch  = btn.dataset.char;
         const idx = _szChars.indexOf(ch);
@@ -2230,153 +3081,167 @@ function getCurrentElapsed() {
     });
 
     const startBtn = document.getElementById("szStartBtn");
-    if (startBtn && canStart) startBtn.addEventListener("click", () => { szStart(_szMode, [..._szChars]); });
+    if (startBtn && canStart) startBtn.addEventListener("click", () => { szStart(_szMode, [..._szChars], _szSet); });
+    szBindLegacyKept();
+  }
+
+  function szRosterHTML(c) {
+    const playing = szPlaying(c);
+    let html = `<div class="panel"><h3 class="panel-title">Roster</h3><div class="syzygy-roster">`;
+    c.characters.forEach((name, i) => {
+      const out = c.eliminated[i];
+      const isPlaying = playing.includes(i);
+      const cardClass = out ? "removed" : (isPlaying ? "playing" : (playing.length === 2 ? "benched" : ""));
+      const roleClass = out ? "role-removed" : (isPlaying ? "role-playing" : "role-benched");
+      const roleText  = c.completed ? (out ? "Eliminated" : "Made it through")
+                      : out ? "Eliminated" : isPlaying ? "Playing" : playing.length === 2 ? "Sitting out · heals to full" : "Waiting to be chosen";
+      const co = c.carry[i];
+      const coText = !out && (co.energy > 0 || co.health > 0) ? `Carrying ${co.health} health, ${co.energy} energy` : "";
+      html += `<div class="syzygy-char-card ${cardClass}"><div class="syzygy-char-name">${esc(name)}</div><div class="syzygy-char-role ${roleClass}">${esc(roleText)}</div>${coText ? `<div class="syzygy-char-carryover">${esc(coText)}</div>` : ""}</div>`;
+    });
+    return html + `</div></div>`;
+  }
+
+  // Where the campaign goes from here, in words, for the current scenario.
+  function szNextText(c) {
+    if (c.mode === "syzygy1") {
+      const win = c.node === 3 ? "you complete the campaign" : `you go on to section ${SZ1_LABELS[c.node + 1]}`;
+      const loss = c.losses ? "the campaign ends (second loss)" : `you retry with 3 resources${SZ1_SECTIONS[c.node].length > 1 ? " and may switch to the other card" : ""}`;
+      return `If you win, ${win}. If you lose, ${loss}.`;
+    }
+    const name = n => n === "HOME" ? "you reach HOME" : n === "LOST" ? "you are LOST IN THE UNIVERSE" : `you go to waypoint ${n}: ${szShort(c.cards[SZ2_NODES.indexOf(n)])}`;
+    return `If you win, ${name(SZ2[c.node].W)}. If you lose, ${name(SZ2[c.node].L)}.`;
   }
 
   function szRenderActive(el) {
     const c = _sz;
-    const pool  = c.retrying ? 3 : 5;
-    const alloc = c.alloc || { chars: szActivePlayers().map(() => ({energy:0, health:0})) };
-    if (!c.alloc) c.alloc = alloc;
-    const totalAlloced = alloc.chars.reduce((s, a) => s + a.energy + a.health, 0);
+    const pool    = szPool(c);
+    const alive   = szAlive(c);
+    if (szPlaying(c).length !== 2 && alive.length === 2) c.playing = alive;
+    const playing = szPlaying(c);
+    const ready   = playing.length === 2;
+    const totalAlloced = playing.reduce((s, i) => s + c.alloc[i].energy + c.alloc[i].health, 0);
     const remaining    = pool - totalAlloced;
-    const playing      = szActivePlayers();
-    const benched      = szBenchedPlayer();
-    const sc           = szCurrentScenario();
-    const modeLabel    = c.mode === "syzygy1" ? "SYZYGY Mode I" : "SYZYGY Mode II: Waypoint";
 
-    // Campaign header
     let html = `
       <div class="syzygy-campaign-header">
         <div>
-          <h2 class="syzygy-campaign-title">${modeLabel}</h2>
-          <div class="syzygy-campaign-meta">Started ${esc(c.started)} · ${c.losses} loss${c.losses !== 1 ? "es" : ""}</div>
+          <h2 class="syzygy-campaign-title">${SZ_MODE_LABEL[c.mode]}</h2>
+          <div class="syzygy-campaign-meta">Started ${esc(c.started)} · ${c.wins} win${c.wins !== 1 ? "s" : ""} · ${c.losses} loss${c.losses !== 1 ? "es" : ""}</div>
         </div>
         <button class="btn btn-danger btn-sm btn-compact" id="szAbandonBtn">Abandon Campaign</button>
       </div>`;
 
-    // Path
-    // Stage state is shown by colour, a ✓/✗ mark, and screen-reader text.
-    const SZ_STATE = { current: ["", "current stage"], win: ["✓", "won"], loss: ["✗", "lost"], "": ["", "not played yet"] };
-    const szMark = st => SZ_STATE[st][0] ? `<span class="syzygy-path-mark" aria-hidden="true">${SZ_STATE[st][0]}</span>` : "";
     html += `<div class="sz-layout"><div class="sz-layout-status">`;
-    html += `<div class="panel"><h3 class="panel-title">Campaign Path</h3><ol class="syzygy-path" style="list-style:none;">`;
-    if (c.mode === "syzygy1") {
-      const stageDefs = [
-        { key: 0, label: "A",   sc: c.scenarios[0] },
-        { key: 1, label: "B/C", sc: c.branchChosen === null ? "Choose…" : (c.branchChosen === 0 ? c.scenarios[1] : c.scenarios[2]) },
-        { key: 2, label: "D",   sc: c.scenarios[3] }
-      ];
-      stageDefs.forEach((s, i) => {
-        const res        = c.stageResults.filter(r => r.stage === s.key).slice(-1)[0];
-        const stateClass = !res ? (c.stage === s.key ? "current" : "") : (res.result === "Win" ? "win" : "loss");
-        const arrow      = i < stageDefs.length - 1 ? `<li class="syzygy-path-arrow" aria-hidden="true">→</li>` : "";
-        html += `<li class="syzygy-path-node"><div class="syzygy-path-stage ${stateClass}"><span class="sr-only">Stage </span>${esc(s.label)}</div><div class="syzygy-path-label">${szMark(stateClass)}${esc(s.sc.replace(/!$/,""))}<span class="sr-only">: ${SZ_STATE[stateClass][1]}</span></div></li>${arrow}`;
-      });
-    } else {
-      c.scenarios.forEach((scenName, i) => {
-        const res        = c.stageResults.filter(r => r.stage === i).slice(-1)[0];
-        const stateClass = !res ? (c.stage === i ? "current" : "") : (res.result === "Win" ? "win" : "loss");
-        const arrow      = i < c.scenarios.length - 1 ? `<li class="syzygy-path-arrow" aria-hidden="true">→</li>` : "";
-        html += `<li class="syzygy-path-node"><div class="syzygy-path-stage ${stateClass}"><span class="sr-only">Scenario </span>${i+1}</div><div class="syzygy-path-label">${szMark(stateClass)}${esc(scenName.replace(/!$/,""))}<span class="sr-only">: ${SZ_STATE[stateClass][1]}</span></div></li>${arrow}`;
-      });
-    }
-    html += `</ol></div>`;
-
-    // Roster
-    html += `<div class="panel"><h3 class="panel-title">Roster</h3><div class="syzygy-roster">`;
-    c.characters.forEach((name, i) => {
-      const isPlaying = playing.includes(i);
-      const isBenched = benched === i;
-      const isRemoved = c.removed[i];
-      const cardClass  = isRemoved ? "removed" : (isPlaying ? "playing" : "benched");
-      const roleClass  = isRemoved ? "role-removed" : (isPlaying ? "role-playing" : "role-benched");
-      const roleText   = isRemoved ? "Eliminated" : (isPlaying ? "Playing" : "Sitting out · heals");
-      const co = c.carryover[i];
-      const coText = (co.energy > 0 || co.health > 0) ? `Carrying ${co.health} health, ${co.energy} energy` : "";
-      html += `<div class="syzygy-char-card ${cardClass}"><div class="syzygy-char-name">${esc(name)}</div><div class="syzygy-char-role ${roleClass}">${esc(roleText)}</div>${coText ? `<div class="syzygy-char-carryover">${esc(coText)}</div>` : ""}</div>`;
-    });
-    html += `</div></div>`;
+    html += `<div class="panel"><h3 class="panel-title">Campaign Map</h3>${szMapHTML(c)}</div>`;
+    html += szRosterHTML(c);
     html += `</div><div class="sz-layout-stage">`;
 
-    // Branch choice (SYZYGY I stage 1 only, before branch is picked)
-    if (c.mode === "syzygy1" && c.stage === 1 && c.branchChosen === null) {
+    if (c.mode === "syzygy1" && c.card === null) {
+      const [l, r] = SZ1_SECTIONS[c.node];
+      const sec = SZ1_LABELS[c.node];
       html += `
         <div class="panel">
-          <h3 class="panel-title syzygy-heading-focus" id="szStageHeading" tabindex="-1">Choose Your Path</h3>
-          <p class="panel-intro">Stage A won. Pick the scenario to play next: B or C. You play only the one you choose.</p>
+          <h3 class="panel-title syzygy-heading-focus" id="szStageHeading" tabindex="-1">Section ${sec}: Choose a Card</h3>
+          <p class="panel-intro">Section ${SZ1_LABELS[c.node - 1]} won. Pick the left or right scenario of section ${sec}. You only need to complete one.</p>
           <div class="syzygy-branch-cards">
             <button type="button" class="syzygy-branch-card" id="szBranchL">
-              <span class="syzygy-branch-tag" style="display:block;">Option B</span>
-              <span class="syzygy-branch-name" style="display:block;">${scenarioHTML(c.scenarios[1])}</span>
+              <span class="syzygy-branch-tag" style="display:block;">${sec} left</span>
+              <span class="syzygy-branch-name" style="display:block;">${scenarioHTML(c.cards[l])}</span>
             </button>
             <button type="button" class="syzygy-branch-card" id="szBranchR">
-              <span class="syzygy-branch-tag" style="display:block;">Option C</span>
-              <span class="syzygy-branch-name" style="display:block;">${scenarioHTML(c.scenarios[2])}</span>
+              <span class="syzygy-branch-tag" style="display:block;">${sec} right</span>
+              <span class="syzygy-branch-name" style="display:block;">${scenarioHTML(c.cards[r])}</span>
             </button>
           </div>
         </div>`;
-    } else if (sc) {
-      // Stage label
+    } else {
+      const sc = c.cards[c.card];
       const stageLabel = c.mode === "syzygy1"
-        ? ["Stage A — First Mission", `Stage ${c.branchChosen === 1 ? "C" : "B"} — Second Mission`, "Stage D — Final Mission"][c.stage] || "Stage"
-        : `Scenario ${c.stage + 1} of 3`;
+        ? `Section ${SZ1_LABELS[c.node]}${c.retry ? " · Retry" : ""}${c.node === 0 ? " · Starting scenario" : c.node === 3 ? " · Final scenario" : ""}`
+        : (c.node === "S" ? "Start" : `Waypoint ${c.node}`) + ` · ${c.wins} of 3 wins`;
+      const other = c.mode === "syzygy1" && c.retry && SZ1_SECTIONS[c.node].length > 1 ? SZ1_SECTIONS[c.node].find(k => k !== c.card) : null;
+      const benched = ready ? alive.filter(i => !playing.includes(i)) : [];
 
-      const playingNames  = playing.map(i => c.characters[i]);
-      const benchedName   = benched !== null ? c.characters[benched] : null;
-
-      // Scenario card
       html += `
         <div class="syzygy-scenario-card">
           <h3 class="syzygy-heading-focus" id="szStageHeading" tabindex="-1" style="font:inherit;">
             <span class="syzygy-stage-label" style="display:block;">${esc(stageLabel)}</span>
             <span class="syzygy-stage-scenario" style="display:block;">${scenarioHTML(sc)}</span>
           </h3>
-          <div class="syzygy-playing">Playing: <strong>${playingNames.map(esc).join(" &amp; ")}</strong>${benchedName ? ` · Sitting out: ${esc(benchedName)} (heals)` : ""}</div>
-          ${c.retrying ? `<div class="notice notice-danger syzygy-retry-notice">Retry after a defeat: only 3 resource points this attempt.</div>` : ""}
+          <div class="syzygy-playing">${ready ? `Playing: <strong>${playing.map(i => esc(c.characters[i])).join(" &amp; ")}</strong>${benched.length ? ` · Sitting out: ${esc(c.characters[benched[0]])} (heals to full)` : ""}` : "Choose who plays below."}</div>
+          <p class="syzygy-playing sz-next-text">${esc(szNextText(c))}</p>
+          ${c.retry ? `<div class="notice notice-danger syzygy-retry-notice">Retry after a defeat: only 3 resources this attempt.</div>` : ""}
+          ${other !== null ? `<button type="button" class="btn btn-secondary btn-sm sz-switch-btn" id="szSwitchBtn">Switch to the other ${SZ1_LABELS[c.node]} card: ${esc(szShort(c.cards[other]))}</button>` : ""}
         </div>`;
 
-      // Pre-scenario resources
-      const resRows = playing.map((ci, i) => {
-        const name = c.characters[ci];
-        const a    = alloc.chars[i];
-        const co   = c.carryover[ci];
-        return `
+      // Who plays
+      html += `
+        <div class="panel">
+          <h3 class="panel-title" id="szPlayersHeading">Who Plays?</h3>
+          ${alive.length > 2
+            ? `<p class="panel-intro">Choose two characters. The third sits out this scenario and heals to full health.</p>
+               <div class="sz-player-choice" role="group" aria-labelledby="szPlayersHeading">
+                 ${alive.map(i => `<button type="button" class="syzygy-char-btn${playing.includes(i) ? " sel-1" : ""}" data-player="${i}" aria-pressed="${playing.includes(i)}">${esc(c.characters[i])}${playing.includes(i) ? `<span class="sz-sel-num" aria-hidden="true">Plays</span>` : ""}</button>`).join("")}
+               </div>`
+            : `<p class="panel-intro">Only two characters are left, so both play.</p>`}
+        </div>`;
+
+      if (ready) {
+        const resRows = playing.map(ci => {
+          const name = c.characters[ci];
+          const a    = c.alloc[ci];
+          const co   = c.carry[ci];
+          return `
           <div class="syzygy-resource-row">
             <div class="syzygy-resource-char">
               <div class="syzygy-resource-name">${esc(name)}</div>
-              ${co.energy > 0 || co.health > 0 ? `<div class="syzygy-carryover-note">Carryover: <span aria-hidden="true">❤️</span><span class="sr-only">health</span> ${co.health} <span aria-hidden="true">⚡</span><span class="sr-only">energy</span> ${co.energy}</div>` : ""}
+              ${co.energy > 0 || co.health > 0 ? `<div class="syzygy-carryover-note">Carried over: <span aria-hidden="true">❤️</span><span class="sr-only">health</span> ${co.health} <span aria-hidden="true">⚡</span><span class="sr-only">energy</span> ${co.energy}</div>` : ""}
             </div>
             <div class="syzygy-resource-controls">
               <span class="sz-step-group"><span class="syzygy-resource-label" aria-hidden="true">❤️</span>
               <div class="syzygy-stepper" role="group" aria-label="${esc(name)} health">
-                <button class="btn-sz-step" data-ai="${i}" data-t="health" data-d="-1" aria-label="Remove 1 health from ${esc(name)}"${a.health <= 0 ? " disabled" : ""}>−</button>
+                <button class="btn-sz-step" data-ai="${ci}" data-t="health" data-d="-1" aria-label="Remove 1 health from ${esc(name)}"${a.health <= 0 ? " disabled" : ""}>−</button>
                 <span class="sz-step-val"><span class="sr-only">Health </span>${a.health}</span>
-                <button class="btn-sz-step" data-ai="${i}" data-t="health" data-d="1" aria-label="Add 1 health to ${esc(name)}"${remaining <= 0 ? " disabled" : ""}>+</button>
+                <button class="btn-sz-step" data-ai="${ci}" data-t="health" data-d="1" aria-label="Add 1 health to ${esc(name)}"${remaining <= 0 ? " disabled" : ""}>+</button>
               </div></span>
               <span class="sz-step-group"><span class="syzygy-resource-label" aria-hidden="true">⚡</span>
               <div class="syzygy-stepper" role="group" aria-label="${esc(name)} energy">
-                <button class="btn-sz-step" data-ai="${i}" data-t="energy" data-d="-1" aria-label="Remove 1 energy from ${esc(name)}"${a.energy <= 0 ? " disabled" : ""}>−</button>
+                <button class="btn-sz-step" data-ai="${ci}" data-t="energy" data-d="-1" aria-label="Remove 1 energy from ${esc(name)}"${a.energy <= 0 ? " disabled" : ""}>−</button>
                 <span class="sz-step-val"><span class="sr-only">Energy </span>${a.energy}</span>
-                <button class="btn-sz-step" data-ai="${i}" data-t="energy" data-d="1" aria-label="Add 1 energy to ${esc(name)}"${remaining <= 0 ? " disabled" : ""}>+</button>
+                <button class="btn-sz-step" data-ai="${ci}" data-t="energy" data-d="1" aria-label="Add 1 energy to ${esc(name)}"${remaining <= 0 ? " disabled" : ""}>+</button>
               </div></span>
             </div>
           </div>`;
-      }).join("");
+        }).join("");
 
-      html += `
+        html += `
         <div class="panel">
           <h3 class="panel-title">Before the Scenario: Resources</h3>
-          <p class="panel-intro">Share <strong>${pool}</strong> bonus points between the playing characters as <span aria-hidden="true">❤️</span> Health or <span aria-hidden="true">⚡</span> Energy. Energy can't go above the maximum shown on the scenario card.</p>
+          <p class="panel-intro">Share <strong>${pool}</strong> resources between the playing characters as <span aria-hidden="true">❤️</span> health or <span aria-hidden="true">⚡</span> energy. A character's energy can't go above the maximum shown on the scenario card.</p>
           ${resRows}
-          <div class="syzygy-pool-bar">${remaining} point${remaining !== 1 ? "s" : ""} left to share</div>
+          <div class="syzygy-pool-bar">${remaining} resource${remaining !== 1 ? "s" : ""} left to share</div>
         </div>`;
+      }
 
-      // Carryover tracking
-      const coRows = playing.map(ci => {
-        const name = c.characters[ci];
-        const co   = c.carryover[ci];
-        return `
+      if (ready && _szLossPending) {
+        html += `
+        <div class="panel">
+          <h3 class="panel-title syzygy-heading-focus" id="szLossHeading" tabindex="-1">Record a Defeat</h3>
+          <fieldset class="sz-elim">
+            <legend class="panel-intro">Did a character's 0 health cause the loss? That character is removed from the campaign. Leave both unticked if you lost another way.</legend>
+            ${playing.map(i => `<label class="sz-elim-option"><input type="checkbox" id="szElim${i}" value="${i}"> ${esc(c.characters[i])} reached 0 health</label>`).join("")}
+          </fieldset>
+          <div class="syzygy-outcome-btns">
+            <button class="btn btn-secondary" id="szLossCancel">Cancel</button>
+            <button class="btn-sz-loss" id="szLossConfirm"><span aria-hidden="true">✗</span> Record Defeat</button>
+          </div>
+        </div>`;
+      } else {
+        const coRows = ready ? playing.map(ci => {
+          const name = c.characters[ci];
+          const co   = c.carry[ci];
+          return `
           <div class="syzygy-carryover-row">
             <span class="syzygy-carryover-name">${esc(name)}</span>
             <span class="sz-step-group"><span aria-hidden="true">❤️</span>
@@ -2392,18 +3257,19 @@ function getCurrentElapsed() {
               <button class="btn-sz-step" data-ci="${ci}" data-ct="energy" data-cd="1" aria-label="Add 1 left-over energy to ${esc(name)}">+</button>
             </div></span>
           </div>`;
-      }).join("");
+        }).join("") : "";
 
-      html += `
+        html += `
         <div class="panel">
           <h3 class="panel-title">After the Scenario: Outcome</h3>
-          <p class="panel-intro">When the scenario ends, enter each character's left-over <span aria-hidden="true">❤️</span> health and <span aria-hidden="true">⚡</span> energy (they carry over), then record the result.</p>
+          ${ready ? `<p class="panel-intro">When the scenario ends, enter each character's unused <span aria-hidden="true">❤️</span> health and <span aria-hidden="true">⚡</span> energy (they carry over to the next stage), then record the result.</p>` : `<p class="sz-hint" id="szOutcomeHint">Choose the two characters who play first.</p>`}
           ${coRows}
           <div class="syzygy-outcome-btns">
-            <button class="btn-sz-win"  id="szWinBtn"><span aria-hidden="true">✓</span> Victory</button>
-            <button class="btn-sz-loss" id="szLossBtn"><span aria-hidden="true">✗</span> Defeat</button>
+            <button class="btn-sz-win"  id="szWinBtn"${ready ? "" : ` disabled aria-describedby="szOutcomeHint"`}><span aria-hidden="true">✓</span> Victory</button>
+            <button class="btn-sz-loss" id="szLossBtn"${ready ? "" : ` disabled aria-describedby="szOutcomeHint"`}><span aria-hidden="true">✗</span> Defeat</button>
           </div>
         </div>`;
+      }
     }
 
     html += `</div></div>`;
@@ -2414,77 +3280,104 @@ function getCurrentElapsed() {
       openModal("szAbandonModal", "szAbandonCancel");
     });
 
+    const pickCard = k => { c.card = k; saveSz(); renderSz("szStageHeading"); announce(`${szShort(c.cards[k])} chosen.`); };
     const branchL = document.getElementById("szBranchL");
     const branchR = document.getElementById("szBranchR");
-    if (branchL) branchL.addEventListener("click", () => { c.branchChosen = 0; saveSz(); renderSz("szStageHeading"); });
-    if (branchR) branchR.addEventListener("click", () => { c.branchChosen = 1; saveSz(); renderSz("szStageHeading"); });
+    if (branchL) branchL.addEventListener("click", () => pickCard(SZ1_SECTIONS[c.node][0]));
+    if (branchR) branchR.addEventListener("click", () => pickCard(SZ1_SECTIONS[c.node][1]));
+    const sw = document.getElementById("szSwitchBtn");
+    if (sw) sw.addEventListener("click", () => pickCard(SZ1_SECTIONS[c.node].find(k => k !== c.card)));
 
-    // Allocation steppers (data-ai, data-t, data-d)
+    el.querySelectorAll("[data-player]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const i = parseInt(btn.dataset.player, 10);
+        let p = szPlaying(c).slice();
+        if (p.includes(i)) { p = p.filter(x => x !== i); c.alloc[i] = { health: 0, energy: 0 }; }
+        else if (p.length < 2) p.push(i);
+        else { toast("Two characters already play. Tap one of them to sit them out first.", "error"); return; }
+        c.playing = p.length ? p.sort((a, b) => a - b) : null;
+        _szLossPending = false;
+        saveSz(); renderSz();
+        announce(p.length === 2 ? `${p.map(x => c.characters[x]).join(" and ")} play. ${c.characters[alive.find(x => !p.includes(x))]} sits out and heals.` : `${c.characters[i]} ${p.includes(i) ? "plays" : "sits out"}. Choose ${2 - p.length} more.`);
+      });
+    });
+
+    // Allocation steppers (data-ai = character index, data-t, data-d)
     el.querySelectorAll("[data-ai]").forEach(btn => {
       btn.addEventListener("click", () => {
-        const ai  = parseInt(btn.dataset.ai);
+        const ci  = parseInt(btn.dataset.ai, 10);
         const t   = btn.dataset.t;
-        const dir = parseInt(btn.dataset.d);
-        const tot = c.alloc.chars.reduce((s, a) => s + a.energy + a.health, 0);
-        if (dir > 0 && (pool - tot) <= 0) return;
-        if (dir < 0 && c.alloc.chars[ai][t] <= 0) return;
-        c.alloc.chars[ai][t] += dir;
+        const dir = parseInt(btn.dataset.d, 10);
+        const tot = () => szPlaying(c).reduce((s, i) => s + c.alloc[i].energy + c.alloc[i].health, 0);
+        if (dir > 0 && (pool - tot()) <= 0) return;
+        if (dir < 0 && c.alloc[ci][t] <= 0) return;
+        c.alloc[ci][t] += dir;
         saveSz(); renderSz();
-        const left = pool - c.alloc.chars.reduce((s, a) => s + a.energy + a.health, 0);
-        announce(`${c.characters[playing[ai]]} ${t} ${c.alloc.chars[ai][t]}. ${left} point${left !== 1 ? "s" : ""} left.`);
+        const left = pool - tot();
+        announce(`${c.characters[ci]} ${t} ${c.alloc[ci][t]}. ${left} resource${left !== 1 ? "s" : ""} left.`);
       });
     });
 
     // Carryover steppers (data-ci, data-ct, data-cd)
     el.querySelectorAll("[data-ci]").forEach(btn => {
       btn.addEventListener("click", () => {
-        const ci  = parseInt(btn.dataset.ci);
+        const ci  = parseInt(btn.dataset.ci, 10);
         const t   = btn.dataset.ct;
-        const dir = parseInt(btn.dataset.cd);
-        if (dir < 0 && c.carryover[ci][t] <= 0) return;
-        c.carryover[ci][t] = Math.max(0, c.carryover[ci][t] + dir);
+        const dir = parseInt(btn.dataset.cd, 10);
+        if (dir < 0 && c.carry[ci][t] <= 0) return;
+        c.carry[ci][t] = Math.min(99, Math.max(0, c.carry[ci][t] + dir));
         saveSz(); renderSz();
-        announce(`${c.characters[ci]} left-over ${t} ${c.carryover[ci][t]}.`);
+        announce(`${c.characters[ci]} left-over ${t} ${c.carry[ci][t]}.`);
       });
     });
 
     const winBtn  = document.getElementById("szWinBtn");
     const lossBtn = document.getElementById("szLossBtn");
-    if (winBtn)  winBtn .addEventListener("click", () => szRecordOutcome("Win"));
-    if (lossBtn) lossBtn.addEventListener("click", () => szRecordOutcome("Loss"));
+    if (winBtn)  winBtn .addEventListener("click", () => szRecordOutcome("Win", []));
+    if (lossBtn) lossBtn.addEventListener("click", () => { _szLossPending = true; renderSz("szLossHeading"); });
+    const lossOk = document.getElementById("szLossConfirm");
+    const lossNo = document.getElementById("szLossCancel");
+    if (lossOk) lossOk.addEventListener("click", () => {
+      const elim = [...el.querySelectorAll(".sz-elim input:checked")].map(x => parseInt(x.value, 10));
+      szRecordOutcome("Loss", elim);
+    });
+    if (lossNo) lossNo.addEventListener("click", () => { _szLossPending = false; renderSz("szLossBtn"); });
+  }
+
+  function szRankColor(rank) {
+    if (rank === "LEGENDS" || rank === "LOADED") return "var(--accent-yellow)";
+    if (rank === "FREE" || rank === "SAFE")      return "var(--accent-teal)";
+    return "var(--loss-color)";
   }
 
   function szRenderComplete(el) {
-    const c     = _sz;
-    const rank  = c.finalRank || szCalcRank();
-    const wins  = c.stageResults.filter(r => r.result === "Win").length;
-    const modeLabel = c.mode === "syzygy1" ? "SYZYGY Mode I" : "SYZYGY Mode II: Waypoint";
-    const goodRanks = new Set(["LEGENDS","FREE","LOADED","SAFE"]);
-    const rankColor = goodRanks.has(rank.rank) ? (rank.rank === "LEGENDS" || rank.rank === "LOADED" ? "var(--accent-yellow)" : "var(--accent-teal)") : "var(--loss-color)";
-
-    const histRows = c.stageResults.map(r =>
-      `<tr>
-        <td class="cell-meta">${esc(r.scenario)}</td>
-        <td class="cell-meta">${r.chars.map(i => c.characters[i]).map(esc).join(" &amp; ")}</td>
-        <td><span class="result-pill ${r.result === "Win" ? "win" : "loss"}">${esc(r.result)}</span></td>
-      </tr>`
-    ).join("");
+    const c    = _sz;
+    const rank = c.rank || szRank(c);
+    const histRows = c.results.map(r => {
+      const gone = (r.eliminated || []).map(i => c.characters[i]);
+      return `<tr>
+        <td class="cell-meta">${esc(c.mode === "syzygy1" ? `Section ${r.node}` : r.node === "S" ? "Start" : `Waypoint ${r.node}`)}${r.retry ? " (retry)" : ""}: ${esc(r.scenario)}</td>
+        <td class="cell-meta">${r.chars.map(i => esc(c.characters[i])).join(" &amp; ")}${gone.length ? `<br>Eliminated: ${gone.map(esc).join(", ")}` : ""}</td>
+        <td><span class="result-pill ${r.result === "Win" ? "win" : "loss"}"><span aria-hidden="true">${r.result === "Win" ? "✓" : "✗"}</span> ${esc(r.result)}</span></td>
+      </tr>`;
+    }).join("");
 
     el.innerHTML = `
       <div class="panel">
-        <h2 class="panel-title syzygy-heading-focus" id="szStageHeading" tabindex="-1">${modeLabel} — Complete</h2>
+        <h2 class="panel-title syzygy-heading-focus" id="szStageHeading" tabindex="-1">${SZ_MODE_LABEL[c.mode]} — Complete</h2>
         <div class="syzygy-rank-card">
           <div class="syzygy-rank-eyebrow">Final Rank</div>
-          <div class="syzygy-rank-value" style="color:${rankColor};">${esc(rank.rank)}</div>
+          <div class="syzygy-rank-value" style="color:${szRankColor(rank.rank)};">${esc(rank.rank)}</div>
           <div class="syzygy-rank-desc">${esc(rank.desc)}</div>
           <div class="syzygy-rank-stats">
-            <div><div class="syzygy-rank-stat-val">${wins}</div><div class="syzygy-rank-stat-label">${wins === 1 ? "Win" : "Wins"}</div></div>
+            <div><div class="syzygy-rank-stat-val">${c.wins}</div><div class="syzygy-rank-stat-label">${c.wins === 1 ? "Win" : "Wins"}</div></div>
             <div><div class="syzygy-rank-stat-val">${c.losses}</div><div class="syzygy-rank-stat-label">${c.losses === 1 ? "Loss" : "Losses"}</div></div>
-            <div><div class="syzygy-rank-stat-val">${c.stageResults.length}</div><div class="syzygy-rank-stat-label">Scenarios</div></div>
+            <div><div class="syzygy-rank-stat-val">${c.results.length}</div><div class="syzygy-rank-stat-label">Scenarios</div></div>
           </div>
         </div>
-        <h3 class="panel-title" style="margin-bottom:10px;">Characters</h3>
-        <p class="panel-intro">${esc(c.characters.join(" · "))}</p>
+        <h3 class="panel-title">Campaign Map</h3>
+        ${szMapHTML(c)}
+        ${szRosterHTML(c)}
         ${histRows ? `
         <h3 class="section-heading" id="szLogHeading">Campaign Log</h3>
         <div class="history-table-wrap" tabindex="0" role="region" aria-labelledby="szLogHeading">
@@ -2496,20 +3389,125 @@ function getCurrentElapsed() {
         <button class="btn btn-primary" id="szNewCampaignBtn" style="margin-top:16px;">Start New Campaign</button>
       </div>`;
     restoreTableRoles(el);
+    szBindNewCampaign();
+  }
 
+  function szBindNewCampaign() {
     document.getElementById("szNewCampaignBtn").addEventListener("click", () => {
-      _sz = null; _szMode = null; _szChars = [];
+      _sz = null; _szLegacy = null; _szMode = null; _szChars = [];
       saveSz(); renderSz();
       const h = document.querySelector("#syzygyCampaignContent .panel-title");
       if (h) { h.setAttribute("tabindex", "-1"); h.focus(); }
     });
   }
 
+  // ─── SYZYGY v1 (pre-rulebook) campaigns ─────────────────────────────────────
+  // Earlier versions saved a different campaign shape that didn't follow the booklets.
+  // It is never converted: a finished one keeps showing its result; an unfinished one is
+  // offered "Abandon" or "Keep read-only" (moved to syzygyCampaignV1 so a new one can start).
+
+  function szLegacyLogHTML(c, idPrefix) {
+    const rows = c.stageResults.map(r => `<tr>
+        <td class="cell-meta">${esc(r.scenario)}</td>
+        <td class="cell-meta">${r.chars.map(i => esc(c.characters[i] || "")).join(" &amp; ")}</td>
+        <td><span class="result-pill ${r.result === "Win" ? "win" : "loss"}"><span aria-hidden="true">${r.result === "Win" ? "✓" : "✗"}</span> ${esc(r.result)}</span></td>
+      </tr>`).join("");
+    if (!rows) return `<p class="panel-intro">No scenarios were recorded.</p>`;
+    return `
+        <h3 class="section-heading" id="${idPrefix}LogHeading">Campaign Log</h3>
+        <div class="history-table-wrap" tabindex="0" role="region" aria-labelledby="${idPrefix}LogHeading">
+          <table>
+            <thead><tr><th>Scenario</th><th>Characters</th><th>Result</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`;
+  }
+
+  function szLegacyPanelHTML(c, kept) {
+    const wins = c.stageResults.filter(r => r.result === "Win").length;
+    return `
+      <div class="panel" id="${kept ? "szKeptPanel" : "szLegacyPanel"}">
+        <h3 class="panel-title">${kept ? "Old Campaign (read-only)" : "Old Campaign Found"}</h3>
+        <p class="panel-intro">${esc(SZ_MODE_LABEL[c.mode])} with ${esc(c.characters.join(", "))}. Started ${esc(c.started || "earlier")} · ${wins} win${wins !== 1 ? "s" : ""} · ${c.losses} loss${c.losses !== 1 ? "es" : ""}.</p>
+        ${szLegacyLogHTML(c, kept ? "szKept" : "szLegacy")}
+        ${kept ? `<button class="btn btn-danger btn-sm btn-compact sz-legacy-actions" id="szKeptDelete">Delete Old Campaign</button>` : ""}
+      </div>`;
+  }
+
+  function szRenderLegacy(el) {
+    const c = _szLegacy;
+    if (c.completed) {
+      const rank = c.finalRank && typeof c.finalRank.rank === "string" ? c.finalRank : { rank: "Finished", desc: "" };
+      const wins = c.stageResults.filter(r => r.result === "Win").length;
+      el.innerHTML = `
+      <div class="panel">
+        <h2 class="panel-title syzygy-heading-focus" id="szStageHeading" tabindex="-1">${SZ_MODE_LABEL[c.mode]} — Complete</h2>
+        <div class="syzygy-rank-card">
+          <div class="syzygy-rank-eyebrow">Final Rank</div>
+          <div class="syzygy-rank-value" style="color:${szRankColor(rank.rank)};">${esc(rank.rank)}</div>
+          <div class="syzygy-rank-desc">${esc(rank.desc || "")}</div>
+          <div class="syzygy-rank-stats">
+            <div><div class="syzygy-rank-stat-val">${wins}</div><div class="syzygy-rank-stat-label">${wins === 1 ? "Win" : "Wins"}</div></div>
+            <div><div class="syzygy-rank-stat-val">${c.losses}</div><div class="syzygy-rank-stat-label">${c.losses === 1 ? "Loss" : "Losses"}</div></div>
+            <div><div class="syzygy-rank-stat-val">${c.stageResults.length}</div><div class="syzygy-rank-stat-label">Scenarios</div></div>
+          </div>
+        </div>
+        <p class="sz-hint">Played with an earlier version of this app, before SYZYGY followed the booklet's rules.</p>
+        <h3 class="panel-title">Characters</h3>
+        <p class="panel-intro">${esc(c.characters.join(" · "))}</p>
+        ${szLegacyLogHTML(c, "sz")}
+        <button class="btn btn-primary" id="szNewCampaignBtn" style="margin-top:16px;">Start New Campaign</button>
+      </div>`;
+      restoreTableRoles(el);
+      szBindNewCampaign();
+      return;
+    }
+    el.innerHTML = `
+      <div class="panel">
+        <h2 class="panel-title syzygy-heading-focus" id="szStageHeading" tabindex="-1">SYZYGY Has Changed</h2>
+        <p class="panel-intro">SYZYGY now follows the booklets: four sections in Mode I, the six-card Waypoint pyramid in Mode II, and you choose who plays each scenario. Your unfinished campaign was started with the old rules and can't be continued.</p>
+        <div class="modal-actions sz-legacy-actions">
+          <button class="btn btn-secondary" id="szLegacyKeep">Keep Read-only</button>
+          <button class="btn btn-danger" id="szLegacyAbandon">Abandon</button>
+        </div>
+      </div>
+      ${szLegacyPanelHTML(c, false)}`;
+    restoreTableRoles(el);
+    document.getElementById("szLegacyKeep").addEventListener("click", () => {
+      _szKept = _szLegacy; _szLegacy = null;
+      saveSz(); renderSz();
+      const h = document.querySelector("#syzygyCampaignContent .panel-title");
+      if (h) { h.setAttribute("tabindex", "-1"); h.focus(); }
+      toast("Old campaign kept read-only. You can start a new campaign.");
+    });
+    document.getElementById("szLegacyAbandon").addEventListener("click", () => {
+      const before = _szLegacy;
+      _szLegacy = null;
+      saveSz(); renderSz();
+      const h = document.querySelector("#syzygyCampaignContent .panel-title");
+      if (h) { h.setAttribute("tabindex", "-1"); h.focus(); }
+      undoToast("Old campaign abandoned.", () => { _szLegacy = before; saveSz(); renderSz("szStageHeading"); toast("Old campaign restored."); });
+    });
+  }
+
+  function szBindLegacyKept() {
+    const del = document.getElementById("szKeptDelete");
+    if (!del) return;
+    del.addEventListener("click", () => {
+      const before = _szKept;
+      _szKept = null;
+      saveSz(); renderSz();
+      const h = document.querySelector("#syzygyCampaignContent .panel-title");
+      if (h) { h.setAttribute("tabindex", "-1"); h.focus(); }
+      undoToast("Old campaign deleted.", () => { _szKept = before; saveSz(); renderSz(); toast("Old campaign restored."); });
+    });
+  }
+
   // ─── Init ───────────────────────────────────────────────────────────────────
   document.getElementById("generateBtn")    .addEventListener("click", handleGenerate);
-  document.getElementById("lockChar1")      .addEventListener("click", () => { locks.char1    = !locks.char1;    updateLockButtons(); });
-  document.getElementById("lockChar2")      .addEventListener("click", () => { locks.char2    = !locks.char2;    updateLockButtons(); });
-  document.getElementById("lockScenario")   .addEventListener("click", () => { locks.scenario = !locks.scenario; updateLockButtons(); });
+  document.getElementById("lockChar1")      .addEventListener("click", () => { locks.char1    = !locks.char1;    updateLockButtons(); track("lock_toggle", { slot: "char1", locked: locks.char1 }); });
+  document.getElementById("lockChar2")      .addEventListener("click", () => { locks.char2    = !locks.char2;    updateLockButtons(); track("lock_toggle", { slot: "char2", locked: locks.char2 }); });
+  document.getElementById("lockScenario")   .addEventListener("click", () => { locks.scenario = !locks.scenario; updateLockButtons(); track("lock_toggle", { slot: "scenario", locked: locks.scenario }); });
   document.getElementById("loadManualCombo").addEventListener("click", handleLoadManualCombo);
   document.getElementById("saveRecordBtn")  .addEventListener("click", handleSaveRecord);
   document.getElementById("exportBtn")      .addEventListener("click", handleExport);
@@ -2545,9 +3543,22 @@ function getCurrentElapsed() {
   document.getElementById("historyFilterScenario").addEventListener("change", () => { historyDirty = true; displayHistory(); });
   document.getElementById("historyFilterDroid").addEventListener("change", () => { historyDirty = true; displayHistory(); });
   document.getElementById("faqClose")       .addEventListener("click", closeFaq);
+  document.getElementById("faqSearch").addEventListener("input", e => runFaqSearch(e.target.value));
+  document.getElementById("faqSearch").addEventListener("keydown", e => {
+    if (e.key === "Escape" && e.target.value) {
+      // First Escape clears the search; the next one closes the dialog.
+      e.preventDefault(); e.stopPropagation();
+      e.target.value = ""; runFaqSearch("");
+    } else if (e.key === "Enter" || e.key === "ArrowDown") {
+      const first = [...document.querySelectorAll("#faqModal details.faq-item")].find(d => d.getClientRects().length);
+      if (first) { e.preventDefault(); first.querySelector("summary").focus(); }
+    }
+  });
+  document.getElementById("faqBtn")         .addEventListener("click", () => openFaq());
   document.getElementById("faqModal")       .addEventListener("click", e => { if (e.target === e.currentTarget) closeFaq(); });
   document.getElementById("rulesBtn")       .addEventListener("click", openRules);
   document.getElementById("rulesClose")     .addEventListener("click", closeRules);
+  document.getElementById("rulesSaveAll")   .addEventListener("click", saveAllRulebooks);
   document.getElementById("rulesModal")     .addEventListener("click", e => { if (e.target === e.currentTarget) closeRules(); });
   document.getElementById("settingsBtn")    .addEventListener("click", openSettings);
   document.getElementById("settingsClose")  .addEventListener("click", closeSettings);
@@ -2579,6 +3590,7 @@ function getCurrentElapsed() {
     _diceMode = "skill";
     _diceApplyMode();
     rollDice(false);
+    track("skill_check");
     // The Skill Check button is now hidden; keep focus in the dialog.
     document.getElementById("skillDoneBtn").focus();
   });
@@ -2677,15 +3689,67 @@ function getCurrentElapsed() {
     document.getElementById("radioBtn").disabled = false;
   });
 
+  // ─── Privacy dialog + rulebook analytics ─────────────────────────────────────
+  // Kept apart from the rulebook viewer code: reads the active tab after it is shown and
+  // only ever sends a label that appears in RULEBOOK_TABS (never arbitrary text).
+  document.getElementById("privacyBtn")       .addEventListener("click", () => openModal("privacyModal", "privacyModalClose"));
+  document.getElementById("privacyModalClose").addEventListener("click", () => closeModal("privacyModal"));
+  document.getElementById("privacyModal")     .addEventListener("click", e => { if (e.target === e.currentTarget) closeModal("privacyModal"); });
+  function trackRulesTab() {
+    const active = document.querySelector('#rulesTabs .active, #rulesTabs [aria-pressed="true"], #rulesTabs [aria-selected="true"]');
+    const label = active ? active.textContent.trim() : "";
+    const known = RULEBOOK_TABS.find(t => t.label === label);
+    if (known && document.getElementById("rulesModal").classList.contains("open")) {
+      track("rules_open", { tab: known.file.split("/").pop().replace(/\.\w+$/, "") });
+    }
+  }
+  document.getElementById("rulesBtn") .addEventListener("click", trackRulesTab);
+  document.getElementById("rulesTabs").addEventListener("click", e => { if (e.target.closest("button")) trackRulesTab(); });
+
   try {
     const lastResult     = localStorage.getItem("lastResult");
     const lastDifficulty = localStorage.getItem("lastDifficulty");
-    if (lastResult)     document.getElementById("result").value     = lastResult;
-    if (lastDifficulty) document.getElementById("difficulty").value = lastDifficulty;
+    // A corrupt value would leave the select blank and save an invalid record.
+    if (VALID_RESULTS.has(lastResult))          document.getElementById("result").value     = lastResult;
+    if (VALID_DIFFICULTIES.has(lastDifficulty)) document.getElementById("difficulty").value = lastDifficulty;
   } catch(e) {}
 
   document.getElementById("radioVolume").value = getRadioVolume();
   if (!navigator.onLine) document.getElementById("radioBtn").disabled = true;
+
+  // ─── Other tabs ─────────────────────────────────────────────────────────────
+  // Another tab or window of the app changed storage: pick up its records and packs so
+  // this tab shows them and its next save builds on them (saves are read-modify-write).
+  // The SYZYGY campaign is not reloaded here (it is being reworked separately); it stays
+  // last-writer-wins.
+  function reloadRecordsFromStorage() {
+    try { records = readStoredRecords().list; } catch(e) { return; }
+    refreshRecordViews();
+    // A dialog for a record that no longer exists can't do anything useful.
+    if (_editId != null && !records.some(r => r.id === _editId)) {
+      closeEditModal(); toast("That record was deleted in another tab or window.", "error");
+    }
+    if (_pendingDeleteId != null && !records.some(r => r.id === _pendingDeleteId)) closeDeleteModal();
+  }
+  function reloadPacksFromStorage() {
+    if (document.getElementById("settingsModal").classList.contains("open")) return; // this tab is editing them
+    let next;
+    try { next = parseEnabledPacks(localStorage.getItem("enabledPacks")); } catch(e) { return; }
+    if ([...next].sort().join() === [...enabledPacks].sort().join()) return;
+    enabledPacks = next;
+    applyPacks();
+  }
+  window.addEventListener("storage", e => {
+    if (e.storageArea && e.storageArea !== localStorage) return;
+    if (e.key === null || e.key === "gameRecords")  reloadRecordsFromStorage();
+    if (e.key === null || e.key === "enabledPacks") reloadPacksFromStorage();
+    // Another tab changed the SYZYGY campaign: reload it so this tab can't overwrite it with stale state.
+    if (e.key === null || e.key === "syzygyCampaign" || e.key === "syzygyCampaignV1") {
+      loadSzCampaign(false);
+      _szLossPending = false;
+      renderSz();
+    }
+  });
 
   buildActiveContent();
   populateSelectors();
@@ -2706,8 +3770,70 @@ function getCurrentElapsed() {
         if (!busy) {
           window.location.reload();
         } else {
-          toast("App updated — reload for the latest version.");
+          // Mid-game: never reload on our own; offer a button and let the player choose when.
+          toast("App updated — reload for the latest version.", "info", { label: "Reload", onClick: () => window.location.reload() });
+          _undoAction = null; // Ctrl/Cmd+Z stays "undo"; it must not reload the page
+          announce("App updated. Press Tab to reach Reload.");
         }
       });
     });
   }
+
+  // ─── Hash routes (manifest shortcuts: ./#randomizer, ./#log, ./#syzygy) ──────
+  const HASH_ROUTES = { "#randomizer": "randomizer", "#log": "history", "#history": "history", "#syzygy": "syzygy" };
+  function routeFromHash() {
+    const tab = HASH_ROUTES[(window.location.hash || "").toLowerCase()];
+    if (!tab) return; // other fragments (e.g. the #main skip link) keep their normal meaning
+    showTab(tab);
+    // Drop the fragment so a later reload or a manual tab change isn't overridden by it,
+    // and so the same shortcut fires hashchange again next time.
+    try { history.replaceState(history.state, "", window.location.pathname + window.location.search); } catch (e) {}
+  }
+  routeFromHash();
+  window.addEventListener("hashchange", routeFromHash);
+
+  // ─── Install app ────────────────────────────────────────────────────────────
+  // Chromium: keep the browser's install prompt and offer it from a header button.
+  // iOS has no prompt, so show a one-time hint pointing at Share → Add to Home Screen.
+  (function initInstall() {
+    const btn = document.getElementById("installBtn");
+    const hint = document.getElementById("iosInstallHint");
+    const isStandalone = () => {
+      try { if (window.matchMedia("(display-mode: standalone)").matches || window.matchMedia("(display-mode: minimal-ui)").matches) return true; } catch (e) {}
+      return window.navigator.standalone === true;
+    };
+    let deferredPrompt = null;
+    window.addEventListener("beforeinstallprompt", e => {
+      e.preventDefault();
+      deferredPrompt = e;
+      if (btn && !isStandalone()) btn.hidden = false;
+    });
+    window.addEventListener("appinstalled", () => {
+      deferredPrompt = null;
+      if (btn) btn.hidden = true;
+    });
+    if (btn) btn.addEventListener("click", () => {
+      const ev = deferredPrompt;
+      if (!ev) return;
+      deferredPrompt = null; // a prompt can only be shown once
+      btn.hidden = true;
+      try { Promise.resolve(ev.prompt()).catch(() => {}); } catch (e) {}
+    });
+
+    if (!hint) return;
+    const ua = navigator.userAgent || "";
+    const isIOS = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    let seen = true;
+    try { seen = !!localStorage.getItem("iosInstallHintSeen") || !localStorage.getItem("hasSeenTip"); } catch (e) {}
+    // Wait until the first-run tip has been dismissed so two popovers never stack.
+    if (!isIOS || isStandalone() || seen) return;
+    hint.classList.remove("hidden");
+    const dismiss = () => {
+      hint.classList.add("hidden");
+      try { localStorage.setItem("iosInstallHintSeen", "1"); } catch (e) {}
+      document.removeEventListener("click", outside);
+    };
+    const outside = e => { if (!hint.contains(e.target)) dismiss(); };
+    document.getElementById("iosInstallHintDismiss").addEventListener("click", dismiss);
+    document.addEventListener("click", outside);
+  })();

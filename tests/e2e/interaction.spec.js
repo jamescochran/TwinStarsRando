@@ -211,6 +211,12 @@ test.describe("SYZYGY keyboard journey", () => {
     await page.locator("#szStartBtn").focus();
     await page.keyboard.press("Enter");
     expect(await activeId(page)).toBe("szStageHeading");
+    // The player chooses who plays (v2: no forced bench rotation); focus stays on the toggle.
+    for (const i of ["0", "1"]) {
+      await page.locator(`[data-player="${i}"]`).focus();
+      await page.keyboard.press("Enter");
+      expect(await page.evaluate(() => document.activeElement.dataset.player)).toBe(i);
+    }
     // Steppers have names and keep focus when re-rendered.
     const plus = page.getByRole("button", { name: /^Add 1 health to/ }).first();
     await plus.focus();
@@ -218,17 +224,23 @@ test.describe("SYZYGY keyboard journey", () => {
     expect(await page.evaluate(() => document.activeElement.getAttribute("aria-label"))).toMatch(/^Add 1 health to/);
     await page.locator("#szWinBtn").focus();
     await page.keyboard.press("Enter");
-    // Branch choice is reachable and operable by keyboard.
+    // Section B card choice is reachable and operable by keyboard.
     await expect(page.locator("#szBranchL")).toHaveJSProperty("tagName", "BUTTON");
     await page.locator("#szBranchL").focus();
     await page.keyboard.press("Enter");
-    await expect(page.locator("#szStageHeading")).toContainText("Stage B");
+    await expect(page.locator("#szStageHeading")).toContainText("Section B");
     expect(await activeId(page)).toBe("szStageHeading");
-    await page.locator("#szLossBtn").click();
+    await page.locator('[data-player="0"]').click();
+    await page.locator('[data-player="2"]').click();
+    await page.locator("#szLossBtn").focus();
+    await page.keyboard.press("Enter");
+    expect(await activeId(page)).toBe("szLossHeading");
+    await page.locator("#szLossConfirm").focus();
+    await page.keyboard.press("Enter");
     await expect(page.locator(".toast")).toContainText("Defeat recorded");
     await page.locator(".toast-action").click();
     const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("syzygyCampaign")));
     expect(saved.losses).toBe(0);
-    expect(saved.stageResults).toHaveLength(1);
+    expect(saved.results).toHaveLength(1);
   });
 });

@@ -2,6 +2,44 @@
 
 Extracted text from the physical rule card scans in this directory. Source images are the original PNG files; this document preserves the content in case the images are unavailable.
 
+## Image files
+
+- `*.png` are the full-resolution originals (~7 MB each). The app only falls back to them in
+  browsers without AVIF/WebP support.
+- `*.avif` and `*.webp` are 1600 px wide copies the app actually shows (`<picture>` picks
+  AVIF, then WebP, then PNG). AVIF set: ~0.74 MB for four books, WebP set: ~1.15 MB, versus
+  29 MB of PNG. Budgets are enforced by `tests/e2e/rulebooks.spec.js`.
+- Regenerate them after replacing a PNG (needs Node and `sharp`, installed outside the repo):
+
+  ```sh
+  npm install --prefix /tmp/rules-tools sharp
+  NODE_PATH=/tmp/rules-tools/node_modules node -e '
+    const sharp = require("sharp");
+    for (const b of process.argv.slice(1)) {
+      const img = () => sharp(`rules/${b}.png`).resize({ width: 1600, kernel: "lanczos3" });
+      img().avif({ quality: 55, effort: 6, chromaSubsampling: "4:4:4" }).toFile(`rules/${b}.avif`);
+      img().webp({ quality: 80, effort: 6, smartSubsample: true }).toFile(`rules/${b}.webp`);
+    }' twinstars1 twinstars1-syzygy twinstars2 twinstars2-syzygy
+  ```
+
+  Then add `optimized: true` to the book in `RULEBOOK_TABS` (app.js) and bump `RULES_CACHE`
+  in service-worker.js so installed apps fetch the new files.
+
+### Known problem: `twinstars-crag.png` is truncated
+
+The committed file stops at exactly 1,920,000 bytes (no IEND chunk; rows ~810-1024 of 1025
+are missing). It has been that way since it was first added (commit a7efc03); there is no
+complete copy in git history. Browsers still fire `load` for it, so the app now checks the
+bytes (in the service worker) and shows "this rulebook image is incomplete" with a link to the
+publisher's file instead of a cut-off sheet. No AVIF/WebP was generated from it on purpose.
+
+**Owner action:** download the official file "Official rules (Button Shy)" (`twinstars-crag.png`,
+2,353,834 bytes, provided by the publisher) from
+https://boardgamegeek.com/filepage/217405/official-rules-button-shy (needs a BGG login), replace
+`rules/twinstars-crag.png`, generate its AVIF/WebP as above, add `optimized: true` to the Crag tab,
+remove the Crag `official` link if desired, update `KNOWN_TRUNCATED` in
+`tests/e2e/rulebooks.spec.js`, and bump `RULES_CACHE`.
+
 ---
 
 ## twinstars1.png — Series 1 Base Game
