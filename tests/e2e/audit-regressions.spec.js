@@ -168,7 +168,7 @@ test.describe("stats", () => {
     await page.locator("#pack-series2").uncheck();
     await page.locator("#settingsClose").click();
     await page.getByRole("tab", { name: "Mission Log" }).click(); // stats are computed after the pack change
-    const completed = page.locator(".stats-summary-card", { hasText: "Completed" });
+    const completed = page.locator(".stats-summary-card", { hasText: "Combos Played" });
     await expect(completed).toContainText("0%"); // 20 Series-2 combos are not part of the 792 available
   });
 });
