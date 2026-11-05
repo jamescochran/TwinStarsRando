@@ -1240,12 +1240,19 @@ function getCurrentElapsed() {
     closeModal("faqModal");
   }
 
+  // `file` is the full-resolution PNG (fallback for browsers without AVIF/WebP). Books with
+  // `optimized` also ship 1600px-wide .avif and .webp copies next to it (see rules/README.md).
+  // `official` is where to read the rules when our copy is missing or incomplete.
+  const RULES_OFFICIAL_URL = "https://buttonshygames.com/pages/twin-stars";
   const RULEBOOK_TABS = [
-    { packId: "series1",     label: "Series 1",  file: "rules/twinstars1.png" },
-    { packId: "series1",     label: "SYZYGY I",  file: "rules/twinstars1-syzygy.png" },
-    { packId: "series2",     label: "Series 2",  file: "rules/twinstars2.png" },
-    { packId: "series2",     label: "SYZYGY II", file: "rules/twinstars2-syzygy.png" },
-    { packId: "captaincrag", label: "Cpt. Crag", file: "rules/twinstars-crag.png" },
+    { packId: "series1",     label: "Series 1",  file: "rules/twinstars1.png",        optimized: true },
+    { packId: "series1",     label: "SYZYGY I",  file: "rules/twinstars1-syzygy.png", optimized: true },
+    { packId: "series2",     label: "Series 2",  file: "rules/twinstars2.png",        optimized: true },
+    { packId: "series2",     label: "SYZYGY II", file: "rules/twinstars2-syzygy.png", optimized: true },
+    // Our copy of this PNG is truncated (see rules/README.md); the viewer detects that and links
+    // to the publisher's file on BoardGameGeek instead of showing the cut-off image.
+    { packId: "captaincrag", label: "Cpt. Crag", file: "rules/twinstars-crag.png",
+      official: "https://boardgamegeek.com/filepage/217405/official-rules-button-shy" },
   ];
 
   function openRules() {
@@ -1271,18 +1278,152 @@ function getCurrentElapsed() {
     });
     showRulebook(available[0]);
     openModal("rulesModal", "rulesClose");
+    refreshRulesOffline();
   }
 
-  // Rulebook images are large (several MB); say so while they load, and if they fail.
+  // Which image format this browser shows: the same choice <picture> makes. Probed once with a
+  // 1×1 AVIF (data: images are allowed by the CSP); WebP is universal in supported browsers.
+  const AVIF_PROBE = "data:image/avif;base64,AAAAHGZ0eXBhdmlmAAAAAG1pZjFhdmlmbWlhZgAAANZtZXRhAAAAAAAAACFoZGxyAAAAAAAAAABwaWN0AAAAAAAAAAAAAAAAAAAAACJpbG9jAAAAAERAAAEAAQAAAAAA+gABAAAAAAAAAB8AAAAjaWluZgAAAAAAAQAAABVpbmZlAgAAAAABAABhdjAxAAAAAA5waXRtAAAAAAABAAAAVmlwcnAAAAA4aXBjbwAAAAxhdjFDgSACAAAAABRpc3BlAAAAAAAAAAEAAAABAAAAEHBpeGkAAAAAAwgICAAAABZpcG1hAAAAAAAAAAEAAQOBAgMAAAAnbWRhdBIACgc4AAaQENBpMhIZQmMEw88880EgAJBAyRxhQr4=";
+  let rulesFormatPromise = null;
+  function rulesFormat() {
+    if (!rulesFormatPromise) {
+      rulesFormatPromise = new Promise(resolve => {
+        const probe = new Image();
+        probe.onload  = () => resolve(probe.naturalWidth > 0 ? "avif" : "webp");
+        probe.onerror = () => resolve("webp");
+        probe.src = AVIF_PROBE;
+      });
+    }
+    return rulesFormatPromise;
+  }
+  function rulebookUrl(tab, format) {
+    return tab.optimized && format !== "png" ? tab.file.replace(/\.png$/, "." + format) : tab.file;
+  }
+
+  // Ask the service worker about rulebook files (see the "message" handler in service-worker.js).
+  // Resolves to null when no worker controls the page.
+  function askRulesWorker(msg, onMessage) {
+    const sw = navigator.serviceWorker && navigator.serviceWorker.controller;
+    if (!sw) return Promise.resolve(null);
+    return new Promise(resolve => {
+      const channel = new MessageChannel();
+      channel.port1.onmessage = e => {
+        if (onMessage && e.data && e.data.progress) { onMessage(e.data.progress); return; }
+        resolve(e.data);
+      };
+      sw.postMessage(msg, [channel.port2]);
+    });
+  }
+  const absUrl = file => new URL(file, document.baseURI).href;
+
+  // Rulebook images are large; say so while they load, and if they fail. A file cut off mid-download
+  // still fires "load" and draws its top part, so the image stays hidden until it decodes and the
+  // service worker confirms the bytes are whole.
+  let rulesLoadToken = 0;
   function showRulebook(tab) {
     const img    = document.getElementById("rulesImage");
     const status = document.getElementById("rulesStatus");
+    const token  = ++rulesLoadToken;
     img.alt = `${tab.label} rulebook`;
     status.textContent = `Loading the ${tab.label} rulebook…`;
-    img.onload  = () => { status.textContent = ""; };
-    img.onerror = () => { status.textContent = `Couldn't load the ${tab.label} rulebook. Check your connection and try again.`; };
-    img.src = tab.file;
-    if (img.complete && img.naturalWidth) status.textContent = "";
+    img.classList.add("rules-img-pending");
+    img.classList.remove("rules-img-broken");
+    [["rulesSourceAvif", "avif"], ["rulesSourceWebp", "webp"]].forEach(([id, fmt]) => {
+      const source = document.getElementById(id);
+      if (tab.optimized) source.srcset = rulebookUrl(tab, fmt);
+      else source.removeAttribute("srcset");
+    });
+    img.onload  = () => { if (token === rulesLoadToken) verifyRulebook(tab, img, token); };
+    img.onerror = () => {
+      if (token !== rulesLoadToken) return;
+      img.classList.remove("rules-img-pending");
+      img.classList.add("rules-img-broken");
+      status.textContent = `Couldn't load the ${tab.label} rulebook. Check your connection and try again.`;
+    };
+    if (img.getAttribute("src") !== tab.file) img.src = tab.file;
+    else if (img.complete && img.naturalWidth) verifyRulebook(tab, img, token);
+  }
+
+  async function verifyRulebook(tab, img, token) {
+    const status = document.getElementById("rulesStatus");
+    let state = "ok";
+    try { await img.decode(); } catch (e) { state = "incomplete"; }
+    if (state === "ok") {
+      const reply = await askRulesWorker({ type: "rules-check", url: img.currentSrc || img.src });
+      if (reply && reply.state === "incomplete") state = "incomplete";
+    }
+    if (token !== rulesLoadToken) return;
+    img.classList.remove("rules-img-pending");
+    if (state === "ok") {
+      status.textContent = "";
+      refreshRulesOffline();
+      return;
+    }
+    img.classList.add("rules-img-broken");
+    const link = document.createElement("a");
+    link.href = tab.official || RULES_OFFICIAL_URL;
+    link.target = "_blank";
+    link.rel = "noopener";
+    link.textContent = "the official rules";
+    status.replaceChildren(`The ${tab.label} rulebook image in this app is incomplete, so it isn't shown. See `, link, ".");
+  }
+
+  // "Save all for offline": stores the current format of every rulebook for the enabled packs in
+  // the service worker's persistent rulebook cache, and says which ones are already stored.
+  let rulesSaving = false;
+  async function rulesOfflineTargets() {
+    const format = await rulesFormat();
+    return RULEBOOK_TABS.filter(t => enabledPacks.has(t.packId)).map(t => ({ tab: t, url: absUrl(rulebookUrl(t, format)) }));
+  }
+  async function refreshRulesOffline() {
+    const btn = document.getElementById("rulesSaveAll");
+    const out = document.getElementById("rulesOfflineStatus");
+    if (rulesSaving) return;
+    if (!("serviceWorker" in navigator)) {
+      btn.disabled = true;
+      out.textContent = "This browser can't keep rulebooks for offline use.";
+      return;
+    }
+    const targets = await rulesOfflineTargets();
+    const reply = await askRulesWorker({ type: "rules-status", urls: targets.map(t => t.url) });
+    if (rulesSaving) return;
+    if (!reply) { btn.disabled = false; out.textContent = ""; return; }
+    const saved = targets.filter(t => reply.saved.includes(t.url));
+    if (saved.length === targets.length) {
+      out.textContent = `All ${targets.length} rulebooks are saved for offline use.`;
+    } else if (saved.length) {
+      out.textContent = `Saved for offline: ${saved.map(t => t.tab.label).join(", ")} (${saved.length} of ${targets.length}).`;
+    } else {
+      out.textContent = "No rulebooks saved for offline use yet.";
+    }
+    btn.disabled = saved.length === targets.length;
+  }
+  async function saveAllRulebooks() {
+    const btn = document.getElementById("rulesSaveAll");
+    const out = document.getElementById("rulesOfflineStatus");
+    if (rulesSaving) return;
+    if (!navigator.serviceWorker || !navigator.serviceWorker.controller) {
+      out.textContent = "Offline saving isn't ready yet. Reload the app once while online, then try again.";
+      return;
+    }
+    rulesSaving = true;
+    btn.disabled = true;
+    const targets = await rulesOfflineTargets();
+    out.textContent = `Saving rulebooks… 0 of ${targets.length}`;
+    const reply = await askRulesWorker({ type: "rules-save", urls: targets.map(t => t.url) },
+      p => { out.textContent = `Saving rulebooks… ${p.done} of ${p.total}`; });
+    rulesSaving = false;
+    const results = (reply && reply.results) || {};
+    const label = state => targets.filter(t => results[t.url] === state).map(t => t.tab.label);
+    const ok = label("ok"), incomplete = label("incomplete");
+    const failed = targets.filter(t => !["ok", "incomplete"].includes(results[t.url])).map(t => t.tab.label);
+    const parts = [ok.length === targets.length
+      ? `All ${targets.length} rulebooks are saved for offline use.`
+      : `Saved ${ok.length} of ${targets.length} rulebooks for offline use.`];
+    if (incomplete.length) parts.push(`${incomplete.join(", ")}: the image in this app is incomplete, so it can't be saved.`);
+    if (failed.length) parts.push(`Couldn't download ${failed.join(", ")}. Check your connection and try again.`);
+    out.textContent = parts.join(" ");
+    btn.disabled = ok.length === targets.length;
   }
 
   function closeRules() {
@@ -2548,6 +2689,7 @@ function getCurrentElapsed() {
   document.getElementById("faqModal")       .addEventListener("click", e => { if (e.target === e.currentTarget) closeFaq(); });
   document.getElementById("rulesBtn")       .addEventListener("click", openRules);
   document.getElementById("rulesClose")     .addEventListener("click", closeRules);
+  document.getElementById("rulesSaveAll")   .addEventListener("click", saveAllRulebooks);
   document.getElementById("rulesModal")     .addEventListener("click", e => { if (e.target === e.currentTarget) closeRules(); });
   document.getElementById("settingsBtn")    .addEventListener("click", openSettings);
   document.getElementById("settingsClose")  .addEventListener("click", closeSettings);
