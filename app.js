@@ -284,17 +284,66 @@
     return a;
   }
 
-  function toast(msg, type) {
+  // Screen-reader-only announcement through the shared polite live region.
+  // Cleared first so repeating the same message is announced again.
+  function announce(msg) {
     const live = document.getElementById("ariaLive");
-    if (live) live.textContent = msg;
+    if (!live) return;
+    live.textContent = "";
+    setTimeout(() => { live.textContent = msg; }, 30);
+  }
+
+  // The undo callback of the most recent undoable action (cleared when its toast goes).
+  let _undoAction = null;
+
+  // toast(msg, type, action?) — action = { label, onClick } adds a button (e.g. Undo).
+  function toast(msg, type, action) {
     // One toast at a time (they share a position), shown long enough to read.
     document.querySelectorAll(".toast").forEach(el => el.remove());
+    _undoAction = null;
     const t = document.createElement("div");
     t.className = "toast " + (type || "info");
-    t.textContent = msg;
+    const text = document.createElement("span");
+    text.textContent = msg;
+    t.appendChild(text);
+    let timer;
+    const remove = () => { clearTimeout(timer); t.remove(); if (_undoAction === run) _undoAction = null; };
+    let run = null;
+    if (action) {
+      run = () => { remove(); action.onClick(); };
+      _undoAction = run;
+      t.classList.add("has-action");
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "toast-action";
+      b.textContent = action.label;
+      b.addEventListener("click", run);
+      t.appendChild(b);
+      // Keep it on screen while the pointer or keyboard is on it.
+      t.addEventListener("mouseenter", () => clearTimeout(timer));
+      t.addEventListener("focusin",    () => clearTimeout(timer));
+      t.addEventListener("mouseleave", () => { timer = setTimeout(remove, 4000); });
+      announce(`${msg} Press Control+Z or the ${action.label} button to reverse.`);
+    } else {
+      // The live region already announces it; hide the visual copy from the a11y tree.
+      t.setAttribute("aria-hidden", "true");
+      announce(msg);
+    }
     document.body.appendChild(t);
-    setTimeout(() => t.remove(), Math.max(2600, 1500 + msg.length * 45));
+    timer = setTimeout(remove, action ? 10000 : Math.max(2600, 1500 + msg.length * 45));
   }
+
+  function undoToast(msg, onUndo) { toast(msg, "info", { label: "Undo", onClick: onUndo }); }
+
+  // Ctrl/Cmd+Z reverses the last undoable action while its message is showing
+  // (not while typing in a text field, where it must keep its normal meaning).
+  document.addEventListener("keydown", e => {
+    if (!_undoAction || e.key.toLowerCase() !== "z" || !(e.ctrlKey || e.metaKey) || e.shiftKey) return;
+    const tag = document.activeElement && document.activeElement.tagName;
+    if (tag === "INPUT" || tag === "TEXTAREA" || document.querySelector(".modal-overlay.open")) return;
+    e.preventDefault();
+    _undoAction();
+  });
 
   // Guards against corrupted or externally-imported records making it into the array.
   // Characters must be from the known master list so comboKey lookups stay consistent.
@@ -342,10 +391,16 @@ function stopTimer() {
     clearInterval(timerInterval);
     timerInterval = null;
   }
+  // Fold the running segment in so the card keeps showing the final time.
+  if (startTime && !timerPaused) accumulatedTime += Date.now() - startTime;
   timerPaused = false;
   startTime   = null;
   const el = document.getElementById("timerDisplay");
-  if (el) { el.classList.add("stopped"); el.setAttribute("aria-label", "Timer stopped"); }
+  if (el) {
+    el.textContent = formatTime(Math.floor(accumulatedTime / 1000));
+    el.classList.add("stopped");
+    el.setAttribute("aria-label", "Timer stopped at " + formatTime(Math.floor(accumulatedTime / 1000)));
+  }
 }
 
 function togglePause() {
@@ -371,6 +426,7 @@ function togglePause() {
     display.classList.toggle("paused", timerPaused);
     display.setAttribute("aria-label", timerPaused ? "Timer paused" : "Timer running");
   }
+  announce(timerPaused ? `Timer paused at ${formatTime(getCurrentElapsed())}.` : "Timer resumed.");
 }
 
 
@@ -384,8 +440,7 @@ function updateDisplay() {
 }
 
 function getCurrentElapsed() {
-  if (timerPaused) return Math.floor(accumulatedTime / 1000);
-  if (!startTime) return 0;
+  if (timerPaused || !startTime) return Math.floor(accumulatedTime / 1000);
   return Math.floor((accumulatedTime + (Date.now() - startTime)) / 1000);
 }
 
@@ -449,10 +504,18 @@ function getCurrentElapsed() {
     });
   }
 
+  const DIFF_STATE_TEXT = { win: "won", loss: "played, not yet won", unplayed: "not played yet" };
+  const DIFF_STATE_MARK = { win: "✓", loss: "✗", unplayed: "" };
   function renderDiffBadges(comb) {
+    // State is shown by colour, a ✓/✗ mark and (for screen readers / tooltips) words.
     return getDifficultyStatus(comb).map(({ diff, state }) =>
-      `<div class="diff-badge ${state}"><div class="diff-dot"></div>${esc(diff)}</div>`
+      `<div class="diff-badge ${state}" role="listitem" title="${esc(diff)}: ${DIFF_STATE_TEXT[state]}"><div class="diff-dot" aria-hidden="true"></div>${esc(diff)}${DIFF_STATE_MARK[state] ? `<span class="diff-mark" aria-hidden="true">${DIFF_STATE_MARK[state]}</span>` : ""}<span class="sr-only">: ${DIFF_STATE_TEXT[state]}</span></div>`
     ).join("");
+  }
+
+  // Short human description of a record, used to give each row's buttons a unique name.
+  function recordLabel(rec) {
+    return `${rec.characters.join(" & ")}, ${scenarioText(rec.scenario)}, ${rec.result}, ${rec.timestamp}`;
   }
 
   // ─── Render ─────────────────────────────────────────────────────────────────
@@ -477,9 +540,14 @@ function getCurrentElapsed() {
     btn1.setAttribute("aria-pressed",  String(locks.char1));
     btn2.setAttribute("aria-pressed",  String(locks.char2));
     btnSc.setAttribute("aria-pressed", String(locks.scenario));
+    [btn1, btn2, btnSc].forEach(b => {
+      b.title = b.getAttribute("aria-pressed") === "true" ? "Locked: kept when you randomize (tap to unlock)" : "Lock to keep it when you randomize";
+    });
     const allLocked = locks.char1 && locks.char2 && locks.scenario;
     const genBtn = document.getElementById("generateBtn");
     genBtn.disabled = allLocked;
+    const hint = document.getElementById("allLockedHint");
+    if (hint) hint.classList.toggle("hidden", !allLocked);
   }
 
   function displayCombination(comb) {
@@ -495,6 +563,7 @@ function getCurrentElapsed() {
 
     document.getElementById("combinationDisplay").innerHTML = `
       <div class="combo-display">
+        <h2 class="sr-only" id="comboHeading" tabindex="-1">Current mission: ${esc(comb.characters[0])} and ${esc(comb.characters[1])}, ${esc(scenarioText(comb.scenario))}</h2>
         <div class="combo-characters">
           <span class="combo-char-wrap"><span class="char-role primary-role">Primary</span>${esc(comb.characters[0])}${CHAR_FAQ_ANCHOR[comb.characters[0]] ? faqHelpBtn(CHAR_FAQ_ANCHOR[comb.characters[0]], comb.characters[0]) : ""}</span><span class="combo-vs">&amp;</span><span class="combo-char-wrap"><span class="char-role secondary-role">Secondary</span>${esc(comb.characters[1])}${CHAR_FAQ_ANCHOR[comb.characters[1]] ? faqHelpBtn(CHAR_FAQ_ANCHOR[comb.characters[1]], comb.characters[1]) : ""}</span>
         </div>
@@ -504,12 +573,12 @@ function getCurrentElapsed() {
         <div class="droid-row">
           <span class="droid-row-label">Droid</span>
           <select class="droid-select" id="droidSelect" aria-label="Droid assistant">${droidOptions}</select>
-          <button class="btn-droid-rand" id="droidRandBtn">Random</button>
+          <button class="btn-droid-rand" id="droidRandBtn" aria-label="Pick a random droid">Random</button>
         </div>` : ""}
-        <div class="difficulty-row">${renderDiffBadges(comb)}</div>
+        <div class="difficulty-row" role="list" aria-label="Your results for this combination by difficulty">${renderDiffBadges(comb)}</div>
         <div class="timer-row">
           <div>
-            <div class="timer-label">Elapsed Time</div>
+            <div class="timer-label">${timerInterval || timerPaused ? "Elapsed Time" : "Recorded Time"}</div>
             <div class="timer-display" id="timerDisplay" aria-live="off" aria-label="Timer stopped">00:00</div>
           </div>
           <div style="display:flex;gap:8px;">
@@ -518,7 +587,7 @@ function getCurrentElapsed() {
           </div>
         </div>
         <div class="dice-row">
-          <button class="btn btn-secondary btn-dice" id="diceRollerBtn">🎲 Roll Dice</button>
+          <button class="btn btn-secondary btn-dice" id="diceRollerBtn"><span aria-hidden="true">🎲</span> Roll Dice</button>
         </div>
       </div>`;
     document.querySelectorAll("#combinationDisplay .btn-faq-inline").forEach(btn => {
@@ -531,6 +600,7 @@ function getCurrentElapsed() {
         const pool = droids.filter(d => d !== _currentDroid);
         _currentDroid = (pool.length ? pool : droids)[Math.floor(Math.random() * (pool.length || droids.length))];
         droidSel.value = _currentDroid;
+        announce(`Droid: ${_currentDroid}.`);
       });
     }
     document.getElementById("pauseBtn").addEventListener("click", togglePause);
@@ -552,6 +622,7 @@ function getCurrentElapsed() {
       pauseB.disabled   = true;
       restartB.disabled = true;
       timerEl.classList.add("stopped");
+      timerEl.setAttribute("aria-label", "Timer stopped at " + formatTime(getCurrentElapsed()));
     } else {
       timerEl.setAttribute("aria-label", "Timer running");
     }
@@ -576,7 +647,7 @@ function getCurrentElapsed() {
         <td><span class="result-pill ${rec.result === "Win" ? "win" : "loss"}">${esc(rec.result)}</span></td>
         <td><span class="diff-pill">${esc(rec.difficulty)}</span></td>
         <td class="td-time">${rec.playtime != null ? formatTime(rec.playtime) : "—"}</td>
-        <td><button class="btn-delete-record" data-idx="${globalIdx}" title="Delete" aria-label="Delete record">✕</button></td>
+        <td><button class="btn-delete-record" data-idx="${globalIdx}" title="Delete" aria-label="Delete record: ${esc(recordLabel(rec))}">✕</button></td>
       </tr>`;}).join("");
 
     // Droid coverage summary for this combo
@@ -593,11 +664,11 @@ function getCurrentElapsed() {
 
     div.innerHTML = `
       <div class="panel">
-        <p class="section-heading">This Combination</p>
+        <h2 class="section-heading">This Combination</h2>
         ${droidSummaryHTML}
         <div class="history-table-wrap">
           <table>
-            <thead><tr><th>Date / Time</th><th>Result</th><th>Difficulty</th><th>Time</th><th></th></tr></thead>
+            <thead><tr><th>Date / Time</th><th>Result</th><th>Difficulty</th><th>Time</th><th><span class="sr-only">Actions</span></th></tr></thead>
             <tbody>${rows}</tbody>
           </table>
         </div>
@@ -610,7 +681,7 @@ function getCurrentElapsed() {
       _deleteTrigger    = deleteBtn;
       _pendingDeleteIdx = parseInt(deleteBtn.dataset.idx, 10);
       _deleteCallback   = () => { displayCombination(currentCombination); displayComboHistory(currentCombination); };
-      openModal("deleteRecordModal", "deleteRecordCancel");
+      openDeleteModal();
     };
   }
 
@@ -666,7 +737,8 @@ function getCurrentElapsed() {
           <button class="btn-load-unplayed"
             data-char0="${esc(comb.characters[0])}"
             data-char1="${esc(comb.characters[1])}"
-            data-scenario="${esc(comb.scenario)}">Play</button>`;
+            data-scenario="${esc(comb.scenario)}"
+            aria-label="Play ${esc(comb.characters.join(" & "))}, ${esc(scenarioText(comb.scenario))}">Play</button>`;
         frag.appendChild(div);
       });
       offset += slice.length;
@@ -677,8 +749,11 @@ function getCurrentElapsed() {
     grid.addEventListener("click", e => {
       const btn = e.target.closest(".btn-load-unplayed");
       if (!btn) return;
-      showTab("randomizer");
-      loadCombination({ characters: [btn.dataset.char0, btn.dataset.char1], scenario: btn.dataset.scenario });
+      const comb = { characters: [btn.dataset.char0, btn.dataset.char1], scenario: btn.dataset.scenario };
+      guardUnsaved(() => {
+        showTab("randomizer");
+        loadCombination(comb, { focusCard: true });
+      });
     });
 
     // Append more rows as the user scrolls toward the bottom
@@ -695,7 +770,8 @@ function getCurrentElapsed() {
     historyDirty = false;
     const container = document.getElementById("historyTableContainer");
     if (!records.length) {
-      container.innerHTML = `<div class="empty-state"><p>No mission records yet. Start playing!</p></div>`;
+      container.innerHTML = `<div class="empty-state"><p>No missions logged yet. Load a mission on the Randomizer tab, play it, then tap Save Record. You can also Import a backup.</p></div>`;
+      document.getElementById("historyCount").textContent = "";
       return;
     }
 
@@ -753,8 +829,19 @@ function getCurrentElapsed() {
       }
     });
 
+    const filtering = !!(filterRes || filterDiff || filterChar || filterSc || filterDroid);
+    document.getElementById("historyCount").textContent = filtering
+      ? `Showing ${displayed.length} of ${records.length} records`
+      : `${records.length} record${records.length !== 1 ? "s" : ""}`;
+
     if (!displayed.length) {
-      container.innerHTML = `<div class="empty-state"><p>No records match the current filter.</p></div>`;
+      container.innerHTML = `<div class="empty-state"><p>No records match these filters.</p><button type="button" class="btn-clear-filters" id="clearFiltersBtn">Clear Filters</button></div>`;
+      document.getElementById("clearFiltersBtn").addEventListener("click", () => {
+        ["historyFilterResult", "historyFilterDifficulty", "historyFilterChar", "historyFilterScenario", "historyFilterDroid"]
+          .forEach(id => { document.getElementById(id).value = ""; });
+        displayHistory();
+        document.getElementById("historyFilterResult").focus();
+      });
       return;
     }
 
@@ -771,8 +858,8 @@ function getCurrentElapsed() {
           <td><span class="diff-pill">${esc(rec.difficulty)}</span></td>
           <td class="td-time">${rec.playtime != null ? formatTime(rec.playtime) : "—"}</td>
           <td class="td-nowrap">
-            <button class="btn-edit-record"   data-idx="${idx}" title="Edit"   aria-label="Edit record">✎</button>
-            <button class="btn-delete-record" data-idx="${idx}" title="Delete" aria-label="Delete record">✕</button>
+            <button class="btn-edit-record"   data-idx="${idx}" title="Edit"   aria-label="Edit record: ${esc(recordLabel(rec))}">✎</button>
+            <button class="btn-delete-record" data-idx="${idx}" title="Delete" aria-label="Delete record: ${esc(recordLabel(rec))}">✕</button>
           </td>
         </tr>${notesRow}`;
     }).join("");
@@ -780,7 +867,7 @@ function getCurrentElapsed() {
     container.innerHTML = `
       <div class="history-table-wrap">
         <table>
-          <thead><tr><th>Date / Time</th><th>Characters</th><th>Scenario</th><th>Result</th><th>Difficulty</th><th>Time</th><th></th></tr></thead>
+          <thead><tr><th>Date / Time</th><th>Characters</th><th>Scenario</th><th>Result</th><th>Difficulty</th><th>Time</th><th><span class="sr-only">Actions</span></th></tr></thead>
           <tbody>${rows}</tbody>
         </table>
       </div>`;
@@ -797,8 +884,8 @@ function getCurrentElapsed() {
       if (deleteBtn) {
         _deleteTrigger    = deleteBtn;
         _pendingDeleteIdx = parseInt(deleteBtn.dataset.idx, 10);
-        _deleteCallback   = () => { displayHistory(); displayUnplayed(); if (currentCombination) { displayCombination(currentCombination); displayComboHistory(currentCombination); } };
-        openModal("deleteRecordModal", "deleteRecordCancel");
+        _deleteCallback   = () => { displayHistory(); displayUnplayed(); displayStats(); if (currentCombination) { displayCombination(currentCombination); displayComboHistory(currentCombination); } };
+        openDeleteModal();
       }
     };
   }
@@ -816,7 +903,7 @@ function getCurrentElapsed() {
     if (!el) return;
 
     if (!records.length) {
-      el.innerHTML = `<div class="empty-state"><p>No mission records yet — save some games to see stats!</p></div>`;
+      el.innerHTML = `<div class="empty-state"><p>No stats yet. Save a few games to see your win rate and playtimes.</p></div>`;
       return;
     }
 
@@ -845,7 +932,7 @@ function getCurrentElapsed() {
       </div>
       <div class="stats-summary-card">
         <div class="stats-summary-value">${completedPct}%</div>
-        <div class="stats-summary-label">Completed</div>
+        <div class="stats-summary-label">Combos Played</div>
       </div>
     </div>`;
 
@@ -856,7 +943,7 @@ function getCurrentElapsed() {
       const avg      = Math.round(times.reduce((a, b) => a + b, 0) / times.length);
       const longest  = Math.max(...times);
       const shortest = Math.min(...times);
-      html += `<p class="section-heading">Playtime</p>
+      html += `<h3 class="section-heading">Playtime</h3>
       <div class="stats-playtime">
         <div class="stats-summary-card">
           <div class="stats-summary-value" style="font-size:14px;">${formatTime(avg)}</div>
@@ -879,11 +966,11 @@ function getCurrentElapsed() {
       const combosWithDroid = new Set(droidRecs.map(r => comboKey(r)));
       const totalPlayed = playedKeys.size;
       const coveragePct = totalPlayed > 0 ? Math.round(combosWithDroid.size / totalPlayed * 100) : 0;
-      html += `<p class="section-heading">Droid Coverage</p>
+      html += `<h3 class="section-heading">Droid Coverage</h3>
       <div class="stats-summary">
         <div class="stats-summary-card">
           <div class="stats-summary-value" style="color:var(--accent-teal);">${combosWithDroid.size}</div>
-          <div class="stats-summary-label">Combos w/ Droid</div>
+          <div class="stats-summary-label">Combos with Droid</div>
         </div>
         <div class="stats-summary-card">
           <div class="stats-summary-value" style="color:var(--accent-teal);">${totalPlayed > 0 ? coveragePct + "%" : "&#x2014;"}</div>
@@ -923,10 +1010,12 @@ function getCurrentElapsed() {
     if (_currentDroid && !droids.includes(_currentDroid)) _currentDroid = null;
     // Update the label below the header so the user can always see what's active
     const label = document.getElementById("activePacksLabel");
-    if (label) label.textContent = active.map(p => p.shortName).join(" · ");
+    if (label) label.textContent = "Collection: " + active.map(p => p.shortName).join(" · ");
   }
 
+  let _packsAtOpen = "";
   function openSettings() {
+    _packsAtOpen = [...enabledPacks].sort().join();
     const list = document.getElementById("packList");
     list.innerHTML = "";
     CONTENT_PACKS.forEach(pack => {
@@ -948,7 +1037,7 @@ function getCurrentElapsed() {
         const testScens = CONTENT_PACKS.filter(p => enabledPacks.has(p.id)).flatMap(p => p.scenarios);
         const warn = document.getElementById("settingsWarning");
         if (testChars.length < 2 || testScens.length === 0) {
-          warn.textContent = "At least 2 characters and 1 scenario required.";
+          warn.textContent = "Keep at least one pack with characters and scenarios ticked (for example Series 1 or Series 2).";
           cb.checked = !cb.checked;
           if (cb.checked) enabledPacks.add(pack.id); else enabledPacks.delete(pack.id);
         } else {
@@ -964,7 +1053,7 @@ function getCurrentElapsed() {
     });
     document.getElementById("settingsWarning").textContent = "";
     // Focus the first interactive element inside the modal once it's visible.
-    openModal("settingsModal", null);
+    openModal("settingsModal", "pack-" + CONTENT_PACKS[0].id);
     setTimeout(() => {
       const first = document.querySelector("#settingsModal input, #settingsModal button");
       if (first) first.focus();
@@ -986,7 +1075,7 @@ function getCurrentElapsed() {
         showEmptyComboState();
         document.getElementById("annotationSection").classList.add("hidden");
         document.getElementById("comboHistory").innerHTML = "";
-        toast("Active combination removed — pack disabled.", "error");
+        toast("The loaded mission uses a pack you removed, so it was closed.", "error");
       } else {
         displayCombination(currentCombination);
         displayComboHistory(currentCombination);
@@ -996,6 +1085,10 @@ function getCurrentElapsed() {
     displayUnplayed();
     displayStats();
     closeModal("settingsModal");
+    if (_packsAtOpen && _packsAtOpen !== [...enabledPacks].sort().join()) {
+      announce(`Collection updated: ${characters.length} characters, ${scenarios.length} scenarios${droids.length ? `, ${droids.length} droids` : ""}.`);
+    }
+    _packsAtOpen = "";
   }
 
   // ─── Generic modal helpers ───────────────────────────────────────────────────
@@ -1008,21 +1101,47 @@ function getCurrentElapsed() {
   // so we can return focus there on close.
   const _modalTriggers = {};
 
+  // While a dialog is open everything behind it is inert, so neither the keyboard
+  // nor a screen reader's virtual cursor can wander into the page underneath.
+  function syncInert() {
+    const openOverlay = document.querySelector(".modal-overlay.open");
+    const shell = document.querySelector(".app-shell");
+    if (shell) shell.inert = !!openOverlay;
+  }
+
+  // A trigger re-rendered while its dialog was open (e.g. the Edit button of a table
+  // row) is a new element; find its replacement so focus can still go back.
+  function refindTrigger(el) {
+    if (!el || el.isConnected) return el;
+    if (el.id) return document.getElementById(el.id);
+    if (el.dataset && el.dataset.idx != null && el.classList[0]) {
+      return document.querySelector(`.${el.classList[0]}[data-idx="${el.dataset.idx}"]`);
+    }
+    return null;
+  }
+
   function openModal(id, firstFocusId) {
     _modalTriggers[id] = document.activeElement;
     document.getElementById(id).classList.add("open");
+    syncInert();
     if (firstFocusId) {
+      // Move focus in straight away (the trigger is now inert), and again after
+      // layout settles in case the dialog content was still being built.
+      const el0 = document.getElementById(firstFocusId);
+      if (el0) el0.focus();
       setTimeout(() => {
         const el = document.getElementById(firstFocusId);
-        if (el) el.focus();
+        if (el && !el.closest(".modal-overlay.open")?.contains(document.activeElement)) el.focus();
       }, 50);
     }
   }
 
   function closeModal(id) {
     document.getElementById(id).classList.remove("open");
-    const trigger = _modalTriggers[id];
-    if (trigger) { trigger.focus(); delete _modalTriggers[id]; }
+    syncInert();
+    const trigger = refindTrigger(_modalTriggers[id]);
+    delete _modalTriggers[id];
+    if (trigger && !trigger.disabled && trigger.offsetParent !== null) trigger.focus();
   }
 
   // ─── Per-modal state ─────────────────────────────────────────────────────────
@@ -1032,9 +1151,19 @@ function getCurrentElapsed() {
   let _deleteCallback   = null; // called after deletion to refresh whichever view triggered it
   let _editIdx          = null; // record index currently open in the edit modal
 
+  function openDeleteModal() {
+    const rec = records[_pendingDeleteIdx];
+    document.getElementById("deleteRecordMsg").textContent = rec
+      ? `Delete the record for ${rec.characters.join(" & ")} — ${scenarioText(rec.scenario)} (${rec.result}, ${rec.timestamp})?`
+      : "Delete this mission record?";
+    openModal("deleteRecordModal", "deleteRecordCancel");
+  }
+
   function openEditModal(idx) {
     _editIdx = idx;
     const rec = records[idx];
+    document.getElementById("editRecordSummary").textContent =
+      `${rec.characters.join(" & ")} — ${scenarioText(rec.scenario)} · ${rec.timestamp}`;
     document.getElementById("editResult").value     = rec.result;
     document.getElementById("editDifficulty").value = rec.difficulty;
     document.getElementById("editNotes").value       = rec.notes || "";
@@ -1063,20 +1192,36 @@ function getCurrentElapsed() {
     if (!available.length) { toast("No rulebooks for your current packs."); return; }
     const tabsEl = document.getElementById("rulesTabs");
     tabsEl.innerHTML = "";
+    tabsEl.setAttribute("role", "group");
+    tabsEl.setAttribute("aria-label", "Choose a rulebook");
     available.forEach((tab, i) => {
       const btn = document.createElement("button");
       btn.className = "rules-tab" + (i === 0 ? " active" : "");
       btn.textContent = tab.label;
+      btn.setAttribute("aria-pressed", String(i === 0));
       btn.addEventListener("click", () => {
-        tabsEl.querySelectorAll(".rules-tab").forEach(t => t.classList.remove("active"));
+        tabsEl.querySelectorAll(".rules-tab").forEach(t => { t.classList.remove("active"); t.setAttribute("aria-pressed", "false"); });
         btn.classList.add("active");
-        document.getElementById("rulesImage").src = tab.file;
+        btn.setAttribute("aria-pressed", "true");
+        showRulebook(tab);
         document.querySelector(".rules-img-wrap").scrollTop = 0;
       });
       tabsEl.appendChild(btn);
     });
-    document.getElementById("rulesImage").src = available[0].file;
+    showRulebook(available[0]);
     openModal("rulesModal", "rulesClose");
+  }
+
+  // Rulebook images are large (several MB); say so while they load, and if they fail.
+  function showRulebook(tab) {
+    const img    = document.getElementById("rulesImage");
+    const status = document.getElementById("rulesStatus");
+    img.alt = `${tab.label} rulebook`;
+    status.textContent = `Loading the ${tab.label} rulebook…`;
+    img.onload  = () => { status.textContent = ""; };
+    img.onerror = () => { status.textContent = `Couldn't load the ${tab.label} rulebook. Check your connection and try again.`; };
+    img.src = tab.file;
+    if (img.complete && img.naturalWidth) status.textContent = "";
   }
 
   function closeRules() {
@@ -1103,8 +1248,10 @@ function getCurrentElapsed() {
     // focus to it rather than going through the _modalTriggers map.
     const trigger = _deleteTrigger;
     _deleteTrigger = null;
+    delete _modalTriggers.deleteRecordModal;
     document.getElementById("deleteRecordModal").classList.remove("open");
-    if (trigger) trigger.focus();
+    syncInert();
+    if (trigger && trigger.isConnected) trigger.focus();
   }
 
   function openFaq(anchorId) {
@@ -1130,12 +1277,30 @@ function getCurrentElapsed() {
     document.getElementById("combinationDisplay").innerHTML = `
       <div class="empty-state" style="padding:28px 20px;">
         <p style="font-size:14px;margin-bottom:8px;">No mission loaded</p>
-        <p>Click <strong>Randomize Combination</strong> above to get started,<br>
-           or pick characters and a scenario manually.</p>
+        <p>Tap <strong>Randomize Combination</strong> for a random mission,<br>
+           or choose characters and a scenario above and tap <strong>Load Mission</strong>.</p>
       </div>`;
   }
 
-  function loadCombination(comb) {
+  // True while a mission is loaded whose outcome hasn't been saved and that has
+  // been going long enough (a minute) that losing it would hurt.
+  function hasUnsavedGame() {
+    return !!currentCombination && !document.getElementById("saveRecordBtn").disabled &&
+      (timerInterval || timerPaused) && getCurrentElapsed() >= 60;
+  }
+
+  let _discardAction = null;
+  // Runs fn now, or after the player confirms throwing away an unsaved game in progress.
+  function guardUnsaved(fn) {
+    if (!hasUnsavedGame()) { fn(); return; }
+    _discardAction = fn;
+    const c = currentCombination;
+    document.getElementById("discardGameMsg").textContent =
+      `${c.characters.join(" & ")} — ${scenarioText(c.scenario)} has been running for ${formatTime(getCurrentElapsed())} and isn't saved. Starting a new mission discards it.`;
+    openModal("discardGameModal", "discardGameCancel");
+  }
+
+  function loadCombination(comb, opts) {
     currentCombination = comb;
     _currentDroid = null;
     startTimer();
@@ -1143,6 +1308,10 @@ function getCurrentElapsed() {
     displayComboHistory(comb);
     document.getElementById("annotationSection").classList.remove("hidden");
     document.getElementById("saveRecordBtn").disabled = false;
+    document.getElementById("saveRecordBtn").textContent = "Save Record";
+    document.getElementById("saveStatus").classList.add("hidden");
+    announce(`Mission loaded: ${comb.characters[0]} and ${comb.characters[1]}, ${scenarioText(comb.scenario)}. Timer started.`);
+    if (opts && opts.focusCard) document.getElementById("comboHeading").focus({ preventScroll: true });
 
     // Sync manual selectors — put locked character back in its original slot
     const c1 = document.getElementById("manualChar1");
@@ -1163,7 +1332,9 @@ function getCurrentElapsed() {
     }, 80);
   }
 
-  function handleGenerate() {
+  function handleGenerate() { guardUnsaved(doGenerate); }
+
+  function doGenerate() {
     const c1El = document.getElementById("manualChar1");
     const c2El = document.getElementById("manualChar2");
     const scEl = document.getElementById("manualScenario");
@@ -1201,8 +1372,8 @@ function getCurrentElapsed() {
     const char1    = document.getElementById("manualChar1").value;
     const char2    = document.getElementById("manualChar2").value;
     const scenario = document.getElementById("manualScenario").value;
-    if (char1 === char2) { toast("Select two different characters.", "error"); return; }
-    loadCombination({ characters: [char1, char2], scenario });
+    if (char1 === char2) { toast("Choose two different characters.", "error"); return; }
+    guardUnsaved(() => loadCombination({ characters: [char1, char2], scenario }));
   }
 
   function handleSaveRecord() {
@@ -1210,6 +1381,8 @@ function getCurrentElapsed() {
     const result     = document.getElementById("result").value;
     const difficulty = document.getElementById("difficulty").value;
     const playtime = getCurrentElapsed();
+    const notesEl  = document.getElementById("recordNotes");
+    const notes    = notesEl.value.trim().slice(0, 2000); // matches isValidRecord
     stopTimer();
     records.push({
       characters: currentCombination.characters,
@@ -1218,14 +1391,24 @@ function getCurrentElapsed() {
       difficulty,
       playtime,
       timestamp: new Date().toLocaleString(),
-      ...(_currentDroid ? { droid: _currentDroid } : {})
+      ...(_currentDroid ? { droid: _currentDroid } : {}),
+      ...(notes ? { notes } : {})
     });
+    notesEl.value = "";
     try { localStorage.setItem("lastResult", result); localStorage.setItem("lastDifficulty", difficulty); } catch(e) {}
     saveRecords();
-    document.getElementById("saveRecordBtn").disabled = true;
+    const saveBtn = document.getElementById("saveRecordBtn");
+    saveBtn.disabled = true;
+    saveBtn.textContent = "Saved";
     displayCombination(currentCombination);
     displayComboHistory(currentCombination);
-    toast("Record saved!");
+    // The Save button is now disabled, so give focus (and the next step) somewhere visible.
+    const status = document.getElementById("saveStatus");
+    const statusText = document.getElementById("saveStatusText");
+    statusText.textContent = `✓ Saved to Mission Log: ${result}, ${difficulty}, ${formatTime(playtime)}.`;
+    status.classList.remove("hidden");
+    statusText.focus();
+    toast("Record saved to Mission Log.");
   }
 
   function handleExport() {
@@ -1241,7 +1424,7 @@ function getCurrentElapsed() {
     a.click();
     document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(url), 1000);
-    toast("Exported successfully!");
+    toast(`Exported ${records.length} record${records.length !== 1 ? "s" : ""} to ${a.download}.`);
   }
 
   let _pendingImport = null;
@@ -1275,6 +1458,7 @@ function getCurrentElapsed() {
     if (!_pendingImport) return;
     const { valid, skipped } = _pendingImport;
     closeImportModal();
+    const before = records;
     records = valid;
     saveRecords();
     statsDirty = true;
@@ -1283,9 +1467,9 @@ function getCurrentElapsed() {
     displayStats();
     if (currentCombination) { displayCombination(currentCombination); displayComboHistory(currentCombination); }
     const msg = skipped > 0
-      ? `Replaced records with ${valid.length} imported. ${skipped} skipped (invalid).`
-      : `Replaced records with ${valid.length} imported.`;
-    toast(msg);
+      ? `Replaced your records with ${valid.length} imported. ${skipped} invalid skipped.`
+      : `Replaced your records with ${valid.length} imported.`;
+    undoToast(msg, () => { records = before; refreshAfterRecordsChange(); toast("Import undone. Your previous records are back."); });
   });
 
   document.getElementById("importMerge").addEventListener("click", () => {
@@ -1302,8 +1486,8 @@ function getCurrentElapsed() {
     displayUnplayed();
     displayStats();
     if (currentCombination) { displayCombination(currentCombination); displayComboHistory(currentCombination); }
-    let msg = `Merged ${toAdd.length} new record(s).`;
-    if (dupes   > 0) msg += ` ${dupes} duplicate(s) skipped.`;
+    let msg = `Added ${toAdd.length} new record${toAdd.length !== 1 ? "s" : ""}.`;
+    if (dupes   > 0) msg += ` ${dupes} already in your log.`;
     if (skipped > 0) msg += ` ${skipped} invalid skipped.`;
     toast(msg);
   });
@@ -1314,17 +1498,31 @@ function getCurrentElapsed() {
     startTimer();
   });
 
-  document.getElementById("clearDataBtn").addEventListener("click", () => openModal("confirmModal", "modalCancel"));
-  document.getElementById("modalCancel").addEventListener("click", closeConfirmModal);
-  document.getElementById("modalConfirm").addEventListener("click", () => {
-    records = [];
+  // Re-render every view that depends on records[] (after undo, clear, import).
+  function refreshAfterRecordsChange() {
     saveRecords();
     displayHistory();
     displayUnplayed();
     displayStats();
     if (currentCombination) { displayCombination(currentCombination); displayComboHistory(currentCombination); }
+  }
+
+  document.getElementById("clearDataBtn").addEventListener("click", () => {
+    document.getElementById("confirmModalMsg").textContent =
+      `This deletes all ${records.length} mission record${records.length !== 1 ? "s" : ""} in your log. Export a backup first if you might want them later.`;
+    openModal("confirmModal", "modalCancel");
+  });
+  document.getElementById("modalCancel").addEventListener("click", closeConfirmModal);
+  document.getElementById("modalConfirm").addEventListener("click", () => {
+    const before = records;
+    records = [];
+    refreshAfterRecordsChange();
     closeConfirmModal();
-    toast("All records cleared.");
+    // Clear All is now disabled, so focus can't return to it.
+    document.getElementById("missionLogHeading").focus();
+    undoToast(`Cleared ${before.length} record${before.length !== 1 ? "s" : ""}.`, () => {
+      records = before; refreshAfterRecordsChange(); toast("Records restored.");
+    });
   });
 
   document.getElementById("szAbandonCancel").addEventListener("click", () => closeModal("szAbandonModal"));
@@ -1335,12 +1533,40 @@ function getCurrentElapsed() {
   document.getElementById("deleteRecordConfirm").addEventListener("click", () => {
     const idx = _pendingDeleteIdx;
     const cb  = _deleteCallback;
+    const trigger = _deleteTrigger;
+    const inLog   = !!(trigger && trigger.closest("#historyTableContainer"));
+    // Remember where in the table the row was, so focus can land on its neighbour.
+    let pos = -1;
+    if (inLog) pos = [...document.querySelectorAll("#historyTableContainer .btn-delete-record")].indexOf(trigger);
+    _deleteTrigger = null; // its row is about to disappear
     closeDeleteModal();
     if (idx == null) return;
-    records.splice(idx, 1);
+    const [removed] = records.splice(idx, 1);
     saveRecords();
     if (cb) cb();
+    const scope = inLog ? "#historyTableContainer" : "#comboHistory";
+    const btns  = [...document.querySelectorAll(`${scope} .btn-delete-record`)];
+    const next  = btns[Math.min(Math.max(pos, 0), btns.length - 1)];
+    if (next) next.focus();
+    else if (inLog) document.getElementById("missionLogHeading").focus();
+    else if (document.getElementById("comboHeading")) document.getElementById("comboHeading").focus();
+    undoToast("Record deleted.", () => {
+      records.splice(Math.min(idx, records.length), 0, removed);
+      saveRecords();
+      displayHistory(); displayUnplayed(); displayStats();
+      if (currentCombination) { displayCombination(currentCombination); displayComboHistory(currentCombination); }
+      toast("Record restored.");
+    });
   });
+
+  document.getElementById("discardGameCancel").addEventListener("click", () => { _discardAction = null; closeModal("discardGameModal"); });
+  document.getElementById("discardGameConfirm").addEventListener("click", () => {
+    const fn = _discardAction;
+    _discardAction = null;
+    closeModal("discardGameModal");
+    if (fn) fn();
+  });
+  document.getElementById("discardGameModal").addEventListener("click", e => { if (e.target === e.currentTarget) { _discardAction = null; closeModal("discardGameModal"); } });
 
   document.getElementById("editRecordCancel").addEventListener("click", closeEditModal);
   document.getElementById("editRecordSave").addEventListener("click", () => {
@@ -1371,6 +1597,10 @@ function getCurrentElapsed() {
     document.getElementById("randomizerTab")        .setAttribute("aria-selected", String(tab === "randomizer"));
     document.getElementById("historyTab")           .setAttribute("aria-selected", String(tab === "history"));
     document.getElementById("syzygyCampaignTab")    .setAttribute("aria-selected", String(tab === "syzygy"));
+    // Roving tabindex: only the selected tab is in the Tab order; arrows move between tabs.
+    document.querySelectorAll(".tab-nav [role='tab']").forEach(t => {
+      t.setAttribute("tabindex", t.getAttribute("aria-selected") === "true" ? "0" : "-1");
+    });
     if (tab === "history") {
       if (statsDirty)    displayStats();
       if (historyDirty)  displayHistory();
@@ -1398,6 +1628,7 @@ function getCurrentElapsed() {
     _diceLocked[i] = locked;
     const die = document.getElementById(`die${i}`);
     die.classList.toggle("locked", locked);
+    die.setAttribute("aria-pressed", String(locked));
     die.setAttribute("aria-label",
       `Die ${i + 1}, value ${_diceValues[i]}, ${locked ? "locked" : "unlocked"}`);
     document.getElementById("diceSwapBtn").disabled =
@@ -1432,6 +1663,7 @@ function getCurrentElapsed() {
     [0, 1].forEach(i => {
       document.getElementById(`dieAdjRow${i}`).hidden = isSkill;
       if (isSkill) document.getElementById(`die${i}`).classList.remove("locked");
+      document.getElementById(`die${i}`).setAttribute("aria-pressed", String(!isSkill && _diceLocked[i]));
     });
     if (!isSkill) _diceUpdateFlipButtons();
   }
@@ -1443,6 +1675,14 @@ function getCurrentElapsed() {
     die.dataset.val = _diceValues[i];
     die.setAttribute("aria-label",
       `Die ${i + 1}, value ${_diceValues[i]}, ${_diceLocked[i] ? "locked" : "unlocked"}`);
+    _diceSay(`Die ${i + 1}: ${_diceValues[i]}`);
+  }
+
+  function _diceSay(msg) {
+    const live = document.getElementById("diceLive");
+    if (!live) return;
+    live.textContent = "";
+    setTimeout(() => { live.textContent = msg; }, 30);
   }
 
   function _diceFlip(i) {
@@ -1452,6 +1692,7 @@ function getCurrentElapsed() {
     die.dataset.val = _diceValues[i];
     die.setAttribute("aria-label",
       `Die ${i + 1}, value ${_diceValues[i]}, ${_diceLocked[i] ? "locked" : "unlocked"}`);
+    _diceSay(`Die ${i + 1} flipped to ${_diceValues[i]}`);
   }
 
   function rollDice(forceAll) {
@@ -1464,7 +1705,8 @@ function getCurrentElapsed() {
     _diceRolling = true;
     toRoll.forEach(i => document.getElementById(`die${i}`).classList.add("rolling"));
     const finalVals = toRoll.map(() => Math.ceil(Math.random() * 6));
-    let frame = 0;
+    // Reduced motion: skip the flickering faces and show the result straight away.
+    let frame = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 13 : 0;
     _diceInterval = setInterval(() => {
       toRoll.forEach(i => { document.getElementById(`die${i}`).dataset.val = Math.ceil(Math.random() * 6); });
       if (++frame >= 14) {
@@ -1479,6 +1721,8 @@ function getCurrentElapsed() {
             `Die ${i + 1}, value ${finalVals[j]}, ${_diceLocked[i] ? "locked" : "unlocked"}`);
         });
         _diceRolling = false;
+        const vals = [0, 1].map(i => toRoll.includes(i) ? finalVals[toRoll.indexOf(i)] : _diceValues[i]);
+        _diceSay(`${isSkill ? "Skill check" : "Rolled"}: ${vals[0]} and ${vals[1]}${!isSkill && toRoll.length < 2 ? " (locked die kept)" : ""}`);
       }
     }, 60);
   }
@@ -1488,7 +1732,7 @@ function getCurrentElapsed() {
     if (_diceInterval) { clearInterval(_diceInterval); _diceInterval = null; _diceRolling = false; }
     _diceMode   = "normal";
     _diceLocked = [false, false];
-    [0, 1].forEach(i => document.getElementById(`die${i}`).classList.remove("locked"));
+    [0, 1].forEach(i => { const d = document.getElementById(`die${i}`); d.classList.remove("locked"); d.setAttribute("aria-pressed", "false"); });
     document.getElementById("diceModal").classList.remove("dice-modal-skill");
     _dicePopulateLabels();
     _diceApplyMode();
@@ -1548,9 +1792,11 @@ function getCurrentElapsed() {
     if (e.key === "Tab") {
       const box = overlay.querySelector(".modal-box, .settings-box, .faq-box, .rules-box, .dice-box");
       if (!box) return;
+      // Only elements that are actually rendered (hidden rows/buttons would otherwise
+      // become the "last" stop and let Tab escape the dialog).
       const focusable = [...box.querySelectorAll(
         'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, a[href], [tabindex]:not([tabindex="-1"])'
-      )];
+      )].filter(el => el.getClientRects().length > 0 && getComputedStyle(el).visibility !== "hidden");
       if (!focusable.length) return;
       const first = focusable[0];
       const last  = focusable[focusable.length - 1];
@@ -1747,10 +1993,12 @@ function getCurrentElapsed() {
       finalRank:  null
     };
     saveSz();
-    renderSz();
+    renderSz("szStageHeading");
+    announce("Campaign started.");
   }
 
   function szRecordOutcome(result) {
+    const before = JSON.stringify(_sz);
     const c   = _sz;
     const sc  = szCurrentScenario();
     const playing = szActivePlayers();
@@ -1779,23 +2027,59 @@ function getCurrentElapsed() {
       c.retrying   = false;
     }
     saveSz();
-    renderSz();
+    renderSz("szStageHeading");
+    const word = result === "Win" ? "Victory" : "Defeat";
+    const next = c.completed ? `Campaign complete: ${c.finalRank.rank}.` : "";
+    undoToast(`${word} recorded. ${next}`.trim(), () => {
+      _sz = JSON.parse(before);
+      saveSz();
+      renderSz("szStageHeading");
+      toast(`${word} undone.`);
+    });
   }
 
   function szAbandon() {
+    const before = JSON.stringify(_sz);
     _sz = null;
     saveSz();
     renderSz();
+    const h = document.querySelector("#syzygyCampaignContent .panel-title");
+    if (h) { h.setAttribute("tabindex", "-1"); h.focus(); }
+    undoToast("Campaign abandoned.", () => { _sz = JSON.parse(before); saveSz(); renderSz("szStageHeading"); toast("Campaign restored."); });
   }
 
   // ─── SYZYGY Render ──────────────────────────────────────────────────────────
 
-  function renderSz() {
+  // The SYZYGY screens re-render with innerHTML on every change. Remember which control
+  // had focus (by a stable key) and put focus back on its replacement afterwards, so
+  // keyboard and screen-reader users aren't thrown back to the top of the page.
+  // focusTarget: optional element id to focus instead (e.g. a heading after a stage ends).
+  function szFocusKey(el) {
+    if (!el || !el.closest || !el.closest("#syzygyCampaignContent")) return null;
+    if (el.id) return "#" + el.id;
+    for (const attr of ["data-char", "data-ai", "data-ci"]) {
+      if (el.hasAttribute(attr)) {
+        const extra = attr === "data-ai" ? `[data-t="${el.dataset.t}"][data-d="${el.dataset.d}"]`
+                    : attr === "data-ci" ? `[data-ct="${el.dataset.ct}"][data-cd="${el.dataset.cd}"]` : "";
+        return `[${attr}="${CSS.escape(el.getAttribute(attr))}"]${extra}`;
+      }
+    }
+    return null;
+  }
+
+  function renderSz(focusTarget) {
     const el = document.getElementById("syzygyCampaignContent");
     if (!el) return;
+    const key = focusTarget ? "#" + focusTarget : szFocusKey(document.activeElement);
     if (!_sz)             szRenderSetup(el);
     else if (_sz.completed) szRenderComplete(el);
     else                  szRenderActive(el);
+    if (!key) return;
+    let target = el.querySelector(key);
+    // A stepper that just hit its limit is disabled; fall back to its partner.
+    if (target && target.disabled && target.dataset.d)  target = el.querySelector(key.replace(/data-d="-?1"/, `data-d="${-target.dataset.d}"`));
+    if (target && target.disabled && target.dataset.cd) target = el.querySelector(key.replace(/data-cd="-?1"/, `data-cd="${-target.dataset.cd}"`));
+    if (target && !target.disabled) target.focus({ preventScroll: !focusTarget });
   }
 
   function szRenderSetup(el) {
@@ -1807,11 +2091,13 @@ function getCurrentElapsed() {
       <div class="syzygy-mode-cards">
         <div class="syzygy-mode-card${!hasSeries1 ? " disabled" : ""}${_szMode === "syzygy1" ? " selected" : ""}" id="szSel1" role="button" aria-pressed="${_szMode === "syzygy1"}" aria-disabled="${!hasSeries1}" tabindex="${hasSeries1 ? "0" : "-1"}">
           <div class="syzygy-mode-card-title">SYZYGY I</div>
-          <div class="syzygy-mode-card-desc">4-scenario campaign. Pay off your debt to the Grosksh.${!hasSeries1 ? "<br><em>Requires Series 1</em>" : ""}</div>
+          <div class="syzygy-mode-card-desc">Three stages: A, then B or C, then D. Pay off your debt to the Grosksh.${!hasSeries1 ? "<br><em>Requires Series 1</em>" : ""}</div>
+          ${_szMode === "syzygy1" ? `<span class="syzygy-mode-card-check" aria-hidden="true">✓ Selected</span>` : ""}
         </div>
         <div class="syzygy-mode-card${!hasSeries2 ? " disabled" : ""}${_szMode === "syzygy2" ? " selected" : ""}" id="szSel2" role="button" aria-pressed="${_szMode === "syzygy2"}" aria-disabled="${!hasSeries2}" tabindex="${hasSeries2 ? "0" : "-1"}">
           <div class="syzygy-mode-card-title">SYZYGY II</div>
-          <div class="syzygy-mode-card-desc">3-scenario campaign. Stranded across the universe — find your way home.</div>
+          <div class="syzygy-mode-card-desc">Three scenarios in a row. Stranded across the universe — find your way home.</div>
+          ${_szMode === "syzygy2" ? `<span class="syzygy-mode-card-check" aria-hidden="true">✓ Selected</span>` : ""}
         </div>
       </div>`;
 
@@ -1819,31 +2105,39 @@ function getCurrentElapsed() {
     if (_szMode) {
       const selClasses = ["", "sel-1", "sel-2", "sel-3"];
       charHTML = `
-        <p class="section-heading">Choose 3 Characters</p>
+        <h3 class="section-heading" id="szCharHeading">Choose 3 Characters</h3>
+        <p class="sz-hint">The first two you pick play the first scenario; the third sits it out.</p>
         <div class="syzygy-char-grid">
           ${allChars.map(c => {
             const si = _szChars.indexOf(c);
             const cls = si >= 0 ? " " + selClasses[si + 1] : "";
-            const num = si >= 0 ? `<span style="display:block;font-size:9px;color:var(--accent-orange);margin-top:2px;">${si + 1}</span>` : "";
+            const num = si >= 0 ? `<span style="display:block;font-size:9px;color:var(--accent-orange);margin-top:2px;"><span class="sr-only">, pick </span>${si + 1}</span>` : "";
             return `<button class="syzygy-char-btn${cls}" data-char="${esc(c)}" aria-pressed="${si >= 0}">${esc(c)}${num}</button>`;
           }).join("")}
         </div>
-        <p style="font-size:12px;color:var(--text-muted);text-align:center;margin-bottom:16px;">${_szChars.length}/3 selected</p>`;
+        <p style="font-size:12px;color:var(--text-muted);text-align:center;margin-bottom:16px;" aria-live="polite">${_szChars.length} of 3 selected</p>`;
     }
 
     const canStart = _szMode && _szChars.length === 3;
+    const startHint = !_szMode ? "Choose a mode to continue." : (_szChars.length < 3 ? `Choose ${3 - _szChars.length} more character${3 - _szChars.length !== 1 ? "s" : ""} to begin.` : "");
     el.innerHTML = `
       <div class="panel">
-        <p class="panel-title">SYZYGY Mode</p>
+        <h2 class="panel-title">SYZYGY Mode</h2>
         <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;line-height:1.6;">A multi-scenario cooperative campaign. Three characters work together across linked missions with health and resources carrying over between scenarios.</p>
         ${modeHTML}
         ${charHTML}
-        <button class="btn btn-primary" id="szStartBtn"${canStart ? "" : " disabled"} style="${canStart ? "" : "opacity:0.4;"}">Begin Campaign</button>
+        ${startHint ? `<p class="sz-hint" id="szStartHint">${startHint}</p>` : ""}
+        <button class="btn btn-primary" id="szStartBtn"${canStart ? "" : " disabled"} style="${canStart ? "" : "opacity:0.4;"}"${startHint ? ` aria-describedby="szStartHint"` : ""}>Begin Campaign</button>
       </div>`;
 
     const sel1 = document.getElementById("szSel1");
     const sel2 = document.getElementById("szSel2");
-    function pickMode(m) { _szMode = m; _szChars = []; renderSz(); }
+    function pickMode(m) {
+      const changed = _szMode !== m;
+      _szMode = m; _szChars = [];
+      renderSz();
+      if (changed) announce(`${m === "syzygy1" ? "SYZYGY I" : "SYZYGY II"} selected. Now choose 3 characters.`);
+    }
     if (sel1 && hasSeries1) { sel1.addEventListener("click", () => pickMode("syzygy1")); sel1.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); sel1.click(); } }); }
     if (sel2 && hasSeries2) { sel2.addEventListener("click", () => pickMode("syzygy2")); sel2.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); sel2.click(); } }); }
 
@@ -1853,13 +2147,14 @@ function getCurrentElapsed() {
         const idx = _szChars.indexOf(ch);
         if (idx >= 0) { _szChars.splice(idx, 1); }
         else if (_szChars.length < 3) { _szChars.push(ch); }
-        else { toast("3 characters already selected — tap one to remove it.", "error"); return; }
+        else { toast("You already have 3 characters. Tap one of them to remove it first.", "error"); return; }
         renderSz();
+        announce(idx >= 0 ? `${ch} removed. ${_szChars.length} of 3 selected.` : `${ch} added. ${_szChars.length} of 3 selected.`);
       });
     });
 
     const startBtn = document.getElementById("szStartBtn");
-    if (startBtn && canStart) startBtn.addEventListener("click", () => szStart(_szMode, [..._szChars]));
+    if (startBtn && canStart) startBtn.addEventListener("click", () => { szStart(_szMode, [..._szChars]); });
   }
 
   function szRenderActive(el) {
@@ -1878,14 +2173,17 @@ function getCurrentElapsed() {
     let html = `
       <div class="syzygy-campaign-header">
         <div>
-          <div class="syzygy-campaign-title">${modeLabel}</div>
+          <h2 class="syzygy-campaign-title">${modeLabel}</h2>
           <div class="syzygy-campaign-meta">Started ${esc(c.started)} · ${c.losses} loss${c.losses !== 1 ? "es" : ""}</div>
         </div>
-        <button class="btn btn-danger" id="szAbandonBtn" style="min-height:36px;padding:8px 14px;font-size:9px;">Abandon</button>
+        <button class="btn btn-danger" id="szAbandonBtn" style="min-height:36px;padding:8px 14px;font-size:9px;">Abandon Campaign</button>
       </div>`;
 
     // Path
-    html += `<div class="panel"><p class="panel-title">Campaign Path</p><div class="syzygy-path">`;
+    // Stage state is shown by colour, a ✓/✗ mark, and screen-reader text.
+    const SZ_STATE = { current: ["", "current stage"], win: ["✓", "won"], loss: ["✗", "lost"], "": ["", "not played yet"] };
+    const szMark = st => SZ_STATE[st][0] ? `<span class="syzygy-path-mark" aria-hidden="true">${SZ_STATE[st][0]}</span>` : "";
+    html += `<div class="panel"><h3 class="panel-title">Campaign Path</h3><ol class="syzygy-path" style="list-style:none;">`;
     if (c.mode === "syzygy1") {
       const stageDefs = [
         { key: 0, label: "A",   sc: c.scenarios[0] },
@@ -1895,30 +2193,30 @@ function getCurrentElapsed() {
       stageDefs.forEach((s, i) => {
         const res        = c.stageResults.filter(r => r.stage === s.key).slice(-1)[0];
         const stateClass = !res ? (c.stage === s.key ? "current" : "") : (res.result === "Win" ? "win" : "loss");
-        const arrow      = i < stageDefs.length - 1 ? `<div class="syzygy-path-arrow">→</div>` : "";
-        html += `<div class="syzygy-path-node"><div class="syzygy-path-stage ${stateClass}">${esc(s.label)}</div><div class="syzygy-path-label">${esc(s.sc.replace(/!$/,""))}</div></div>${arrow}`;
+        const arrow      = i < stageDefs.length - 1 ? `<li class="syzygy-path-arrow" aria-hidden="true">→</li>` : "";
+        html += `<li class="syzygy-path-node"><div class="syzygy-path-stage ${stateClass}"><span class="sr-only">Stage </span>${esc(s.label)}</div><div class="syzygy-path-label">${szMark(stateClass)}${esc(s.sc.replace(/!$/,""))}<span class="sr-only">: ${SZ_STATE[stateClass][1]}</span></div></li>${arrow}`;
       });
     } else {
       c.scenarios.forEach((scenName, i) => {
         const res        = c.stageResults.filter(r => r.stage === i).slice(-1)[0];
         const stateClass = !res ? (c.stage === i ? "current" : "") : (res.result === "Win" ? "win" : "loss");
-        const arrow      = i < c.scenarios.length - 1 ? `<div class="syzygy-path-arrow">→</div>` : "";
-        html += `<div class="syzygy-path-node"><div class="syzygy-path-stage ${stateClass}">${i+1}</div><div class="syzygy-path-label">${esc(scenName.replace(/!$/,""))}</div></div>${arrow}`;
+        const arrow      = i < c.scenarios.length - 1 ? `<li class="syzygy-path-arrow" aria-hidden="true">→</li>` : "";
+        html += `<li class="syzygy-path-node"><div class="syzygy-path-stage ${stateClass}"><span class="sr-only">Scenario </span>${i+1}</div><div class="syzygy-path-label">${szMark(stateClass)}${esc(scenName.replace(/!$/,""))}<span class="sr-only">: ${SZ_STATE[stateClass][1]}</span></div></li>${arrow}`;
       });
     }
-    html += `</div></div>`;
+    html += `</ol></div>`;
 
     // Roster
-    html += `<div class="panel"><p class="panel-title">Roster</p><div class="syzygy-roster">`;
+    html += `<div class="panel"><h3 class="panel-title">Roster</h3><div class="syzygy-roster">`;
     c.characters.forEach((name, i) => {
       const isPlaying = playing.includes(i);
       const isBenched = benched === i;
       const isRemoved = c.removed[i];
       const cardClass  = isRemoved ? "removed" : (isPlaying ? "playing" : "benched");
       const roleClass  = isRemoved ? "role-removed" : (isPlaying ? "role-playing" : "role-benched");
-      const roleText   = isRemoved ? "Eliminated" : (isPlaying ? "Playing" : "Benched · heals");
+      const roleText   = isRemoved ? "Eliminated" : (isPlaying ? "Playing" : "Sitting out · heals");
       const co = c.carryover[i];
-      const coText = (co.energy > 0 || co.health > 0) ? `❤️ ${co.health} ⚡ ${co.energy} carry` : "";
+      const coText = (co.energy > 0 || co.health > 0) ? `Carrying ${co.health} health, ${co.energy} energy` : "";
       html += `<div class="syzygy-char-card ${cardClass}"><div class="syzygy-char-name">${esc(name)}</div><div class="syzygy-char-role ${roleClass}">${esc(roleText)}</div>${coText ? `<div class="syzygy-char-carryover">${esc(coText)}</div>` : ""}</div>`;
     });
     html += `</div></div>`;
@@ -1927,23 +2225,23 @@ function getCurrentElapsed() {
     if (c.mode === "syzygy1" && c.stage === 1 && c.branchChosen === null) {
       html += `
         <div class="panel">
-          <p class="panel-title">Choose Your Path</p>
-          <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">Pick one scenario for Stage B/C. You play only the one you choose.</p>
+          <h3 class="panel-title syzygy-heading-focus" id="szStageHeading" tabindex="-1">Choose Your Path</h3>
+          <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">Stage A won. Pick the scenario to play next: B or C. You play only the one you choose.</p>
           <div class="syzygy-branch-cards">
-            <div class="syzygy-branch-card" id="szBranchL">
-              <div class="syzygy-branch-tag">Option B</div>
-              <div class="syzygy-branch-name">${scenarioHTML(c.scenarios[1])}</div>
-            </div>
-            <div class="syzygy-branch-card" id="szBranchR">
-              <div class="syzygy-branch-tag">Option C</div>
-              <div class="syzygy-branch-name">${scenarioHTML(c.scenarios[2])}</div>
-            </div>
+            <button type="button" class="syzygy-branch-card" id="szBranchL">
+              <span class="syzygy-branch-tag" style="display:block;">Option B</span>
+              <span class="syzygy-branch-name" style="display:block;">${scenarioHTML(c.scenarios[1])}</span>
+            </button>
+            <button type="button" class="syzygy-branch-card" id="szBranchR">
+              <span class="syzygy-branch-tag" style="display:block;">Option C</span>
+              <span class="syzygy-branch-name" style="display:block;">${scenarioHTML(c.scenarios[2])}</span>
+            </button>
           </div>
         </div>`;
     } else if (sc) {
       // Stage label
       const stageLabel = c.mode === "syzygy1"
-        ? ["Stage A — First Mission", "Stage B/C — Branch", "Stage D — Final"][c.stage] || "Stage"
+        ? ["Stage A — First Mission", `Stage ${c.branchChosen === 1 ? "C" : "B"} — Second Mission`, "Stage D — Final Mission"][c.stage] || "Stage"
         : `Scenario ${c.stage + 1} of 3`;
 
       const playingNames  = playing.map(i => c.characters[i]);
@@ -1952,10 +2250,12 @@ function getCurrentElapsed() {
       // Scenario card
       html += `
         <div class="syzygy-scenario-card">
-          <div class="syzygy-stage-label">${esc(stageLabel)}</div>
-          <div class="syzygy-stage-scenario">${scenarioHTML(sc)}</div>
-          <div style="font-size:12px;color:var(--text-muted);">Playing: <strong>${playingNames.map(esc).join(" &amp; ")}</strong>${benchedName ? ` · Benched: ${esc(benchedName)} (heals)` : ""}</div>
-          ${c.retrying ? `<div class="notice" style="margin-top:10px;color:var(--loss-color);border-color:rgba(255,68,85,0.3);">Retry — only 3 resource points this attempt</div>` : ""}
+          <h3 class="syzygy-heading-focus" id="szStageHeading" tabindex="-1" style="font:inherit;">
+            <span class="syzygy-stage-label" style="display:block;">${esc(stageLabel)}</span>
+            <span class="syzygy-stage-scenario" style="display:block;">${scenarioHTML(sc)}</span>
+          </h3>
+          <div style="font-size:12px;color:var(--text-muted);">Playing: <strong>${playingNames.map(esc).join(" &amp; ")}</strong>${benchedName ? ` · Sitting out: ${esc(benchedName)} (heals)` : ""}</div>
+          ${c.retrying ? `<div class="notice" style="margin-top:10px;color:var(--loss-color);border-color:rgba(255,68,85,0.3);">Retry after a defeat: only 3 resource points this attempt.</div>` : ""}
         </div>`;
 
       // Pre-scenario resources
@@ -1967,20 +2267,20 @@ function getCurrentElapsed() {
           <div class="syzygy-resource-row">
             <div class="syzygy-resource-char">
               <div style="font-weight:600;">${esc(name)}</div>
-              ${co.energy > 0 || co.health > 0 ? `<div style="font-size:11px;color:var(--text-dim);">Carryover: ❤️ ${co.health} ⚡ ${co.energy}</div>` : ""}
+              ${co.energy > 0 || co.health > 0 ? `<div style="font-size:11px;color:var(--text-dim);">Carryover: <span aria-hidden="true">❤️</span><span class="sr-only">health</span> ${co.health} <span aria-hidden="true">⚡</span><span class="sr-only">energy</span> ${co.energy}</div>` : ""}
             </div>
             <div class="syzygy-resource-controls">
-              <span class="syzygy-resource-label">❤️</span>
-              <div class="syzygy-stepper">
-                <button class="btn-sz-step" data-ai="${i}" data-t="health" data-d="-1"${a.health <= 0 ? " disabled" : ""}>−</button>
-                <span class="sz-step-val">${a.health}</span>
-                <button class="btn-sz-step" data-ai="${i}" data-t="health" data-d="1"${remaining <= 0 ? " disabled" : ""}>+</button>
+              <span class="syzygy-resource-label" aria-hidden="true">❤️</span>
+              <div class="syzygy-stepper" role="group" aria-label="${esc(name)} health">
+                <button class="btn-sz-step" data-ai="${i}" data-t="health" data-d="-1" aria-label="Remove 1 health from ${esc(name)}"${a.health <= 0 ? " disabled" : ""}>−</button>
+                <span class="sz-step-val"><span class="sr-only">Health </span>${a.health}</span>
+                <button class="btn-sz-step" data-ai="${i}" data-t="health" data-d="1" aria-label="Add 1 health to ${esc(name)}"${remaining <= 0 ? " disabled" : ""}>+</button>
               </div>
-              <span class="syzygy-resource-label">⚡</span>
-              <div class="syzygy-stepper">
-                <button class="btn-sz-step" data-ai="${i}" data-t="energy" data-d="-1"${a.energy <= 0 ? " disabled" : ""}>−</button>
-                <span class="sz-step-val">${a.energy}</span>
-                <button class="btn-sz-step" data-ai="${i}" data-t="energy" data-d="1"${remaining <= 0 ? " disabled" : ""}>+</button>
+              <span class="syzygy-resource-label" aria-hidden="true">⚡</span>
+              <div class="syzygy-stepper" role="group" aria-label="${esc(name)} energy">
+                <button class="btn-sz-step" data-ai="${i}" data-t="energy" data-d="-1" aria-label="Remove 1 energy from ${esc(name)}"${a.energy <= 0 ? " disabled" : ""}>−</button>
+                <span class="sz-step-val"><span class="sr-only">Energy </span>${a.energy}</span>
+                <button class="btn-sz-step" data-ai="${i}" data-t="energy" data-d="1" aria-label="Add 1 energy to ${esc(name)}"${remaining <= 0 ? " disabled" : ""}>+</button>
               </div>
             </div>
           </div>`;
@@ -1988,10 +2288,10 @@ function getCurrentElapsed() {
 
       html += `
         <div class="panel">
-          <p class="panel-title">Pre-Scenario Resources</p>
-          <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">Distribute <strong>${pool}</strong> points as ❤️ Health or ⚡ Energy. Cannot exceed the max ⚡ shown on the scenario card.</p>
+          <h3 class="panel-title">Before the Scenario: Resources</h3>
+          <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">Share <strong>${pool}</strong> bonus points between the playing characters as <span aria-hidden="true">❤️</span> Health or <span aria-hidden="true">⚡</span> Energy. Energy can't go above the maximum shown on the scenario card.</p>
           ${resRows}
-          <div class="syzygy-pool-bar">${remaining} point${remaining !== 1 ? "s" : ""} remaining</div>
+          <div class="syzygy-pool-bar">${remaining} point${remaining !== 1 ? "s" : ""} left to share</div>
         </div>`;
 
       // Carryover tracking
@@ -2001,29 +2301,29 @@ function getCurrentElapsed() {
         return `
           <div class="syzygy-carryover-row">
             <span class="syzygy-carryover-name">${esc(name)}</span>
-            <span>❤️</span>
-            <div class="syzygy-stepper" style="gap:3px;">
-              <button class="btn-sz-step" data-ci="${ci}" data-ct="health" data-cd="-1" style="width:24px;height:24px;font-size:13px;"${co.health <= 0 ? " disabled" : ""}>−</button>
-              <span class="sz-step-val" style="font-size:13px;min-width:18px;">${co.health}</span>
-              <button class="btn-sz-step" data-ci="${ci}" data-ct="health" data-cd="1" style="width:24px;height:24px;font-size:13px;">+</button>
+            <span aria-hidden="true">❤️</span>
+            <div class="syzygy-stepper" style="gap:3px;" role="group" aria-label="${esc(name)} health left over">
+              <button class="btn-sz-step" data-ci="${ci}" data-ct="health" data-cd="-1" style="width:24px;height:24px;font-size:13px;" aria-label="Remove 1 left-over health from ${esc(name)}"${co.health <= 0 ? " disabled" : ""}>−</button>
+              <span class="sz-step-val" style="font-size:13px;min-width:18px;"><span class="sr-only">Health </span>${co.health}</span>
+              <button class="btn-sz-step" data-ci="${ci}" data-ct="health" data-cd="1" style="width:24px;height:24px;font-size:13px;" aria-label="Add 1 left-over health to ${esc(name)}">+</button>
             </div>
-            <span>⚡</span>
-            <div class="syzygy-stepper" style="gap:3px;">
-              <button class="btn-sz-step" data-ci="${ci}" data-ct="energy" data-cd="-1" style="width:24px;height:24px;font-size:13px;"${co.energy <= 0 ? " disabled" : ""}>−</button>
-              <span class="sz-step-val" style="font-size:13px;min-width:18px;">${co.energy}</span>
-              <button class="btn-sz-step" data-ci="${ci}" data-ct="energy" data-cd="1" style="width:24px;height:24px;font-size:13px;">+</button>
+            <span aria-hidden="true">⚡</span>
+            <div class="syzygy-stepper" style="gap:3px;" role="group" aria-label="${esc(name)} energy left over">
+              <button class="btn-sz-step" data-ci="${ci}" data-ct="energy" data-cd="-1" style="width:24px;height:24px;font-size:13px;" aria-label="Remove 1 left-over energy from ${esc(name)}"${co.energy <= 0 ? " disabled" : ""}>−</button>
+              <span class="sz-step-val" style="font-size:13px;min-width:18px;"><span class="sr-only">Energy </span>${co.energy}</span>
+              <button class="btn-sz-step" data-ci="${ci}" data-ct="energy" data-cd="1" style="width:24px;height:24px;font-size:13px;" aria-label="Add 1 left-over energy to ${esc(name)}">+</button>
             </div>
           </div>`;
       }).join("");
 
       html += `
         <div class="panel">
-          <p class="panel-title">Outcome</p>
-          <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">After the scenario, note any unused ❤️ and ⚡ — both carry over to the next stage.</p>
+          <h3 class="panel-title">After the Scenario: Outcome</h3>
+          <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">When the scenario ends, enter each character's left-over <span aria-hidden="true">❤️</span> health and <span aria-hidden="true">⚡</span> energy (they carry over), then record the result.</p>
           ${coRows}
           <div class="syzygy-outcome-btns">
-            <button class="btn-sz-win"  id="szWinBtn">✓ Victory</button>
-            <button class="btn-sz-loss" id="szLossBtn">✗ Defeat</button>
+            <button class="btn-sz-win"  id="szWinBtn"><span aria-hidden="true">✓</span> Victory</button>
+            <button class="btn-sz-loss" id="szLossBtn"><span aria-hidden="true">✗</span> Defeat</button>
           </div>
         </div>`;
     }
@@ -2037,8 +2337,8 @@ function getCurrentElapsed() {
 
     const branchL = document.getElementById("szBranchL");
     const branchR = document.getElementById("szBranchR");
-    if (branchL) branchL.addEventListener("click", () => { c.branchChosen = 0; saveSz(); renderSz(); });
-    if (branchR) branchR.addEventListener("click", () => { c.branchChosen = 1; saveSz(); renderSz(); });
+    if (branchL) branchL.addEventListener("click", () => { c.branchChosen = 0; saveSz(); renderSz("szStageHeading"); });
+    if (branchR) branchR.addEventListener("click", () => { c.branchChosen = 1; saveSz(); renderSz("szStageHeading"); });
 
     // Allocation steppers (data-ai, data-t, data-d)
     el.querySelectorAll("[data-ai]").forEach(btn => {
@@ -2051,6 +2351,8 @@ function getCurrentElapsed() {
         if (dir < 0 && c.alloc.chars[ai][t] <= 0) return;
         c.alloc.chars[ai][t] += dir;
         saveSz(); renderSz();
+        const left = pool - c.alloc.chars.reduce((s, a) => s + a.energy + a.health, 0);
+        announce(`${c.characters[playing[ai]]} ${t} ${c.alloc.chars[ai][t]}. ${left} point${left !== 1 ? "s" : ""} left.`);
       });
     });
 
@@ -2063,6 +2365,7 @@ function getCurrentElapsed() {
         if (dir < 0 && c.carryover[ci][t] <= 0) return;
         c.carryover[ci][t] = Math.max(0, c.carryover[ci][t] + dir);
         saveSz(); renderSz();
+        announce(`${c.characters[ci]} left-over ${t} ${c.carryover[ci][t]}.`);
       });
     });
 
@@ -2090,22 +2393,22 @@ function getCurrentElapsed() {
 
     el.innerHTML = `
       <div class="panel">
-        <p class="panel-title">${modeLabel} — Complete</p>
+        <h2 class="panel-title syzygy-heading-focus" id="szStageHeading" tabindex="-1">${modeLabel} — Complete</h2>
         <div class="syzygy-rank-card">
           <div class="syzygy-rank-eyebrow">Final Rank</div>
           <div class="syzygy-rank-value" style="color:${rankColor};">${esc(rank.rank)}</div>
           <div class="syzygy-rank-desc">${esc(rank.desc)}</div>
           <div class="syzygy-rank-stats">
-            <div><div class="syzygy-rank-stat-val">${wins}</div><div class="syzygy-rank-stat-label">Wins</div></div>
-            <div><div class="syzygy-rank-stat-val">${c.losses}</div><div class="syzygy-rank-stat-label">Losses</div></div>
+            <div><div class="syzygy-rank-stat-val">${wins}</div><div class="syzygy-rank-stat-label">${wins === 1 ? "Win" : "Wins"}</div></div>
+            <div><div class="syzygy-rank-stat-val">${c.losses}</div><div class="syzygy-rank-stat-label">${c.losses === 1 ? "Loss" : "Losses"}</div></div>
             <div><div class="syzygy-rank-stat-val">${c.stageResults.length}</div><div class="syzygy-rank-stat-label">Scenarios</div></div>
           </div>
         </div>
-        <p class="panel-title" style="margin-bottom:10px;">Characters</p>
+        <h3 class="panel-title" style="margin-bottom:10px;">Characters</h3>
         <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">${esc(c.characters.join(" · "))}</p>
         ${histRows ? `
-        <p class="section-heading">Campaign Log</p>
-        <div class="history-table-wrap">
+        <h3 class="section-heading" id="szLogHeading">Campaign Log</h3>
+        <div class="history-table-wrap" tabindex="0" role="region" aria-labelledby="szLogHeading">
           <table>
             <thead><tr><th>Scenario</th><th>Characters</th><th>Result</th></tr></thead>
             <tbody>${histRows}</tbody>
@@ -2117,6 +2420,8 @@ function getCurrentElapsed() {
     document.getElementById("szNewCampaignBtn").addEventListener("click", () => {
       _sz = null; _szMode = null; _szChars = [];
       saveSz(); renderSz();
+      const h = document.querySelector("#syzygyCampaignContent .panel-title");
+      if (h) { h.setAttribute("tabindex", "-1"); h.focus(); }
     });
   }
 
@@ -2138,17 +2443,20 @@ function getCurrentElapsed() {
     const idx  = tabs.indexOf(document.activeElement);
     if (idx === -1) return;
     const TAB_NAMES = { randomizerTab: "randomizer", historyTab: "history", syzygyCampaignTab: "syzygy" };
-    if (e.key === "ArrowRight") {
-      e.preventDefault();
-      const next = tabs[(idx + 1) % tabs.length];
-      showTab(TAB_NAMES[next.id] || next.id);
-      next.focus();
-    } else if (e.key === "ArrowLeft") {
-      e.preventDefault();
-      const prev = tabs[(idx - 1 + tabs.length) % tabs.length];
-      showTab(TAB_NAMES[prev.id] || prev.id);
-      prev.focus();
-    }
+    const target =
+      e.key === "ArrowRight" ? tabs[(idx + 1) % tabs.length] :
+      e.key === "ArrowLeft"  ? tabs[(idx - 1 + tabs.length) % tabs.length] :
+      e.key === "Home"       ? tabs[0] :
+      e.key === "End"        ? tabs[tabs.length - 1] : null;
+    if (!target) return;
+    e.preventDefault();
+    showTab(TAB_NAMES[target.id] || target.id);
+    target.focus();
+  });
+  document.getElementById("viewLogBtn").addEventListener("click", () => {
+    showTab("history");
+    document.getElementById("missionLogHeading").focus();
+    document.getElementById("missionLogHeading").scrollIntoView({ block: "start" });
   });
   document.getElementById("historySortBy").addEventListener("change", () => { historyDirty = true; displayHistory(); });
   document.getElementById("historyFilterResult").addEventListener("change", () => { historyDirty = true; displayHistory(); });
@@ -2178,13 +2486,20 @@ function getCurrentElapsed() {
   document.getElementById("diceSwapBtn")       .addEventListener("click", () => {
     if (_diceRolling || _diceLocked[0] || _diceLocked[1]) return;
     [_diceValues[0], _diceValues[1]] = [_diceValues[1], _diceValues[0]];
-    [0, 1].forEach(i => { document.getElementById(`die${i}`).dataset.val = _diceValues[i]; });
+    [0, 1].forEach(i => {
+      const die = document.getElementById(`die${i}`);
+      die.dataset.val = _diceValues[i];
+      die.setAttribute("aria-label", `Die ${i + 1}, value ${_diceValues[i]}, ${_diceLocked[i] ? "locked" : "unlocked"}`);
+    });
+    _diceSay(`Swapped: ${_diceValues[0]} and ${_diceValues[1]}`);
   });
   document.getElementById("skillCheckBtn")     .addEventListener("click", () => {
     _savedDiceState = { values: [..._diceValues], locked: [..._diceLocked] };
     _diceMode = "skill";
     _diceApplyMode();
     rollDice(false);
+    // The Skill Check button is now hidden; keep focus in the dialog.
+    document.getElementById("skillDoneBtn").focus();
   });
   document.getElementById("skillDoneBtn")      .addEventListener("click", () => {
     _diceMode = "normal";
@@ -2196,6 +2511,7 @@ function getCurrentElapsed() {
         const die = document.getElementById(`die${i}`);
         die.dataset.val = _diceValues[i];
         die.classList.toggle("locked", _diceLocked[i]);
+        die.setAttribute("aria-pressed", String(_diceLocked[i]));
         die.setAttribute("aria-label",
           `Die ${i + 1}, value ${_diceValues[i]}, ${_diceLocked[i] ? "locked" : "unlocked"}`);
       });

@@ -1930,6 +1930,44 @@
       flex-wrap: wrap;
     }
     .syzygy-carryover-name { min-width: 90px; font-weight: 600; color: var(--text-primary); }
+    /* ─── Interaction & accessibility additions (ux/interaction) ─────────────
+       New elements/states only; base component styling lives above. */
+    .die-adj[hidden], .die-adj-row[hidden] { display: none; }
+    /* .tab-nav clips overflow, so draw the tab focus ring inside the button. */
+    .tab-btn:focus-visible { outline-offset: -4px; }
+    .tab-btn.active:focus-visible { outline-color: var(--on-orange); }
+    h2.panel-title, h3.section-heading { font-weight: 700; }
+    [tabindex="-1"]:focus:not(:focus-visible) { outline: none; }
+    .all-locked-hint { font-size: 12px; color: var(--text-muted); margin-top: 10px; text-align: center; }
+    .label-optional { font-weight: 400; text-transform: none; letter-spacing: 0; }
+    .notes-input {
+      width: 100%; background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px;
+      color: var(--text-primary); padding: 8px 10px; font-size: 14px; font-family: inherit; resize: vertical;
+    }
+    .save-status { margin-top: 12px; text-align: center; }
+    .save-status p { font-size: 13px; color: var(--accent-teal); margin-bottom: 10px; }
+    .save-status .btn { width: 100%; }
+    .edit-record-summary { font-size: 13px !important; margin-bottom: 16px !important; }
+    .history-count { font-size: 12px; color: var(--text-muted); margin: 0 0 8px; min-height: 1em; }
+    .history-count:empty { display: none; }
+    .btn-clear-filters {
+      margin-top: 12px; background: transparent; border: 1px solid var(--border-glow); color: var(--accent-teal);
+      border-radius: 6px; padding: 10px 16px; font: inherit; font-size: 13px; cursor: pointer; min-height: 44px;
+    }
+    .rules-status { font-size: 13px; color: var(--text-muted); padding: 8px 0; }
+    .rules-status:empty { display: none; }
+    .diff-mark { font-weight: 700; }
+    .syzygy-path-mark { font-weight: 700; margin-right: 2px; }
+    .syzygy-mode-card-check { display: block; font-size: 11px; font-weight: 700; color: var(--accent-orange); margin-top: 6px; }
+    .syzygy-branch-card { font: inherit; color: inherit; width: 100%; }
+    .sz-hint { font-size: 12px; color: var(--text-muted); text-align: center; margin: 0 0 12px; }
+    .syzygy-heading-focus:focus { outline: none; }
+    .toast.has-action { pointer-events: auto; display: flex; align-items: center; gap: 12px; justify-content: center; }
+    .toast-action {
+      background: transparent; border: 1px solid currentColor; color: inherit; border-radius: 4px;
+      font: inherit; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 6px 12px;
+      min-height: 32px; cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -1937,9 +1975,9 @@
 <div id="ariaLive" role="status" aria-live="polite" aria-atomic="true" class="sr-only"></div>
 
 <div class="modal-overlay" id="restartModal">
-  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="restartModalTitle">
-    <h2 id="restartModalTitle">Restart Timer</h2>
-    <p>Are you sure? The current elapsed time will be lost.</p>
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="restartModalTitle" aria-describedby="restartModalMsg">
+    <h2 id="restartModalTitle">Restart Timer?</h2>
+    <p id="restartModalMsg">The timer goes back to 00:00 and the time played so far is lost.</p>
     <div class="modal-actions">
       <button class="btn btn-secondary" id="restartCancel">Cancel</button>
       <button class="btn btn-danger"    id="restartConfirm">Restart</button>
@@ -1948,9 +1986,9 @@
 </div>
 
 <div class="modal-overlay" id="confirmModal">
-  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle">
-    <h2 id="confirmModalTitle">Warning</h2>
-    <p>Clear ALL mission records? This cannot be undone.</p>
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle" aria-describedby="confirmModalMsg">
+    <h2 id="confirmModalTitle">Clear All Records?</h2>
+    <p id="confirmModalMsg">This deletes every mission in your log. Export a backup first if you might want them later.</p>
     <div class="modal-actions">
       <button class="btn btn-secondary" id="modalCancel">Cancel</button>
       <button class="btn btn-danger"    id="modalConfirm">Clear All</button>
@@ -1959,21 +1997,21 @@
 </div>
 
 <div class="modal-overlay" id="importConfirmModal">
-  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="importConfirmModalTitle">
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="importConfirmModalTitle" aria-describedby="importConfirmMsg">
     <h2 id="importConfirmModalTitle">Import Records</h2>
     <p id="importConfirmMsg"></p>
     <div class="modal-actions" style="flex-wrap:wrap;">
       <button class="btn btn-secondary" id="importCancel"  style="flex-basis:100%;">Cancel</button>
       <button class="btn btn-secondary" id="importMerge">Merge</button>
-      <button class="btn btn-danger"    id="importReplace">Replace</button>
+      <button class="btn btn-danger"    id="importReplace">Replace All</button>
     </div>
   </div>
 </div>
 
 <div class="modal-overlay" id="szAbandonModal">
-  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="szAbandonModalTitle">
-    <h2 id="szAbandonModalTitle">Abandon Campaign</h2>
-    <p>Abandon this SYZYGY campaign? All progress will be lost.</p>
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="szAbandonModalTitle" aria-describedby="szAbandonModalMsg">
+    <h2 id="szAbandonModalTitle">Abandon Campaign?</h2>
+    <p id="szAbandonModalMsg">This SYZYGY campaign and its progress will be removed.</p>
     <div class="modal-actions">
       <button class="btn btn-secondary" id="szAbandonCancel">Cancel</button>
       <button class="btn btn-danger"    id="szAbandonConfirm">Abandon</button>
@@ -1982,9 +2020,9 @@
 </div>
 
 <div class="modal-overlay" id="deleteRecordModal">
-  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="deleteRecordModalTitle">
-    <h2 id="deleteRecordModalTitle">Delete Record</h2>
-    <p>Delete this mission record? This cannot be undone.</p>
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="deleteRecordModalTitle" aria-describedby="deleteRecordMsg">
+    <h2 id="deleteRecordModalTitle">Delete Record?</h2>
+    <p id="deleteRecordMsg">Delete this mission record?</p>
     <div class="modal-actions">
       <button class="btn btn-secondary" id="deleteRecordCancel">Cancel</button>
       <button class="btn btn-danger"    id="deleteRecordConfirm">Delete</button>
@@ -1992,9 +2030,21 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="discardGameModal">
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="discardGameTitle" aria-describedby="discardGameMsg">
+    <h2 id="discardGameTitle">Start a New Mission?</h2>
+    <p id="discardGameMsg">Your current game hasn't been saved yet.</p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="discardGameCancel">Keep Playing</button>
+      <button class="btn btn-danger"    id="discardGameConfirm">Discard Game</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="editRecordModal">
-  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="editRecordModalTitle">
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="editRecordModalTitle" aria-describedby="editRecordSummary">
     <h2 id="editRecordModalTitle">Edit Record</h2>
+    <p class="edit-record-summary" id="editRecordSummary"></p>
     <div class="form-row">
       <label for="editResult">Result</label>
       <select id="editResult">
@@ -2016,7 +2066,7 @@
     </div>
     <div class="modal-actions">
       <button class="btn btn-secondary" id="editRecordCancel">Cancel</button>
-      <button class="btn btn-primary"   id="editRecordSave">Save</button>
+      <button class="btn btn-primary"   id="editRecordSave">Save Changes</button>
     </div>
   </div>
 </div>
@@ -2030,6 +2080,7 @@
     </div>
     <div class="rules-tabs" id="rulesTabs"></div>
     <div class="rules-img-wrap">
+      <p class="rules-status" id="rulesStatus" role="status"></p>
       <img id="rulesImage" alt="Rulebook" src="">
     </div>
   </div>
@@ -2037,11 +2088,11 @@
 
 <!-- SETTINGS MODAL -->
 <div class="modal-overlay" id="settingsModal">
-  <div class="settings-box" role="dialog" aria-modal="true" aria-labelledby="settingsModalTitle">
-    <h2 id="settingsModalTitle">Content Packs</h2>
-    <p>Select which expansions you own to include their characters and scenarios in the randomizer.</p>
+  <div class="settings-box" role="dialog" aria-modal="true" aria-labelledby="settingsModalTitle" aria-describedby="settingsModalDesc">
+    <h2 id="settingsModalTitle">My Collection</h2>
+    <p id="settingsModalDesc">Tick the Twin Stars products you own. Only their characters, scenarios and droids are used.</p>
     <div id="packList"></div>
-    <p class="settings-warning" id="settingsWarning"></p>
+    <p class="settings-warning" id="settingsWarning" role="alert"></p>
     <div class="modal-actions" style="margin-top:20px;">
       <button class="btn btn-primary" id="settingsClose">Done</button>
     </div>
@@ -2052,9 +2103,9 @@
 <div class="modal-overlay" id="faqModal">
   <div class="faq-box" role="dialog" aria-modal="true" aria-labelledby="faqModalTitle">
     <h2 id="faqModalTitle">Rules FAQ</h2>
-    <div class="faq-content">
+    <div class="faq-content" tabindex="-1">
 
-      <p class="faq-section-header">General</p>
+      <h3 class="faq-section-header">General</h3>
 
       <details class="faq-item">
         <summary>If you win by performing an action that requires a skill check, do you win immediately or perform the check first?</summary>
@@ -2097,9 +2148,9 @@
         <p>No. The universal special is to re-roll a die by spending energy, and many others require energy too. But if a special does not have an energy cost, it activates in some other way instead.</p>
       </details>
 
-      <p class="faq-section-header">Characters</p>
+      <h3 class="faq-section-header">Characters</h3>
 
-      <p class="faq-char-header" id="faq-char-bood">Bood</p>
+      <h4 class="faq-char-header" id="faq-char-bood">Bood</h4>
       <details class="faq-item">
         <summary>Can Bood's special action be used to re-roll skill check dice, or only character dice?</summary>
         <p>No; only energy can be used to re-roll skill check dice.</p>
@@ -2109,19 +2160,19 @@
         <p>Whenever both dice are rolled, they're always rolled together; Bood is no different.</p>
       </details>
 
-      <p class="faq-char-header" id="faq-char-brenimov-x">Brenimov-X</p>
+      <h4 class="faq-char-header" id="faq-char-brenimov-x">Brenimov-X</h4>
       <details class="faq-item">
         <summary>How do you get the star on Brenimov-X's 2-spot?</summary>
         <p>If you roll a two, you need to re-roll the die. However, effects do not activate upon die reduction — so if you reduce the die to two, it stays there.</p>
       </details>
 
-      <p class="faq-char-header" id="faq-char-fanoobia">Fanoobia</p>
+      <h4 class="faq-char-header" id="faq-char-fanoobia">Fanoobia</h4>
       <details class="faq-item">
         <summary>When reducing to Fanoobia's one-spot, can you choose which character to heal?</summary>
         <p>No; Fanoobia can only heal herself.</p>
       </details>
 
-      <p class="faq-char-header" id="faq-char-grant">Grant Rockgardner</p>
+      <h4 class="faq-char-header" id="faq-char-grant">Grant Rockgardner</h4>
       <details class="faq-item">
         <summary>Does Grant's special ability work for any die roll, or does he roll a special die after activating it?</summary>
         <p>Grant can spend energy to call the number of a die rolled during regular gameplay — it's an excellent insurance policy against a roll that, if it fails, will sink you.</p>
@@ -2131,7 +2182,7 @@
         <p>No; when rolling two dice, they are always rolled together, and Grant's ability can only be activated when rolling "a die."</p>
       </details>
 
-      <p class="faq-char-header" id="faq-char-inpon-gol">Inpon Gol</p>
+      <h4 class="faq-char-header" id="faq-char-inpon-gol">Inpon Gol</h4>
       <details class="faq-item">
         <summary>Does Inpon Gol's token move every time the die is removed from his 3-spot?</summary>
         <p>No; any time the die is on the 3-spot and is then re-rolled or reduced, the token moves to the other side of the spot.</p>
@@ -2141,7 +2192,7 @@
         <p>If the broken heart is uncovered and the die is placed on Inpon's 3-spot, he immediately loses health.</p>
       </details>
 
-      <p class="faq-char-header" id="faq-char-inzill-mey">Inzill Mey</p>
+      <h4 class="faq-char-header" id="faq-char-inzill-mey">Inzill Mey</h4>
       <details class="faq-item">
         <summary>When using Inzill Mey's instant action to place the other die on any number and re-roll this die, which die goes where?</summary>
         <p>You can place Inzill's partner's die on any spot on Inzill's partner. Then pick up Inzill's die and re-roll it on her card.</p>
@@ -2151,7 +2202,7 @@
         <p>Inzill Mey adopts the other character's instant action and uses it as if it were her own.</p>
       </details>
 
-      <p class="faq-char-header" id="faq-char-kinglan">Kinglan</p>
+      <h4 class="faq-char-header" id="faq-char-kinglan">Kinglan</h4>
       <details class="faq-item">
         <summary>After placing a coin heads-up on Kinglan's card, is the coin removed after it's used in place of a flip?</summary>
         <p>Yes; it's a one-time effect. The next time a coin flip is needed, it must be flipped randomly as usual.</p>
@@ -2161,25 +2212,25 @@
         <p>The effect is redundant and ignored. You only need one coin for the game.</p>
       </details>
 
-      <p class="faq-char-header" id="faq-char-phaeton">Phaeton</p>
+      <h4 class="faq-char-header" id="faq-char-phaeton">Phaeton</h4>
       <details class="faq-item">
         <summary>With Phaeton in play, !! counts as a combo but !!! does not. What about !!!!?</summary>
         <p>Only !!! does not count as a combo; !!!! counts the same as a regular !!.</p>
       </details>
 
-      <p class="faq-char-header" id="faq-char-roux">Roux Jaezmina</p>
+      <h4 class="faq-char-header" id="faq-char-roux">Roux Jaezmina</h4>
       <details class="faq-item">
         <summary>When using Roux's instant action (re-roll both dice, add them, make two new dice with the same sum), must both new dice show the same number?</summary>
         <p>No; get the sum and split it between the two dice any way you choose.</p>
       </details>
 
-      <p class="faq-char-header" id="faq-char-smiff">Smiff</p>
+      <h4 class="faq-char-header" id="faq-char-smiff">Smiff</h4>
       <details class="faq-item">
         <summary>How does Smiff's "Focus *" work?</summary>
         <p>If a skill check succeeds and Smiff's die is a three, you gain a * icon; if the other die is already on a *, it counts as a ** combo. Otherwise, continue play as normal.</p>
       </details>
 
-      <p class="faq-char-header" id="faq-char-strezelsior">Strezelsior</p>
+      <h4 class="faq-char-header" id="faq-char-strezelsior">Strezelsior</h4>
       <details class="faq-item">
         <summary>When combining both dice, using the sum, and re-rolling the other die — which die uses the combined number and which is re-rolled?</summary>
         <p>You can choose which character to place the set die on and which character to re-roll.</p>
@@ -2189,7 +2240,7 @@
         <p>You can only use this ability when the dice combine to a sum of six or less.</p>
       </details>
 
-      <p class="faq-char-header" id="faq-char-yanfred">Yanfred Jima</p>
+      <h4 class="faq-char-header" id="faq-char-yanfred">Yanfred Jima</h4>
       <details class="faq-item">
         <summary>Do both dice need to be on !! to activate Yanfred's special?</summary>
         <p>No; the special can be activated at any time. Take the effect of a !! combo as shown on the scenario card, then swap the positions of the dice. You may then activate any instants or combos achieved through the swap, after the !! has taken effect.</p>
@@ -2199,15 +2250,15 @@
         <p>Normally yes; this ability, however, activates a combo and then allows the dice to be manipulated after as part of the action.</p>
       </details>
 
-      <p class="faq-char-header" id="faq-char-zoaze">Zoaze</p>
+      <h4 class="faq-char-header" id="faq-char-zoaze">Zoaze</h4>
       <details class="faq-item">
         <summary>What do the "re-rolls" in Zoaze's special action refer to?</summary>
         <p>Anytime you use Zoaze's reaction abilities on her one- and two-spots, you may add one to the result of the die roll in exchange for conducting a skill check.</p>
       </details>
 
-      <p class="faq-section-header">Scenarios</p>
+      <h3 class="faq-section-header">Scenarios</h3>
 
-      <p class="faq-scenario-header" id="faq-sc-01">Scenario 01: Escape the Brig!</p>
+      <h4 class="faq-scenario-header" id="faq-sc-01">Scenario 01: Escape the Brig!</h4>
       <details class="faq-item">
         <summary>Do you need to acquire the Pick (with a ** combo) before you can use it?</summary>
         <p>Yes; the pick is covered at the start of the game. Use a ** combo to uncover it and then use it at will.</p>
@@ -2221,7 +2272,7 @@
         <p>No; it returns to its spot on the scenario card and can be reacquired with another ** combo.</p>
       </details>
 
-      <p class="faq-scenario-header" id="faq-sc-02">Scenario 02: Confine the Quarks!</p>
+      <h4 class="faq-scenario-header" id="faq-sc-02">Scenario 02: Confine the Quarks!</h4>
       <details class="faq-item">
         <summary>Do base precision and precision begin at the same spot at the start of the scenario?</summary>
         <p>Yes, they both share the first spot on the precision track.</p>
@@ -2251,13 +2302,13 @@
         <p>Doubles are normally required. Once this track point is reached, a roll of two even numbers (e.g., 2 and 4) also yields one quark.</p>
       </details>
 
-      <p class="faq-scenario-header" id="faq-sc-03">Scenario 03: Rule the World!</p>
+      <h4 class="faq-scenario-header" id="faq-sc-03">Scenario 03: Rule the World!</h4>
       <details class="faq-item">
         <summary>Are the enemy ships covered at the start of the scenario?</summary>
         <p>No; the enemy ships begin uncovered and ready to attack.</p>
       </details>
 
-      <p class="faq-scenario-header" id="faq-sc-04">Scenario 04: Stop the Virus!</p>
+      <h4 class="faq-scenario-header" id="faq-sc-04">Scenario 04: Stop the Virus!</h4>
       <details class="faq-item">
         <summary>When using the check-check combo to cover a virus, if you roll the number of the marked virus, can you cover the marked virus?</summary>
         <p>Yes, you got a lucky roll.</p>
@@ -2275,7 +2326,7 @@
         <p>No. "Treating" the marked virus has nothing to do with healing attempts. Successful healing attempts either heal or restore stamina; they do not interact with the virus row.</p>
       </details>
 
-      <p class="faq-scenario-header" id="faq-sc-05">Scenario 05: Steal the Plans!</p>
+      <h4 class="faq-scenario-header" id="faq-sc-05">Scenario 05: Steal the Plans!</h4>
       <details class="faq-item">
         <summary>At the start of the scenario, how many guards begin at the Guard Start location?</summary>
         <p>Just one; others may appear later.</p>
@@ -2301,7 +2352,7 @@
         <p>Yes; the plans passed through that spot and new guards appear at their starting location.</p>
       </details>
 
-      <p class="faq-scenario-header" id="faq-sc-06">Scenario 06: Hunt the Bounty!</p>
+      <h4 class="faq-scenario-header" id="faq-sc-06">Scenario 06: Hunt the Bounty!</h4>
       <details class="faq-item">
         <summary>How many resources do you start with?</summary>
         <p>Both characters start with full health. You choose how much energy to begin with (depending on your preferred difficulty). You start with five supplies (also the maximum).</p>
@@ -2323,7 +2374,7 @@
         <p>Resources — energy, health, and supplies — are expended to add to the capture die roll and the information track in any amount you choose. Each resource spent adds one to the roll and is then lost.</p>
       </details>
 
-      <p class="faq-scenario-header" id="faq-sc-07">Scenario 07: Master the Trials!</p>
+      <h4 class="faq-scenario-header" id="faq-sc-07">Scenario 07: Master the Trials!</h4>
       <details class="faq-item">
         <summary>What does it mean that you must take a skill check "at each reduction"?</summary>
         <p>Each time the die is reduced (due to not activating a combo), you must also take a skill check and lose a health point (on the character that reduced a die) in case of failure.</p>
@@ -2333,7 +2384,7 @@
         <p>To attempt a trial, roll one die — if it's equal to or greater than the number on the next trial spot, you succeed. If using the check-check combo, subtract the difference between the Master's and Apprentice's levels from your roll. (For example, if both are at their starting locations, subtract three.)</p>
       </details>
 
-      <p class="faq-scenario-header" id="faq-sc-08">Scenario 08: Beat the Odds!</p>
+      <h4 class="faq-scenario-header" id="faq-sc-08">Scenario 08: Beat the Odds!</h4>
       <details class="faq-item">
         <summary>The description says to use five coins, but the scenario side says six. How many?</summary>
         <p>Five; the scenario side is incorrect. The scenario is a "best out of five" contest — the first to win three coins wins.</p>
@@ -2347,7 +2398,7 @@
         <p>Use a ** combo to mark one of the four positions on the "re-roll" track. Thereafter, when betting, if your combined roll equals that marked number, you may choose to re-roll (and take the skill check if necessary). The re-roll track only comes into play while betting.</p>
       </details>
 
-      <p class="faq-scenario-header" id="faq-sc-09">Scenario 09: Control the Skies!</p>
+      <h4 class="faq-scenario-header" id="faq-sc-09">Scenario 09: Control the Skies!</h4>
       <details class="faq-item">
         <summary>When beginning, do you place your character token first or the enemy starfighter first?</summary>
         <p>You must begin by placing a token for your characters, then place the enemy starfighter after.</p>
@@ -2369,7 +2420,7 @@
         <p>No; there is only one shield token and one missile token. Once acquired, they cannot be re-acquired until used.</p>
       </details>
 
-      <p class="faq-scenario-header" id="faq-sc-10">Scenario 10: Sell the Junk!</p>
+      <h4 class="faq-scenario-header" id="faq-sc-10">Scenario 10: Sell the Junk!</h4>
       <details class="faq-item">
         <summary>At the very start, do you begin with $0 or $1?</summary>
         <p>You begin with $1, and place the token on the money track accordingly.</p>
@@ -2379,7 +2430,7 @@
         <p>Yes; you must gain $2 to make those jumps. A single dollar gained when you're already at $8 (or $10) is wasted.</p>
       </details>
 
-      <p class="faq-scenario-header" id="faq-sc-11">Scenario 11: Destroy the Order!</p>
+      <h4 class="faq-scenario-header" id="faq-sc-11">Scenario 11: Destroy the Order!</h4>
       <details class="faq-item">
         <summary>After passing a law, are you required to follow it in all cases or can you choose when it applies?</summary>
         <p>If a law is in effect, it must be followed whenever applicable.</p>
@@ -2389,7 +2440,7 @@
         <p>A law is "used" only when a combo is activated that is in some way modified by the law. An icon that does not result in a combo does not count as a use.</p>
       </details>
 
-      <p class="faq-scenario-header" id="faq-sc-12">Scenario 12: Serve the Rabble!</p>
+      <h4 class="faq-scenario-header" id="faq-sc-12">Scenario 12: Serve the Rabble!</h4>
       <details class="faq-item">
         <summary>Do the primary and secondary character tokens placed on "bouncer" and "server" ever move or interact with the scenario?</summary>
         <p>No; they are simply there to mark which character acts as which.</p>
@@ -2416,7 +2467,7 @@
     <div class="dice-tray" id="diceTray">
       <div class="die-wrap" id="dieWrap0">
         <span class="die-char-label" id="dieLabel0"></span>
-        <div class="die" id="die0" data-val="1" role="button" tabindex="0" aria-label="Die 1, value 1, unlocked">
+        <div class="die" id="die0" data-val="1" role="button" tabindex="0" aria-pressed="false" aria-label="Die 1, value 1, unlocked">
           <span class="dot d1"></span><span class="dot d2"></span><span class="dot d3"></span>
           <span class="dot d4"></span><span class="dot d5"></span><span class="dot d6"></span>
           <span class="dot d7"></span><span class="dot d8"></span><span class="dot d9"></span>
@@ -2427,10 +2478,10 @@
           <button class="die-adj adj-plus"  id="diePlus0"  aria-label="Increase die 1">+</button>
         </div>
       </div>
-      <button class="dice-swap-mid" id="diceSwapBtn" title="Swap dice">⇄</button>
+      <button class="dice-swap-mid" id="diceSwapBtn" title="Swap dice values" aria-label="Swap dice values"><span aria-hidden="true">⇄</span></button>
       <div class="die-wrap" id="dieWrap1">
         <span class="die-char-label" id="dieLabel1"></span>
-        <div class="die" id="die1" data-val="1" role="button" tabindex="0" aria-label="Die 2, value 1, unlocked">
+        <div class="die" id="die1" data-val="1" role="button" tabindex="0" aria-pressed="false" aria-label="Die 2, value 1, unlocked">
           <span class="dot d1"></span><span class="dot d2"></span><span class="dot d3"></span>
           <span class="dot d4"></span><span class="dot d5"></span><span class="dot d6"></span>
           <span class="dot d7"></span><span class="dot d8"></span><span class="dot d9"></span>
@@ -2442,7 +2493,8 @@
         </div>
       </div>
     </div>
-    <p class="dice-hint" id="diceHint">Tap a die to lock it.</p>
+    <p class="dice-hint" id="diceHint">Tap a die to lock or unlock it. Locked dice keep their value when you roll.</p>
+    <p class="sr-only" id="diceLive" role="status" aria-live="polite" aria-atomic="true"></p>
     <div class="modal-actions" id="normalDiceRow">
       <button class="btn btn-secondary" id="rollBtn">Roll</button>
       <button class="btn btn-secondary" id="skillCheckBtn">Skill Check</button>
@@ -2459,35 +2511,37 @@
       <h2 id="tipsModalTitle">Tips &amp; Features</h2>
       <button class="tips-modal-close" id="tipsModalClose" aria-label="Close">✕</button>
     </div>
-    <div class="tips-content">
+    <div class="tips-content" tabindex="0" role="region" aria-labelledby="tipsModalTitle">
       <h3 class="tips-section-heading">Randomizing</h3>
       <ul class="tips-list">
-        <li>Lock 🔒 any character or scenario to keep it when you randomize</li>
+        <li>Lock <span aria-hidden="true">🔒</span> any character or scenario to keep it when you randomize</li>
         <li>Your last result and difficulty are remembered across sessions</li>
       </ul>
       <h3 class="tips-section-heading">During Play</h3>
       <ul class="tips-list">
-        <li><strong>🎲 Roll Dice</strong> — appears below the timer during active sessions</li>
+        <li><strong>Roll Dice</strong> appears below the timer once a mission is loaded</li>
+        <li>Add optional notes when you save a record, or later from the Mission Log</li>
         <li>Tap a die to lock it (teal glow = locked) — locked dice keep their value on the next roll</li>
         <li>Tap +/− on a locked die to fine-tune its value; wraps 6→1</li>
         <li><strong>Skill Check</strong> rolls white dice temporarily, then restores your normal dice exactly as you left them</li>
-        <li><strong>Yanfred Jima</strong> — ⇄ Swap button exchanges both dice values and lock states</li>
-        <li><strong>Hebolt Rom</strong> — ↕ Flip appears on locked dice; flips to the opposite face (7 − value)</li>
+        <li><strong>Yanfred Jima</strong> — the ⇄ button swaps the two dice values (unlock both dice first)</li>
+        <li><strong>Hebolt Rom</strong> — a Flip button appears under each die; it turns the die to the opposite face (7 − value)</li>
       </ul>
       <h3 class="tips-section-heading">Ambient Radio</h3>
       <ul class="tips-list">
-        <li>Tap ♫ in the header to stream SomaFM Mission Control (online only)</li>
+        <li>Tap <span aria-hidden="true">♫</span> in the header to stream SomaFM Mission Control (online only)</li>
         <li>Volume slider in the popover; lock-screen controls work too</li>
       </ul>
       <h3 class="tips-section-heading">Mission Log</h3>
       <ul class="tips-list">
         <li>Sort and filter records by date, result, difficulty, character, or scenario</li>
-        <li>Tap ✎ on any record to edit result, difficulty, or add notes</li>
-        <li>Import/Export your full record history from the History tab</li>
+        <li>Tap <span aria-hidden="true">✎</span> Edit on any record to change its result, difficulty or notes</li>
+        <li>Deleted something by mistake? Tap Undo in the message that appears</li>
+        <li>Export a backup of your records, or Import one, from the Mission Log tab</li>
       </ul>
       <h3 class="tips-section-heading">Stats</h3>
       <ul class="tips-list">
-        <li>Stats tab shows win rate, completion %, and average playtime at a glance</li>
+        <li>The Mission Log tab shows games played, win rate, how many combinations you've tried, and playtimes</li>
       </ul>
     </div>
   </div>
@@ -2500,8 +2554,8 @@
       <div class="header-btn-row">
         <button class="btn-tips-trigger" id="tipsTriggerBtn" title="Tips &amp; Features" aria-label="Tips and features">?</button>
         <button class="btn-radio"  id="radioBtn"  title="SomaFM Mission Control" aria-label="Play ambient radio">♫</button>
-        <button class="btn-volume" id="volumeBtn" title="Volume" aria-label="Adjust volume">🔊</button>
-        <button class="btn-theme"  id="themeBtn"  title="Toggle theme" aria-label="Toggle theme"></button>
+        <button class="btn-volume" id="volumeBtn" title="Volume" aria-label="Adjust volume" aria-expanded="false" aria-controls="volumePopover">🔊</button>
+        <button class="btn-theme"  id="themeBtn"  title="Switch theme" aria-label="Switch theme"></button>
         <button class="btn-settings" id="settingsBtn" title="My Collection">My Collection</button>
       </div>
       <div class="volume-popover" id="volumePopover">
@@ -2512,10 +2566,10 @@
     </div>
     <div class="onboarding-tip hidden" id="onboardingTip">
       <p><strong>My Collection</strong> — tell the app which Twin Stars games you own. Only your content gets randomized.</p>
-      <p><strong>&#9790; / &#9728;</strong> — switch between dark and light mode.</p>
-      <p><strong>🔒</strong> — lock a character or scenario to keep it when you randomize.</p>
+      <p><strong aria-hidden="true">&#9790; / &#9728;</strong><span class="sr-only">Theme button</span> — switch between dark and light mode.</p>
+      <p><strong aria-hidden="true">🔒</strong><span class="sr-only">Lock button</span> — lock a character or scenario to keep it when you randomize.</p>
       <p>Tap <strong>?</strong> anytime to see all features.</p>
-      <button class="btn-tip-dismiss" id="tipDismiss">Got it</button>
+      <button class="btn-tip-dismiss" id="tipDismiss">Got It</button>
     </div>
     <h1>Twin<br>Stars<br><span>Adventure</span><br><span class="sub">Randomizer</span></h1>
     <div class="header-rule"></div>
@@ -2523,27 +2577,29 @@
     <p class="active-packs-label" id="activePacksLabel"></p>
   </header>
 
+  <main id="main">
   <nav class="tab-nav" role="tablist" aria-label="App sections">
-    <button class="tab-btn active" id="randomizerTab"    role="tab" aria-selected="true"  aria-controls="randomizerPage">Randomizer</button>
-    <button class="tab-btn"        id="historyTab"       role="tab" aria-selected="false" aria-controls="historyPage">Mission Log</button>
-    <button class="tab-btn"        id="syzygyCampaignTab" role="tab" aria-selected="false" aria-controls="syzygyCampaignPage">SYZYGY</button>
+    <button class="tab-btn active" id="randomizerTab"    role="tab" aria-selected="true"  aria-controls="randomizerPage" tabindex="0">Randomizer</button>
+    <button class="tab-btn"        id="historyTab"       role="tab" aria-selected="false" aria-controls="historyPage" tabindex="-1">Mission Log</button>
+    <button class="tab-btn"        id="syzygyCampaignTab" role="tab" aria-selected="false" aria-controls="syzygyCampaignPage" tabindex="-1">SYZYGY</button>
   </nav>
 
   <!-- RANDOMIZER PAGE -->
   <div id="randomizerPage" role="tabpanel" aria-labelledby="randomizerTab" tabindex="0">
 
     <div class="panel">
-      <p class="panel-title">Random Mission</p>
+      <h2 class="panel-title">Random Mission</h2>
       <button class="btn btn-primary" id="generateBtn">
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;">
+        <svg aria-hidden="true" focusable="false" width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;">
           <path d="M7 1L12.196 4V10L7 13L1.804 10V4L7 1Z" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linejoin="round"/>
         </svg>
         Randomize Combination
       </button>
+      <p class="all-locked-hint hidden" id="allLockedHint">All three are locked. Unlock one to randomize, or tap Load Mission.</p>
     </div>
 
     <div class="panel" id="manualPanel">
-      <p class="panel-title">Manual Selection</p>
+      <h2 class="panel-title">Manual Selection</h2>
       <div class="form-row-inline">
         <div class="form-row form-row-flush">
           <div class="form-row-label">Character 1 <button type="button" class="btn-lock" id="lockChar1" title="Lock" aria-label="Lock Character 1" aria-pressed="false"><svg aria-hidden="true" width="12" height="14" viewBox="0 0 12 14" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="6" width="10" height="8" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M3 6V4a3 3 0 0 1 6 0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button></div>
@@ -2564,7 +2620,7 @@
     <div id="combinationDisplay"></div>
 
     <div id="annotationSection" class="panel hidden">
-      <p class="panel-title">Record Outcome</p>
+      <h2 class="panel-title" id="recordOutcomeHeading">Record Outcome</h2>
       <div class="form-row-inline">
         <div class="form-row form-row-flush">
           <label for="result">Result</label>
@@ -2582,8 +2638,16 @@
           </select>
         </div>
       </div>
+      <div class="form-row form-row-top">
+        <label for="recordNotes">Notes <span class="label-optional">(optional)</span></label>
+        <textarea id="recordNotes" class="notes-input" rows="2" maxlength="2000" placeholder="e.g. Close game, used advanced variant…"></textarea>
+      </div>
       <div class="form-row-top">
         <button class="btn btn-save" id="saveRecordBtn">Save Record</button>
+      </div>
+      <div class="save-status hidden" id="saveStatus">
+        <p id="saveStatusText" tabindex="-1"></p>
+        <button class="btn btn-secondary" id="viewLogBtn">View Mission Log</button>
       </div>
     </div>
 
@@ -2599,11 +2663,11 @@
   <!-- HISTORY PAGE -->
   <div id="historyPage" role="tabpanel" aria-labelledby="historyTab" tabindex="0" class="hidden">
     <div class="panel" id="statsPanel">
-      <p class="panel-title">Statistics</p>
+      <h2 class="panel-title">Statistics</h2>
       <div id="statsContent"></div>
     </div>
     <div class="panel">
-      <p class="panel-title">Mission Log</p>
+      <h2 class="panel-title" id="missionLogHeading" tabindex="-1">Mission Log</h2>
       <div class="history-toolbar">
         <div class="history-actions">
           <button class="btn btn-secondary" id="exportBtn" disabled>Export</button>
@@ -2613,12 +2677,12 @@
         </div>
         <div class="history-filters">
           <select id="historySortBy" class="history-select" aria-label="Sort by">
-            <option value="date-desc">Newest first</option>
-            <option value="date-asc">Oldest first</option>
-            <option value="result">Result</option>
-            <option value="difficulty">Difficulty</option>
-            <option value="characters">Characters</option>
-            <option value="scenario">Scenario</option>
+            <option value="date-desc">Sort: Newest first</option>
+            <option value="date-asc">Sort: Oldest first</option>
+            <option value="result">Sort: Result</option>
+            <option value="difficulty">Sort: Difficulty</option>
+            <option value="characters">Sort: Characters</option>
+            <option value="scenario">Sort: Scenario</option>
           </select>
           <select id="historyFilterResult" class="history-select" aria-label="Filter by result">
             <option value="">All results</option>
@@ -2643,13 +2707,15 @@
           </select>
         </div>
       </div>
+      <p class="history-count" id="historyCount" role="status"></p>
       <div id="historyTableContainer"></div>
     </div>
     <div class="panel">
-      <p class="panel-title">Unplayed Combinations</p>
+      <h2 class="panel-title">Unplayed Combinations</h2>
       <div id="unplayedContainer"></div>
     </div>
   </div>
+  </main>
 
   <footer>
     <p class="footer-byline">
