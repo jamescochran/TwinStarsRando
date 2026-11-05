@@ -26,6 +26,8 @@ const ALLOWED = {
   theme_toggle: ["theme"],
   undo: [],
   js_error: ["message", "file", "line"],
+  collection_change: ["items"],
+  shelf_open: [],
 };
 
 const rec = (i, extra = {}) => ({
