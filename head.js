@@ -12,3 +12,18 @@
     try { window.top.location = window.self.location; } catch (e) { /* cross-origin sandbox: stay hidden */ }
   }
 })();
+
+// Apply the saved theme before first paint so light-theme users never see a dark flash
+// (app.js re-applies the same value later; keep this in sync with getInitialTheme there).
+(function () {
+  var theme;
+  try {
+    var saved = window.localStorage.getItem("theme");
+    if (saved === "light" || saved === "dark") theme = saved;
+  } catch (e) { /* storage blocked: fall through to the OS preference */ }
+  if (!theme) {
+    try { theme = window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"; }
+    catch (e) { theme = "dark"; }
+  }
+  document.documentElement.setAttribute("data-theme", theme);
+})();

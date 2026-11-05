@@ -217,12 +217,50 @@ test.describe("keyboard and screen reader access", () => {
   });
 });
 
+test.describe("theme", () => {
+  test("saved light theme is applied before app.js runs (no dark flash on load)", async ({ page }) => {
+    await seed({ theme: "light" })(page);
+    // Hold app.js back: whatever the page paints first must already be light.
+    let release;
+    const gate = new Promise((r) => { release = r; });
+    await page.route("**/app.js", async (route) => { await gate; await route.continue(); });
+    // app.js is a parser-blocking script at the end of <body>, so DOMContentLoaded waits for it:
+    // wait only for the markup above it.
+    await page.goto("/", { waitUntil: "commit" });
+    await page.waitForSelector("footer", { state: "attached" });
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+    const bg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+    expect(bg).toBe("rgb(240, 242, 251)");
+    release();
+  });
+
+  test("hover-feedback transitions never use `transition: all` (theme changes must not animate)", async ({ page }) => {
+    await page.goto("/");
+    const offenders = await page.evaluate(() => [...document.querySelectorAll("button, select, a, label")]
+      .filter((el) => {
+        // "all 0s" is the browser default (no transition) — only flag an animated "all".
+        const cs = getComputedStyle(el);
+        const props = cs.transitionProperty.split(",").map((s) => s.trim());
+        const durs = cs.transitionDuration.split(",").map((s) => parseFloat(s));
+        return props.some((p, i) => p === "all" && durs[i % durs.length] > 0);
+      })
+      .map((el) => el.id || el.className));
+    expect(offenders).toEqual([]);
+  });
+});
+
 test.describe("colour contrast (WCAG AA, 4.5:1)", () => {
+
   for (const theme of ["dark", "light"]) {
     test(`primary button, active tab, dim text and accents in ${theme} theme`, async ({ page }) => {
       await seed({ theme })(page);
       await page.goto("/");
+      // The theme is applied before first paint (head.js), so nothing should be mid-transition;
+      // still, never sample colours while a transition/animation is running.
+      await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+      await page.waitForFunction(() => document.getAnimations().length === 0);
       const pairs = await page.evaluate(() => {
+
         const pick = (sel, prop = "color") => getComputedStyle(document.querySelector(sel))[prop];
         const bgOf = (sel) => { let el = document.querySelector(sel); while (el) { const c = getComputedStyle(el).backgroundColor; if (c && c !== "rgba(0, 0, 0, 0)") return c; el = el.parentElement; } return "rgb(255,255,255)"; };
         return {
