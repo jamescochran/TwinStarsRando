@@ -26,6 +26,12 @@ const ALLOWED = {
   theme_toggle: ["theme"],
   undo: [],
   js_error: ["message", "file", "line"],
+  teach_start: ["source"],
+  teach_complete: ["step"],
+  setup_open: [],
+  rail_toggle: ["on"],
+  daily_play: [],
+  daily_share: [],
 };
 
 const rec = (i, extra = {}) => ({
