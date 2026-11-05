@@ -98,20 +98,38 @@
     "Save the Spacewhales!": "14"
   };
 
+  // Every character in CONTENT_PACKS has a heading with this id in #faqModal
+  // (characters without published rulings get a short "none yet" note).
   const CHAR_FAQ_ANCHOR = {
     "Bood":              "faq-char-bood",
-    "Brenimov-X":        "faq-char-brenimov-x",
+    "Stag Solar":        "faq-char-stag-solar",
     "Fanoobia":          "faq-char-fanoobia",
-    "Grant Rockgardner": "faq-char-grant",
     "Inpon Gol":         "faq-char-inpon-gol",
-    "Inzill Mey":        "faq-char-inzill-mey",
-    "Kinglan":           "faq-char-kinglan",
-    "Phaeton":           "faq-char-phaeton",
+    "Grant Rockgardner": "faq-char-grant",
     "Roux Jaezmina":     "faq-char-roux",
-    "Smiff":             "faq-char-smiff",
-    "Strezelsior":       "faq-char-strezelsior",
     "Yanfred Jima":      "faq-char-yanfred",
+    "Saaze":             "faq-char-saaze",
+    "Inzill Mey":        "faq-char-inzill-mey",
+    "Strezelsior":       "faq-char-strezelsior",
+    "Kinglan":           "faq-char-kinglan",
+    "Brenimov-X":        "faq-char-brenimov-x",
+    "Dain Taubo":        "faq-char-dain-taubo",
+    "Grulexon":          "faq-char-grulexon",
+    "Gari Obul":         "faq-char-gari-obul",
+    "Smiff":             "faq-char-smiff",
     "Zoaze":             "faq-char-zoaze",
+    "Tumbug Firo":       "faq-char-tumbug-firo",
+    "Mzerzo":            "faq-char-mzerzo",
+    "Phaeton":           "faq-char-phaeton",
+    "Hebolt Rom":        "faq-char-hebolt-rom",
+    "Tarla Voke":        "faq-char-tarla-voke",
+    "Gruffles":          "faq-char-gruffles",
+    "\"Mad\" Anxy":       "faq-char-mad-anxy",
+    "Feth Doriet":       "faq-char-feth-doriet",
+    "Pummtoggs":         "faq-char-pummtoggs",
+    "Striker":           "faq-char-striker",
+    "Bippinnidip":       "faq-char-bippinnidip",
+    "Captain Crag":      "faq-char-captain-crag",
   };
 
   const RADIO_STREAMS = [
@@ -610,7 +628,7 @@ function getCurrentElapsed() {
         <div class="combo-characters">
           <span class="combo-char-wrap"><span class="char-role primary-role">Primary</span>${esc(comb.characters[0])}${CHAR_FAQ_ANCHOR[comb.characters[0]] ? faqHelpBtn(CHAR_FAQ_ANCHOR[comb.characters[0]], comb.characters[0]) : ""}</span><span class="combo-vs">&amp;</span><span class="combo-char-wrap"><span class="char-role secondary-role">Secondary</span>${esc(comb.characters[1])}${CHAR_FAQ_ANCHOR[comb.characters[1]] ? faqHelpBtn(CHAR_FAQ_ANCHOR[comb.characters[1]], comb.characters[1]) : ""}</span>
         </div>
-        <div class="combo-scenario">${scenarioHTML(comb.scenario)}${SCENARIO_NUMBER[comb.scenario] && parseInt(SCENARIO_NUMBER[comb.scenario]) <= 12 ? faqHelpBtn("faq-sc-" + SCENARIO_NUMBER[comb.scenario], scenarioText(comb.scenario)) : ""}</div>
+        <div class="combo-scenario">${scenarioHTML(comb.scenario)}${SCENARIO_NUMBER[comb.scenario] ? faqHelpBtn("faq-sc-" + SCENARIO_NUMBER[comb.scenario], scenarioText(comb.scenario)) : ""}</div>
         <div class="combo-play-count"><span>${esc(countText)}</span></div>
         ${droids.length ? `
         <div class="droid-row">
@@ -1315,15 +1333,215 @@ function getCurrentElapsed() {
     if (trigger && trigger.isConnected) trigger.focus();
   }
 
+  // ─── Rules Oracle: the FAQ dialog's mission view and offline search ─────────
+  // The FAQ itself is static HTML in #faqAll (indexable, and the source of the
+  // FAQPage JSON-LD). Each .faq-item belongs to the .faq-group it sits in and may
+  // name extra groups in data-faq-for; data-faq-common marks the general rulings
+  // players ask about most.
+  const FAQ_GROUP_OF = el => (el.closest(".faq-group") || {}).dataset?.faqGroup || "";
+  const faqFor = el => [FAQ_GROUP_OF(el), ...(el.dataset.faqFor || "").split(" ")].filter(Boolean);
+  const faqItems = () => [...document.querySelectorAll("#faqAll details.faq-item")];
+
+  function faqGroupHTML(title, items, emptyText, anchor) {
+    const wrap = document.createElement("div");
+    wrap.className = "faq-group";
+    if (anchor) wrap.dataset.faqMissionAnchor = anchor;
+    const h = document.createElement("h4");
+    h.className = "faq-char-header";
+    h.textContent = title;
+    wrap.appendChild(h);
+    if (items.length) {
+      items.forEach(it => {
+        const c = it.cloneNode(true);
+        c.open = false;
+        c.removeAttribute("data-faq-auto-open");
+        c.querySelectorAll("mark").forEach(m => m.replaceWith(m.textContent));
+        wrap.appendChild(c);
+      });
+    } else {
+      const p = document.createElement("p");
+      p.className = "faq-none";
+      p.textContent = emptyText;
+      wrap.appendChild(p);
+    }
+    return wrap;
+  }
+
+  // "For this mission": the scenario's rulings, then each character's, then the
+  // most-asked general rules. Rebuilt on every open so it follows the loaded mission.
+  function buildFaqMission() {
+    const box = document.getElementById("faqMission");
+    box.innerHTML = "";
+    box.hidden = true;
+    const c = currentCombination;
+    if (!c) return;
+    const num = SCENARIO_NUMBER[c.scenario];
+    const targets = [
+      num ? { anchor: "faq-sc-" + num, title: (document.getElementById("faq-sc-" + num) || {}).textContent || scenarioText(c.scenario) } : null,
+      ...c.characters.map(ch => CHAR_FAQ_ANCHOR[ch] ? { anchor: CHAR_FAQ_ANCHOR[ch], title: ch } : null),
+    ].filter(Boolean);
+    const used = new Set();
+    const section = document.createElement("section");
+    section.className = "faq-section";
+    section.setAttribute("aria-labelledby", "faq-s-mission");
+    section.innerHTML = `<h3 class="faq-section-header" id="faq-s-mission">For this mission</h3>
+      <p class="faq-mission-intro">Rulings for ${esc(c.characters.join(" & "))} on ${esc(scenarioText(c.scenario))}, then the most-asked general rules. The full FAQ follows.</p>`;
+    const all = faqItems();
+    targets.forEach(t => {
+      // The block's own entries first, then related ones from other sections.
+      const items = all.filter(it => !used.has(it) && faqFor(it).includes(t.anchor))
+        .sort((a, b) => (FAQ_GROUP_OF(b) === t.anchor) - (FAQ_GROUP_OF(a) === t.anchor));
+      items.forEach(it => used.add(it));
+      section.appendChild(faqGroupHTML(t.title, items, `No rulings specific to ${t.title} have been published yet.`, t.anchor));
+    });
+    const common = all.filter(it => !used.has(it) && it.hasAttribute("data-faq-common"));
+    section.appendChild(faqGroupHTML("Most-asked general rules", common, ""));
+    box.appendChild(section);
+    box.hidden = false;
+  }
+
+  // Search index, built on first use: question + answer + the headings of every
+  // group the entry belongs to (so "Bood" or "Hunt the Bounty" finds its rulings).
+  let _faqIndex = null;
+  function faqIndex() {
+    if (_faqIndex) return _faqIndex;
+    const headingText = id => { const h = document.getElementById(id); return h ? h.textContent : ""; };
+    _faqIndex = faqItems().map(el => {
+      const summary = el.querySelector("summary");
+      const answer  = el.querySelector(".faq-answer");
+      let text = [summary.textContent, answer.textContent, ...faqFor(el).map(headingText)].join(" ").toLowerCase();
+      if (text.includes("★")) text += " star stars";
+      if (text.includes("✓")) text += " check checks";
+      return { el, summary, answer, text, loose: text.replace(/-/g, ""), sumText: summary.textContent.toLowerCase(),
+               sumHTML: summary.innerHTML, ansHTML: answer.innerHTML };
+    });
+    return _faqIndex;
+  }
+
+  function faqHighlight(root, terms) {
+    if (!terms.length) return;
+    const re = new RegExp("(" + terms.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|") + ")", "gi");
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode: n => n.parentElement.closest(".faq-meta, .sr-only") ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT,
+    });
+    const nodes = [];
+    while (walker.nextNode()) nodes.push(walker.currentNode);
+    nodes.forEach(node => {
+      const parts = node.nodeValue.split(re);
+      if (parts.length < 2) return;
+      const frag = document.createDocumentFragment();
+      parts.forEach((part, i) => {
+        if (!part) return;
+        if (i % 2) { const m = document.createElement("mark"); m.textContent = part; frag.appendChild(m); }
+        else frag.appendChild(document.createTextNode(part));
+      });
+      node.replaceWith(frag);
+    });
+  }
+
+  function levenshtein(a, b) {
+    if (Math.abs(a.length - b.length) > 3) return 99;
+    let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+    for (let i = 1; i <= a.length; i++) {
+      const cur = [i];
+      for (let j = 1; j <= b.length; j++)
+        cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+      prev = cur;
+    }
+    return prev[b.length];
+  }
+
+  // Closest spelling of each query word among the words used in the FAQ.
+  function faqSuggestion(terms) {
+    const vocab = new Set();
+    faqIndex().forEach(r => r.text.split(/[^a-z0-9'-]+/).forEach(w => { if (w.length >= 3) vocab.add(w); }));
+    let changed = false;
+    const out = terms.map(t => {
+      if (vocab.has(t) || t.length < 3) return t;
+      let best = null, bestD = Math.max(1, Math.floor(t.length / 3)) + 1;
+      vocab.forEach(w => { const d = levenshtein(t, w); if (d < bestD) { bestD = d; best = w; } });
+      if (best) { changed = true; return best; }
+      return t;
+    });
+    return changed ? out.join(" ") : null;
+  }
+
+  let _faqStatusTimer = null;
+  function runFaqSearch(raw) {
+    const q = raw.trim().toLowerCase();
+    const terms = q.split(/\s+/).filter(Boolean);
+    const content = document.querySelector(".faq-content");
+    const status  = document.getElementById("faqSearchStatus");
+    const empty   = document.getElementById("faqEmpty");
+    let count = 0;
+    faqIndex().forEach(r => {
+      // Reset any earlier highlighting before matching again.
+      if (r.summary.querySelector("mark")) r.summary.innerHTML = r.sumHTML;
+      if (r.answer.querySelector("mark"))  r.answer.innerHTML  = r.ansHTML;
+      // "reroll" finds "re-roll" too.
+      const hit = terms.every(t => r.text.includes(t) || r.loose.includes(t.replace(/-/g, "")));
+      r.el.classList.toggle("faq-hidden", terms.length > 0 && !hit);
+      if (terms.length && hit) {
+        count++;
+        faqHighlight(r.summary, terms);
+        faqHighlight(r.answer, terms);
+        // Show the answer when the match is only in it, so the reason is visible.
+        if (!r.el.open && !terms.every(t => r.sumText.includes(t))) { r.el.open = true; r.el.dataset.faqAutoOpen = ""; }
+      } else if (r.el.hasAttribute("data-faq-auto-open")) {
+        r.el.open = false;
+        r.el.removeAttribute("data-faq-auto-open");
+      }
+    });
+    document.querySelectorAll("#faqAll .faq-group, #faqAll .faq-section").forEach(g => {
+      g.classList.toggle("faq-hidden", terms.length > 0 && !g.querySelector("details.faq-item:not(.faq-hidden)"));
+    });
+    const mission = document.getElementById("faqMission");
+    mission.classList.toggle("faq-hidden", terms.length > 0);
+    document.querySelector("#faqModal .faq-credit").classList.toggle("faq-hidden", terms.length > 0);
+
+    empty.innerHTML = "";
+    empty.hidden = !(terms.length && count === 0);
+    if (!empty.hidden) {
+      const suggestion = faqSuggestion(terms);
+      empty.innerHTML = `<p>No rulings match “${esc(raw.trim())}”.</p>` +
+        (suggestion ? `<p>Did you mean <button type="button" class="faq-suggest" data-faq-suggest="${esc(suggestion)}">${esc(suggestion)}</button>?</p>` : "") +
+        `<p>Try one keyword (like “reduce”, “energy” or “skill check”), a character's name or a scenario number, or check the rulebooks under Rules at the bottom of the page.</p>`;
+      const btn = empty.querySelector(".faq-suggest");
+      if (btn) btn.addEventListener("click", () => {
+        const input = document.getElementById("faqSearch");
+        input.value = btn.dataset.faqSuggest;
+        runFaqSearch(input.value);
+        input.focus();
+      });
+    }
+    if (terms.length) content.scrollTop = 0;
+
+    const msg = !terms.length ? "" :
+      count === 0 ? "No rulings match." :
+      count === 1 ? "1 ruling matches." : `${count} rulings match.`;
+    clearTimeout(_faqStatusTimer);
+    // Wait for a pause in typing so screen readers announce one count, not every keystroke.
+    if (!msg) status.textContent = "";
+    else _faqStatusTimer = setTimeout(() => { status.textContent = msg; }, 350);
+    return count;
+  }
+
   function openFaq(anchorId) {
+    const input = document.getElementById("faqSearch");
+    if (input.value) { input.value = ""; runFaqSearch(""); }
+    buildFaqMission();
     openModal("faqModal", "faqClose");
+    const container = document.querySelector(".faq-content");
+    container.scrollTop = 0;
     if (anchorId) {
-      const target = document.getElementById(anchorId);
+      // With a mission loaded, the mission card's ? buttons land on that
+      // character's or scenario's block in "For this mission"; otherwise on the
+      // full FAQ heading with this id.
+      const target = document.querySelector(`#faqMission [data-faq-mission-anchor="${anchorId}"]`) || document.getElementById(anchorId);
       if (target) {
         const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
         setTimeout(() => {
-          const container = document.querySelector(".faq-content");
-          const stickyHeader = container.querySelector(".faq-section-header");
+          const stickyHeader = target.closest(".faq-section")?.querySelector(".faq-section-header");
           // Offset by the sticky section header so the target isn't hidden under it.
           const clearance = (stickyHeader ? stickyHeader.offsetHeight : 0) + 8;
           const scrollTop = target.getBoundingClientRect().top - container.getBoundingClientRect().top + container.scrollTop - clearance;
@@ -2545,6 +2763,18 @@ function getCurrentElapsed() {
   document.getElementById("historyFilterScenario").addEventListener("change", () => { historyDirty = true; displayHistory(); });
   document.getElementById("historyFilterDroid").addEventListener("change", () => { historyDirty = true; displayHistory(); });
   document.getElementById("faqClose")       .addEventListener("click", closeFaq);
+  document.getElementById("faqSearch").addEventListener("input", e => runFaqSearch(e.target.value));
+  document.getElementById("faqSearch").addEventListener("keydown", e => {
+    if (e.key === "Escape" && e.target.value) {
+      // First Escape clears the search; the next one closes the dialog.
+      e.preventDefault(); e.stopPropagation();
+      e.target.value = ""; runFaqSearch("");
+    } else if (e.key === "Enter" || e.key === "ArrowDown") {
+      const first = [...document.querySelectorAll("#faqModal details.faq-item")].find(d => d.getClientRects().length);
+      if (first) { e.preventDefault(); first.querySelector("summary").focus(); }
+    }
+  });
+  document.getElementById("faqBtn")         .addEventListener("click", () => openFaq());
   document.getElementById("faqModal")       .addEventListener("click", e => { if (e.target === e.currentTarget) closeFaq(); });
   document.getElementById("rulesBtn")       .addEventListener("click", openRules);
   document.getElementById("rulesClose")     .addEventListener("click", closeRules);
