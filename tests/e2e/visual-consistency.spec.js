@@ -96,7 +96,8 @@ test("non-destructive dialogs share one header close control", async ({ page }) 
     await expect(overlay).toHaveClass(/open/);
     const btn = overlay.locator(".dialog-header .dialog-close");
     await expect(btn).toHaveCount(1);
-    await expect(btn).toHaveAttribute("aria-label", "Close");
+    // Named after its dialog ("Close Rules FAQ"), so it is unambiguous out of context.
+    await expect(btn).toHaveAttribute("aria-label", /^Close \S/);
     await expect(overlay.locator(close)).toHaveClass(/dialog-close/);
     await btn.click();
     await expect(overlay).not.toHaveClass(/open/);
