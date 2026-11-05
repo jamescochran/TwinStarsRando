@@ -1958,155 +1958,192 @@ function getCurrentElapsed() {
   }
 
   // ─── SYZYGY Campaign ────────────────────────────────────────────────────────
+  // Campaign model v2, following the two SYZYGY booklets (rules/twinstars1-syzygy.png and
+  // rules/twinstars2-syzygy.png). szNewCampaign / szApply / szRank are pure (no DOM, no
+  // storage) so tests can run every win/loss sequence through them.
 
   const SYZYGY1_RANKS = [
-    { rank: "LEGENDS",   desc: "Word spreads across the galaxy. There's apparently a song.",        wins: 3, maxLosses: 0 },
-    { rank: "FREE",      desc: "Debt paid off. Where's your next adventure?",                       wins: 3, maxLosses: 1 },
-    { rank: "ALIVE",     desc: "The Grosksh aren't about to waste a perfectly good servant.",        wins: 2 },
-    { rank: "GROSKSH'D", desc: "Not the best outcome, all things considered." }
+    { rank: "LEGENDS",   desc: "You pay off the Grosksh, and word of your adventures spreads across the galaxy. There's even a song about you." },
+    { rank: "FREE",      desc: "Thanks to some skill and a lot of luck, your debt is paid off. Where will your next adventure take you?" },
+    { rank: "ALIVE",     desc: "The Grosksh are proud of their ruthless reputation, but they aren't about to waste a perfectly good servant." },
+    { rank: "GROSKSH'D", desc: "Your time is up. You have failed the mission." }
   ];
   const SYZYGY2_RANKS = [
-    { rank: "LOADED",            desc: "The only thing that slowed you down was all the loot you brought home.", wins: 3, maxLosses: 0 },
-    { rank: "SAFE",              desc: "Home with one nifty new scar.",                                          wins: 3, maxLosses: 1 },
-    { rank: "BACK TO SQUARE ONE",desc: "Home, broken, and broke, but home.",                                     wins: 1, maxLosses: 2 },
-    { rank: "LOST IN THE UNIVERSE", desc: "The universe is a big place. Someone will find you eventually." }
+    { rank: "LOADED",               desc: "The only thing that slowed you down at all was the extra loot you brought home." },
+    { rank: "SAFE",                 desc: "Home safely, with one nifty new scar to talk about over a round of drinks." },
+    { rank: "BACK TO SQUARE ONE",   desc: "Well, you're home. Broken, and broke, but home." },
+    { rank: "LOST IN THE UNIVERSE", desc: "Way off point: you must accept your fate of being lost in the universe." }
   ];
+  // SYZYGY I: the six cards are dealt 1-2-2-1 into sections A, B, C, D (indexes into cards[]).
+  const SZ1_SECTIONS = [[0], [1, 2], [3, 4], [5]];
+  const SZ1_LABELS   = ["A", "B", "C", "D"];
+  // SYZYGY II "Waypoint": six cards in a right-aligned pyramid  S / a b / x y z.
+  // Black arrows (win) and red arrows (loss) from the booklet's diagram.
+  const SZ2 = { S: { W: "b", L: "a" }, a: { W: "b", L: "x" }, b: { W: "z", L: "y" },
+                x: { W: "y", L: "LOST" }, y: { W: "z", L: "LOST" }, z: { W: "HOME", L: "LOST" } };
+  const SZ2_NODES = ["S", "a", "b", "x", "y", "z"];   // cards[i] sits at node SZ2_NODES[i]
+  const SZ_MODE_LABEL = { syzygy1: "SYZYGY Mode I", syzygy2: "SYZYGY Mode II: Waypoint" };
 
-  let _sz = null;           // active campaign object
+  let _sz       = null;     // active v2 campaign
+  let _szLegacy = null;     // a v1 campaign found in storage (finished: shown; unfinished: migration prompt)
+  let _szKept   = null;     // an unfinished v1 campaign the player chose to keep read-only
   let _szMode   = null;     // setup: "syzygy1" | "syzygy2"
+  let _szSet    = null;     // setup (Mode II): which Adventure Series' six scenarios to use
   let _szChars  = [];       // setup: selected character names
+  let _szLossPending = false; // the "who hit 0 health?" question is showing
 
-  // Guards against an old or hand-edited saved campaign crashing the SYZYGY tab on every visit.
+  const szZero = () => [0, 1, 2].map(() => ({ health: 0, energy: 0 }));
+
+  function szNewCampaign(mode, chars, cards, set) {
+    return {
+      v: 2, mode, set: set || (mode === "syzygy1" ? "series1" : "series2"),
+      characters: [...chars], eliminated: [false, false, false], cards: [...cards],
+      node: mode === "syzygy1" ? 0 : "S", card: 0,
+      wins: 0, losses: 0, retry: false,
+      playing: null, alloc: szZero(), carry: szZero(),
+      results: [], started: new Date().toLocaleString(), completed: false, rank: null
+    };
+  }
+
+  const szAlive   = c => [0, 1, 2].filter(i => !c.eliminated[i]);
+  const szPool    = c => c.retry ? 3 : 5;
+  const szPlaying = c => Array.isArray(c.playing) ? c.playing : [];
+  const szNodeLabel = c => c.mode === "syzygy1" ? SZ1_LABELS[c.node] : c.node;
+
+  function szRank(c) {
+    if (c.mode === "syzygy1") {
+      if (c.wins >= 4) return SYZYGY1_RANKS[c.losses === 0 ? 0 : 1];
+      return SYZYGY1_RANKS[c.wins >= 3 ? 2 : 3];
+    }
+    return c.node === "HOME" ? SYZYGY2_RANKS[Math.min(c.losses, 2)] : SYZYGY2_RANKS[3];
+  }
+
+  // Apply one result to a campaign and return the new campaign (the input is not changed).
+  // elim: indexes of playing characters whose 0 health caused a loss (they leave the campaign).
+  function szApply(c0, result, elim) {
+    const c = JSON.parse(JSON.stringify(c0));
+    const win = result === "Win";
+    const playing = szPlaying(c).length === 2 ? szPlaying(c) : szAlive(c).slice(0, 2);
+    const out = win ? [] : [...new Set(elim || [])].filter(i => playing.includes(i) && !c.eliminated[i]);
+    c.results.push({ node: szNodeLabel(c), scenario: c.cards[c.card], chars: playing, result: win ? "Win" : "Loss",
+                     eliminated: out, retry: c.retry, ts: new Date().toLocaleString() });
+    out.forEach(i => { c.eliminated[i] = true; c.carry[i] = { health: 0, energy: 0 }; });
+    c.alloc = szZero();
+    if (win) c.wins++; else c.losses++;
+    const alive = szAlive(c);
+
+    if (c.mode === "syzygy1") {
+      if (win) {
+        c.retry = false;
+        c.node++;
+        if (c.node >= SZ1_SECTIONS.length) c.completed = true;
+        else c.card = SZ1_SECTIONS[c.node].length === 1 ? SZ1_SECTIONS[c.node][0] : null; // B, C: player picks a card
+      } else if (c.losses >= 2 || alive.length < 2) {
+        c.completed = true;          // a second loss ends the game (or too few characters are left to play)
+      } else {
+        c.retry = true;              // retry the section with 3 resources; in B or C the other card may be chosen
+      }
+    } else {
+      const next = SZ2[c.node][win ? "W" : "L"];
+      if (next === "HOME" || next === "LOST" || alive.length < 2) {
+        c.node = next === "HOME" ? "HOME" : "LOST";   // a bottom-row loss or losing 2 characters: lost
+        c.completed = true;
+      } else {
+        c.node = next;
+        c.card = SZ2_NODES.indexOf(next);
+      }
+    }
+    if (c.completed) { c.retry = false; c.rank = szRank(c); }
+    c.playing = alive.length === 2 ? alive : null;   // the player chooses again who plays next
+    return c;
+  }
+
+  // Only v2 campaigns are accepted; anything else is either a v1 campaign (see isLegacySz) or reset.
   function isValidSz(c) {
+    const isInt = (x, lo, hi) => Number.isInteger(x) && x >= lo && x <= hi;
+    const isCounts = a => Array.isArray(a) && a.length === 3 && a.every(x => x && isInt(x.energy, 0, 99) && isInt(x.health, 0, 99));
+    if (!c || typeof c !== "object" || c.v !== 2) return false;
+    if (c.mode !== "syzygy1" && c.mode !== "syzygy2") return false;
+    if (!Array.isArray(c.characters) || c.characters.length !== 3 || !c.characters.every(s => typeof s === "string")) return false;
+    if (!Array.isArray(c.eliminated) || c.eliminated.length !== 3 || !c.eliminated.every(b => typeof b === "boolean")) return false;
+    if (!Array.isArray(c.cards) || c.cards.length !== 6 || !c.cards.every(s => typeof s === "string")) return false;
+    if (!isInt(c.wins, 0, 4) || !isInt(c.losses, 0, 3) || typeof c.retry !== "boolean" || typeof c.completed !== "boolean") return false;
+    if (!isCounts(c.alloc) || !isCounts(c.carry) || !Array.isArray(c.results)) return false;
+    if (c.playing !== null && !(Array.isArray(c.playing) && c.playing.length === 2 && c.playing[0] !== c.playing[1] &&
+        c.playing.every(i => isInt(i, 0, 2) && !c.eliminated[i]))) return false;
+    if (c.mode === "syzygy1") {
+      if (!isInt(c.node, 0, c.completed ? 4 : 3)) return false;
+      if (!c.completed && !(c.card === null ? SZ1_SECTIONS[c.node].length === 2 : SZ1_SECTIONS[c.node].includes(c.card))) return false;
+    } else {
+      if (c.completed ? !(c.node === "HOME" || c.node === "LOST") : SZ2_NODES.indexOf(c.node) !== c.card) return false;
+    }
+    return true;
+  }
+
+  // The pre-rulebook (v1) campaign shape. Never converted: shown read-only or abandoned.
+  function isLegacySz(c) {
     const isCounts = a => Array.isArray(a) && a.length === 3 && a.every(x => x && Number.isFinite(x.energy) && Number.isFinite(x.health));
-    return !!c && typeof c === "object" &&
+    return !!c && typeof c === "object" && c.v === undefined &&
       (c.mode === "syzygy1" || c.mode === "syzygy2") &&
       Array.isArray(c.characters) && c.characters.length === 3 &&
       Array.isArray(c.removed) && c.removed.length === 3 &&
       isCounts(c.carryover) &&
       Array.isArray(c.scenarios) && c.scenarios.length >= 3 &&
-      Array.isArray(c.stageResults) &&
+      Array.isArray(c.stageResults) && c.stageResults.every(r => r && typeof r.scenario === "string" && Array.isArray(r.chars)) &&
       Number.isInteger(c.stage) && Number.isInteger(c.losses);
   }
 
-  (function loadSzCampaign() {
+  function loadSzCampaign(initial) {
+    _sz = null; _szLegacy = null; _szKept = null;
     try {
       const raw = localStorage.getItem("syzygyCampaign");
-      _sz = raw ? JSON.parse(raw) : null;
-      if (_sz && !isValidSz(_sz)) {
-        _sz = null;
-        setTimeout(() => toast("A saved SYZYGY campaign could not be read and was reset.", "error"), 500);
-      }
-    } catch(e) { _sz = null; }
-  })();
+      const obj = raw ? JSON.parse(raw) : null;
+      if (isValidSz(obj))       _sz = obj;
+      else if (isLegacySz(obj)) _szLegacy = obj;
+      else if (obj && initial)  setTimeout(() => toast("A saved SYZYGY campaign could not be read and was reset.", "error"), 500);
+    } catch(e) {}
+    try {
+      const kept = JSON.parse(localStorage.getItem("syzygyCampaignV1"));
+      if (isLegacySz(kept)) _szKept = kept;
+    } catch(e) {}
+  }
+  loadSzCampaign(true);
 
   function saveSz() {
     try {
-      if (_sz) localStorage.setItem("syzygyCampaign", JSON.stringify(_sz));
+      const obj = _sz || _szLegacy;
+      if (obj) localStorage.setItem("syzygyCampaign", JSON.stringify(obj));
       else     localStorage.removeItem("syzygyCampaign");
+      if (_szKept) localStorage.setItem("syzygyCampaignV1", JSON.stringify(_szKept));
+      else         localStorage.removeItem("syzygyCampaignV1");
     } catch(e) {}
   }
 
-  function szActivePlayers() {
-    const alive = [0,1,2].filter(i => !_sz.removed[i]);
-    if (alive.length < 2) return alive;
-    const benchSlot = _sz.stage % alive.length;
-    return alive.filter((_, i) => i !== benchSlot);
-  }
-
-  function szBenchedPlayer() {
-    const alive = [0,1,2].filter(i => !_sz.removed[i]);
-    if (alive.length < 2) return null;
-    return alive[_sz.stage % alive.length];
-  }
-
-  function szCurrentScenario() {
-    if (!_sz) return null;
-    const { mode, stage, branchChosen, scenarios } = _sz;
-    if (mode === "syzygy1") {
-      if (stage === 0) return scenarios[0];
-      if (stage === 1) return branchChosen === null ? null : (branchChosen === 0 ? scenarios[1] : scenarios[2]);
-      if (stage === 2) return scenarios[3];
-    }
-    return scenarios[stage] || null;
-  }
-
-  function szCalcRank() {
-    const c = _sz;
-    const wins   = c.stageResults.filter(r => r.result === "Win").length;
-    const losses = c.losses;
-    const table  = c.mode === "syzygy1" ? SYZYGY1_RANKS : SYZYGY2_RANKS;
-    for (const entry of table) {
-      if (entry.wins    !== undefined && wins < entry.wins)          continue;
-      if (entry.maxLosses !== undefined && losses > entry.maxLosses) continue;
-      return { rank: entry.rank, desc: entry.desc };
-    }
-    return table[table.length - 1];
-  }
-
-  function szStart(mode, chars) {
-    const s1Scenarios = shuffle([...CONTENT_PACKS.find(p => p.id === "series1").scenarios]);
-    let picked;
-    if (mode === "syzygy1") {
-      picked = s1Scenarios.slice(0, 4); // A, B, C, D
-    } else {
-      picked = shuffle([...scenarios]).slice(0, 3);
-    }
-    _sz = {
-      mode,
-      characters: chars,
-      removed:   [false, false, false],
-      stage:      0,
-      branchChosen: null,
-      scenarios:  picked,
-      carryover:  [{energy:0,health:0},{energy:0,health:0},{energy:0,health:0}],
-      alloc:      null,
-      stageResults: [],
-      losses:     0,
-      retrying:   false,
-      started:    new Date().toLocaleString(),
-      completed:  false,
-      finalRank:  null
-    };
+  function szStart(mode, chars, set) {
+    const useSet = mode === "syzygy1" ? "series1" : (set || "series2");
+    const cards = shuffle([...CONTENT_PACKS.find(p => p.id === useSet).scenarios]);
+    _sz = szNewCampaign(mode, chars, cards, useSet);
+    _szLossPending = false;
     saveSz();
+    typeof track === "function" && track("sz_start", { mode });
     renderSz("szStageHeading");
-    announce("Campaign started.");
+    announce("Campaign started. Choose the two characters who play the first scenario.");
   }
 
-  function szRecordOutcome(result) {
+  function szRecordOutcome(result, elim) {
     const before = JSON.stringify(_sz);
-    const c   = _sz;
-    const sc  = szCurrentScenario();
-    const playing = szActivePlayers();
-    c.stageResults.push({ stage: c.stage, scenario: sc, chars: playing, result, ts: new Date().toLocaleString() });
-
-    if (result === "Win") {
-      c.retrying = false;
-      if (c.mode === "syzygy1") {
-        c.stage = c.stage === 1 ? 2 : c.stage + 1;
-      } else {
-        c.stage++;
-      }
-    } else {
-      c.losses++;
-      if (c.mode === "syzygy2") c.stage++; // red-arrow path still advances
-      c.retrying = true;
-    }
-
-    c.alloc = null;
-
-    const totalStages = c.mode === "syzygy1" ? 3 : 3;
-    const tooManyLosses = c.losses >= 2;
-    if (c.stage >= totalStages || tooManyLosses) {
-      c.completed  = true;
-      c.finalRank  = szCalcRank();
-      c.retrying   = false;
-    }
+    _sz = szApply(_sz, result, elim);
+    _szLossPending = false;
+    const c = _sz;
     saveSz();
     renderSz("szStageHeading");
+    if (c.completed) typeof track === "function" && track("sz_complete", { mode: c.mode, rank: c.rank.rank });
     const word = result === "Win" ? "Victory" : "Defeat";
-    const next = c.completed ? `Campaign complete: ${c.finalRank.rank}.` : "";
-    undoToast(`${word} recorded. ${next}`.trim(), () => {
+    const gone = (c.results[c.results.length - 1].eliminated || []).map(i => c.characters[i]);
+    const msg = [`${word} recorded.`,
+      gone.length ? `${gone.join(" and ")} ${gone.length > 1 ? "are" : "is"} out of the campaign.` : "",
+      c.completed ? `Campaign complete: ${c.rank.rank}.` : (c.retry ? "Retry with 3 resources." : "")].filter(Boolean).join(" ");
+    undoToast(msg, () => {
       _sz = JSON.parse(before);
       saveSz();
       renderSz("szStageHeading");
@@ -2116,7 +2153,7 @@ function getCurrentElapsed() {
 
   function szAbandon() {
     const before = JSON.stringify(_sz);
-    _sz = null;
+    _sz = null; _szLossPending = false;
     saveSz();
     renderSz();
     const h = document.querySelector("#syzygyCampaignContent .panel-title");
@@ -2133,7 +2170,7 @@ function getCurrentElapsed() {
   function szFocusKey(el) {
     if (!el || !el.closest || !el.closest("#syzygyCampaignContent")) return null;
     if (el.id) return "#" + el.id;
-    for (const attr of ["data-char", "data-ai", "data-ci"]) {
+    for (const attr of ["data-char", "data-player", "data-ai", "data-ci"]) {
       if (el.hasAttribute(attr)) {
         const extra = attr === "data-ai" ? `[data-t="${el.dataset.t}"][data-d="${el.dataset.d}"]`
                     : attr === "data-ci" ? `[data-ct="${el.dataset.ct}"][data-cd="${el.dataset.cd}"]` : "";
@@ -2147,9 +2184,10 @@ function getCurrentElapsed() {
     const el = document.getElementById("syzygyCampaignContent");
     if (!el) return;
     const key = focusTarget ? "#" + focusTarget : szFocusKey(document.activeElement);
-    if (!_sz)             szRenderSetup(el);
+    if (_szLegacy && !_sz)  szRenderLegacy(el);
+    else if (!_sz)          szRenderSetup(el);
     else if (_sz.completed) szRenderComplete(el);
-    else                  szRenderActive(el);
+    else                    szRenderActive(el);
     if (!key) return;
     let target = el.querySelector(key);
     // A stepper that just hit its limit is disabled; fall back to its partner.
@@ -2158,31 +2196,122 @@ function getCurrentElapsed() {
     if (target && !target.disabled) target.focus({ preventScroll: !focusTarget });
   }
 
+  const szShort = name => String(name).replace(/!$/, "");
+
+  // The campaign map: Mode I as its four sections, Mode II as the Waypoint pyramid.
+  // Every node says its state in text (and a ✓/✗ mark), not by colour alone.
+  function szMapHTML(c) {
+    const node = (cls, mark, title, name, state) =>
+      `<li class="sz-node ${cls}">${mark ? `<span class="sz-node-mark" aria-hidden="true">${mark}</span>` : ""}` +
+      `<span class="sz-node-title">${esc(title)}</span>` +
+      (name ? `<span class="sz-node-name">${esc(szShort(name))}</span>` : "") +
+      `<span class="sz-node-state">${esc(state)}</span></li>`;
+    const played = k => c.results.filter(r => r.scenario === c.cards[k]);
+    const history = rs => rs.map(r => r.result === "Win" ? "Won" : "Lost").join(", then ");
+    const marks   = rs => rs.map(r => r.result === "Win" ? "✓" : "✗").join("");
+
+    if (c.mode === "syzygy1") {
+      let html = `<ol class="sz-map sz-map-1" aria-label="Campaign map: sections A to D">`;
+      SZ1_SECTIONS.forEach((cardsIn, s) => {
+        html += `<li class="sz-map-row"><span class="sz-map-sec" aria-hidden="true">${SZ1_LABELS[s]}</span><ul class="sz-map-cards" aria-label="Section ${SZ1_LABELS[s]}">`;
+        cardsIn.forEach(k => {
+          const rs = played(k);
+          const last = rs[rs.length - 1];
+          const live = !c.completed && s === c.node;
+          let cls = "", state;
+          if (live && c.card === k)                      { cls = "is-current"; state = rs.length ? `${history(rs)} · retry now` : "Playing now"; }
+          else if (live && c.card === null)              { cls = "is-next"; state = "Choose this or the other card"; }
+          else if (live && c.retry && cardsIn.length > 1) { cls = "is-next"; state = "Can switch to this card"; }
+          else if (last)                                 { cls = last.result === "Win" ? "is-win" : "is-loss"; state = history(rs); }
+          else if (!c.completed && s === c.node + 1 && c.card !== null) { cls = "is-next"; state = cardsIn.length > 1 ? "Next if you win (choose one)" : "Next if you win"; }
+          else if (s < c.node || c.completed)           { cls = "is-skipped"; state = "Not played"; }
+          else                                           { state = "Ahead"; }
+          html += node(cls, marks(rs), `${SZ1_LABELS[s]}${cardsIn.length > 1 ? (k === cardsIn[0] ? " left" : " right") : ""}`, c.cards[k], state);
+        });
+        html += `</ul></li>`;
+      });
+      return html + `</ol>`;
+    }
+
+    const visited = new Set(c.results.map(r => r.node));
+    const nextW = !c.completed ? SZ2[c.node].W : null;
+    const nextL = !c.completed ? SZ2[c.node].L : null;
+    let html = `<ol class="sz-map sz-map-2" aria-label="Campaign map: Waypoint pyramid">`;
+    SZ2_NODES.forEach((n, k) => {
+      const rs = played(k);
+      const last = rs[rs.length - 1];
+      let cls = "", state;
+      if (!c.completed && c.node === n) { cls = "is-current"; state = "Playing now"; }
+      else if (last)                    { cls = last.result === "Win" ? "is-win" : "is-loss"; state = history(rs); }
+      else if (n === nextW)             { cls = "is-next"; state = "Next if you win"; }
+      else if (n === nextL)             { cls = "is-next is-next-loss"; state = "Next if you lose"; }
+      else                              { state = visited.size && (c.completed || !szReachable(c.node).has(n)) ? "Off your path" : "Ahead"; }
+      html += node(`sz-pos-${n} ${cls}`, marks(rs), n === "S" ? "Start" : `Waypoint ${n}`, c.cards[k], state);
+    });
+    // The three exits under the bottom row: x and y lose to the LOST under them, z loses to the middle one.
+    const lostCol = c.node === "x" ? 1 : 2;
+    [["LOST", 1], ["LOST", 2], ["HOME", 3]].forEach(([end, col]) => {
+      let cls = "", state = end === "HOME" ? "3 wins" : "Bottom-row loss";
+      if (c.completed && c.node === end && (end === "HOME" || col === szLostCol(c))) { cls = end === "HOME" ? "is-win" : "is-loss"; state = end === "HOME" ? "You made it" : "You ended here"; }
+      else if (!c.completed && end === "HOME" && nextW === "HOME")              { cls = "is-next"; state = "Next if you win"; }
+      else if (!c.completed && end === "LOST" && nextL === "LOST" && col === lostCol) { cls = "is-next is-next-loss"; state = "Next if you lose"; }
+      html += node(`sz-end sz-end-${col} ${cls}`, cls === "is-win" ? "✓" : cls === "is-loss" ? "✗" : "", end, "", state);
+    });
+    return html + `</ol>`;
+  }
+
+  function szReachable(from) {
+    const seen = new Set(), stack = [from];
+    while (stack.length) { const n = stack.pop(); if (!SZ2[n] || seen.has(n)) continue; seen.add(n); stack.push(SZ2[n].W, SZ2[n].L); }
+    return seen;
+  }
+  // Which LOST exit a finished Mode II campaign took (2 = middle, the default for z and for losing 2 characters).
+  function szLostCol(c) {
+    const last = c.results[c.results.length - 1];
+    return last && last.node === "x" && last.result === "Loss" ? 1 : 2;
+  }
+
   function szRenderSetup(el) {
     const hasSeries1 = enabledPacks.has("series1");
-    const hasSeries2 = enabledPacks.has("series1") || enabledPacks.has("series2");
-    const allChars   = characters;
+    const hasSeries2 = enabledPacks.has("series2");
+    const canMode2   = hasSeries1 || hasSeries2;
+    if (_szMode === "syzygy1" && !hasSeries1) _szMode = null;
+    if (_szMode === "syzygy2" && !canMode2)   _szMode = null;
+    if (!_szSet || !enabledPacks.has(_szSet)) _szSet = hasSeries2 ? "series2" : "series1";
+    const allChars = characters;
 
+    const modeCard = (id, mode, title, desc, req, ok) => `
+        <div class="syzygy-mode-card${!ok ? " disabled" : ""}${_szMode === mode ? " selected" : ""}" id="${id}" role="button" aria-pressed="${_szMode === mode}" aria-disabled="${!ok}" tabindex="${ok ? "0" : "-1"}">
+          <div class="syzygy-mode-card-title">${title}</div>
+          <div class="syzygy-mode-card-desc">${desc}</div>
+          <div class="sz-mode-req">Requires the SYZYGY booklet<br>${req}</div>
+          ${_szMode === mode ? `<span class="syzygy-mode-card-check" aria-hidden="true">✓ Selected</span>` : ""}
+        </div>`;
     const modeHTML = `
       <div class="syzygy-mode-cards">
-        <div class="syzygy-mode-card${!hasSeries1 ? " disabled" : ""}${_szMode === "syzygy1" ? " selected" : ""}" id="szSel1" role="button" aria-pressed="${_szMode === "syzygy1"}" aria-disabled="${!hasSeries1}" tabindex="${hasSeries1 ? "0" : "-1"}">
-          <div class="syzygy-mode-card-title">SYZYGY I</div>
-          <div class="syzygy-mode-card-desc">Three stages: A, then B or C, then D. Pay off your debt to the Grosksh.${!hasSeries1 ? "<br><em>Requires Series 1</em>" : ""}</div>
-          ${_szMode === "syzygy1" ? `<span class="syzygy-mode-card-check" aria-hidden="true">✓ Selected</span>` : ""}
-        </div>
-        <div class="syzygy-mode-card${!hasSeries2 ? " disabled" : ""}${_szMode === "syzygy2" ? " selected" : ""}" id="szSel2" role="button" aria-pressed="${_szMode === "syzygy2"}" aria-disabled="${!hasSeries2}" tabindex="${hasSeries2 ? "0" : "-1"}">
-          <div class="syzygy-mode-card-title">SYZYGY II</div>
-          <div class="syzygy-mode-card-desc">Three scenarios in a row. Stranded across the universe — find your way home.</div>
-          ${_szMode === "syzygy2" ? `<span class="syzygy-mode-card-check" aria-hidden="true">✓ Selected</span>` : ""}
-        </div>
+        ${modeCard("szSel1", "syzygy1", "SYZYGY I", "Pay off your debt to the Grosksh. Four scenarios: A, then one card in B, one in C, then D. Lose once and you retry with 3 resources; lose twice and it's over.",
+          hasSeries1 ? "Uses the 6 Series 1 scenarios" : "<em>Needs Series 1 (turn it on in My Collection)</em>", hasSeries1)}
+        ${modeCard("szSel2", "syzygy2", "SYZYGY II: Waypoint", "Stranded across the universe. Six scenarios in a pyramid: win 3 to get home, a loss sends you down the red arrows. No retries.",
+          canMode2 ? "Uses the 6 scenarios of one Adventure Series" : "<em>Needs an Adventure Series (turn on Series 1 or 2 in My Collection)</em>", canMode2)}
       </div>`;
+
+    let setHTML = "";
+    if (_szMode === "syzygy2" && hasSeries1 && hasSeries2) {
+      setHTML = `
+        <h3 class="section-heading" id="szSetHeading">Scenario Cards</h3>
+        <div class="sz-set-choice" role="group" aria-labelledby="szSetHeading">
+          <button type="button" class="syzygy-char-btn${_szSet === "series2" ? " sel-1" : ""}" id="szSetS2" aria-pressed="${_szSet === "series2"}">Series 2 (as in the booklet)</button>
+          <button type="button" class="syzygy-char-btn${_szSet === "series1" ? " sel-1" : ""}" id="szSetS1" aria-pressed="${_szSet === "series1"}">Series 1</button>
+        </div>`;
+    }
 
     let charHTML = "";
     if (_szMode) {
       const selClasses = ["", "sel-1", "sel-2", "sel-3"];
       charHTML = `
+        ${setHTML}
         <h3 class="section-heading" id="szCharHeading">Choose 3 Characters</h3>
-        <p class="sz-hint">The first two you pick play the first scenario; the third sits it out.</p>
+        <p class="sz-hint">All three start at half health, rounded up. Before each scenario you choose which two play; the third sits out and heals to full.</p>
         <div class="syzygy-char-grid">
           ${allChars.map(c => {
             const si = _szChars.indexOf(c);
@@ -2199,12 +2328,13 @@ function getCurrentElapsed() {
     el.innerHTML = `
       <div class="panel">
         <h2 class="panel-title">SYZYGY Mode</h2>
-        <p class="panel-intro">A multi-scenario cooperative campaign. Three characters work together across linked missions with health and resources carrying over between scenarios.</p>
+        <p class="panel-intro">A solo campaign from the SYZYGY booklets. Guide three characters through linked scenarios; left-over health and energy carry over from one to the next.</p>
         ${modeHTML}
         ${charHTML}
         ${startHint ? `<p class="sz-hint" id="szStartHint">${startHint}</p>` : ""}
         <button class="btn btn-primary" id="szStartBtn"${canStart ? "" : " disabled"}${startHint ? ` aria-describedby="szStartHint"` : ""}>Begin Campaign</button>
-      </div>`;
+      </div>
+      ${_szKept ? szLegacyPanelHTML(_szKept, true) : ""}`;
 
     const sel1 = document.getElementById("szSel1");
     const sel2 = document.getElementById("szSel2");
@@ -2215,9 +2345,13 @@ function getCurrentElapsed() {
       if (changed) announce(`${m === "syzygy1" ? "SYZYGY I" : "SYZYGY II"} selected. Now choose 3 characters.`);
     }
     if (sel1 && hasSeries1) { sel1.addEventListener("click", () => pickMode("syzygy1")); sel1.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); sel1.click(); } }); }
-    if (sel2 && hasSeries2) { sel2.addEventListener("click", () => pickMode("syzygy2")); sel2.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); sel2.click(); } }); }
+    if (sel2 && canMode2)   { sel2.addEventListener("click", () => pickMode("syzygy2")); sel2.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); sel2.click(); } }); }
+    [["szSetS1", "series1"], ["szSetS2", "series2"]].forEach(([id, set]) => {
+      const b = document.getElementById(id);
+      if (b) b.addEventListener("click", () => { _szSet = set; renderSz(); announce(`${set === "series1" ? "Series 1" : "Series 2"} scenario cards.`); });
+    });
 
-    el.querySelectorAll(".syzygy-char-btn").forEach(btn => {
+    el.querySelectorAll(".syzygy-char-btn[data-char]").forEach(btn => {
       btn.addEventListener("click", () => {
         const ch  = btn.dataset.char;
         const idx = _szChars.indexOf(ch);
@@ -2230,153 +2364,167 @@ function getCurrentElapsed() {
     });
 
     const startBtn = document.getElementById("szStartBtn");
-    if (startBtn && canStart) startBtn.addEventListener("click", () => { szStart(_szMode, [..._szChars]); });
+    if (startBtn && canStart) startBtn.addEventListener("click", () => { szStart(_szMode, [..._szChars], _szSet); });
+    szBindLegacyKept();
+  }
+
+  function szRosterHTML(c) {
+    const playing = szPlaying(c);
+    let html = `<div class="panel"><h3 class="panel-title">Roster</h3><div class="syzygy-roster">`;
+    c.characters.forEach((name, i) => {
+      const out = c.eliminated[i];
+      const isPlaying = playing.includes(i);
+      const cardClass = out ? "removed" : (isPlaying ? "playing" : (playing.length === 2 ? "benched" : ""));
+      const roleClass = out ? "role-removed" : (isPlaying ? "role-playing" : "role-benched");
+      const roleText  = c.completed ? (out ? "Eliminated" : "Made it through")
+                      : out ? "Eliminated" : isPlaying ? "Playing" : playing.length === 2 ? "Sitting out · heals to full" : "Waiting to be chosen";
+      const co = c.carry[i];
+      const coText = !out && (co.energy > 0 || co.health > 0) ? `Carrying ${co.health} health, ${co.energy} energy` : "";
+      html += `<div class="syzygy-char-card ${cardClass}"><div class="syzygy-char-name">${esc(name)}</div><div class="syzygy-char-role ${roleClass}">${esc(roleText)}</div>${coText ? `<div class="syzygy-char-carryover">${esc(coText)}</div>` : ""}</div>`;
+    });
+    return html + `</div></div>`;
+  }
+
+  // Where the campaign goes from here, in words, for the current scenario.
+  function szNextText(c) {
+    if (c.mode === "syzygy1") {
+      const win = c.node === 3 ? "you complete the campaign" : `you go on to section ${SZ1_LABELS[c.node + 1]}`;
+      const loss = c.losses ? "the campaign ends (second loss)" : `you retry with 3 resources${SZ1_SECTIONS[c.node].length > 1 ? " and may switch to the other card" : ""}`;
+      return `If you win, ${win}. If you lose, ${loss}.`;
+    }
+    const name = n => n === "HOME" ? "you reach HOME" : n === "LOST" ? "you are LOST IN THE UNIVERSE" : `you go to waypoint ${n}: ${szShort(c.cards[SZ2_NODES.indexOf(n)])}`;
+    return `If you win, ${name(SZ2[c.node].W)}. If you lose, ${name(SZ2[c.node].L)}.`;
   }
 
   function szRenderActive(el) {
     const c = _sz;
-    const pool  = c.retrying ? 3 : 5;
-    const alloc = c.alloc || { chars: szActivePlayers().map(() => ({energy:0, health:0})) };
-    if (!c.alloc) c.alloc = alloc;
-    const totalAlloced = alloc.chars.reduce((s, a) => s + a.energy + a.health, 0);
+    const pool    = szPool(c);
+    const alive   = szAlive(c);
+    if (szPlaying(c).length !== 2 && alive.length === 2) c.playing = alive;
+    const playing = szPlaying(c);
+    const ready   = playing.length === 2;
+    const totalAlloced = playing.reduce((s, i) => s + c.alloc[i].energy + c.alloc[i].health, 0);
     const remaining    = pool - totalAlloced;
-    const playing      = szActivePlayers();
-    const benched      = szBenchedPlayer();
-    const sc           = szCurrentScenario();
-    const modeLabel    = c.mode === "syzygy1" ? "SYZYGY Mode I" : "SYZYGY Mode II: Waypoint";
 
-    // Campaign header
     let html = `
       <div class="syzygy-campaign-header">
         <div>
-          <h2 class="syzygy-campaign-title">${modeLabel}</h2>
-          <div class="syzygy-campaign-meta">Started ${esc(c.started)} · ${c.losses} loss${c.losses !== 1 ? "es" : ""}</div>
+          <h2 class="syzygy-campaign-title">${SZ_MODE_LABEL[c.mode]}</h2>
+          <div class="syzygy-campaign-meta">Started ${esc(c.started)} · ${c.wins} win${c.wins !== 1 ? "s" : ""} · ${c.losses} loss${c.losses !== 1 ? "es" : ""}</div>
         </div>
         <button class="btn btn-danger btn-sm btn-compact" id="szAbandonBtn">Abandon Campaign</button>
       </div>`;
 
-    // Path
-    // Stage state is shown by colour, a ✓/✗ mark, and screen-reader text.
-    const SZ_STATE = { current: ["", "current stage"], win: ["✓", "won"], loss: ["✗", "lost"], "": ["", "not played yet"] };
-    const szMark = st => SZ_STATE[st][0] ? `<span class="syzygy-path-mark" aria-hidden="true">${SZ_STATE[st][0]}</span>` : "";
     html += `<div class="sz-layout"><div class="sz-layout-status">`;
-    html += `<div class="panel"><h3 class="panel-title">Campaign Path</h3><ol class="syzygy-path" style="list-style:none;">`;
-    if (c.mode === "syzygy1") {
-      const stageDefs = [
-        { key: 0, label: "A",   sc: c.scenarios[0] },
-        { key: 1, label: "B/C", sc: c.branchChosen === null ? "Choose…" : (c.branchChosen === 0 ? c.scenarios[1] : c.scenarios[2]) },
-        { key: 2, label: "D",   sc: c.scenarios[3] }
-      ];
-      stageDefs.forEach((s, i) => {
-        const res        = c.stageResults.filter(r => r.stage === s.key).slice(-1)[0];
-        const stateClass = !res ? (c.stage === s.key ? "current" : "") : (res.result === "Win" ? "win" : "loss");
-        const arrow      = i < stageDefs.length - 1 ? `<li class="syzygy-path-arrow" aria-hidden="true">→</li>` : "";
-        html += `<li class="syzygy-path-node"><div class="syzygy-path-stage ${stateClass}"><span class="sr-only">Stage </span>${esc(s.label)}</div><div class="syzygy-path-label">${szMark(stateClass)}${esc(s.sc.replace(/!$/,""))}<span class="sr-only">: ${SZ_STATE[stateClass][1]}</span></div></li>${arrow}`;
-      });
-    } else {
-      c.scenarios.forEach((scenName, i) => {
-        const res        = c.stageResults.filter(r => r.stage === i).slice(-1)[0];
-        const stateClass = !res ? (c.stage === i ? "current" : "") : (res.result === "Win" ? "win" : "loss");
-        const arrow      = i < c.scenarios.length - 1 ? `<li class="syzygy-path-arrow" aria-hidden="true">→</li>` : "";
-        html += `<li class="syzygy-path-node"><div class="syzygy-path-stage ${stateClass}"><span class="sr-only">Scenario </span>${i+1}</div><div class="syzygy-path-label">${szMark(stateClass)}${esc(scenName.replace(/!$/,""))}<span class="sr-only">: ${SZ_STATE[stateClass][1]}</span></div></li>${arrow}`;
-      });
-    }
-    html += `</ol></div>`;
-
-    // Roster
-    html += `<div class="panel"><h3 class="panel-title">Roster</h3><div class="syzygy-roster">`;
-    c.characters.forEach((name, i) => {
-      const isPlaying = playing.includes(i);
-      const isBenched = benched === i;
-      const isRemoved = c.removed[i];
-      const cardClass  = isRemoved ? "removed" : (isPlaying ? "playing" : "benched");
-      const roleClass  = isRemoved ? "role-removed" : (isPlaying ? "role-playing" : "role-benched");
-      const roleText   = isRemoved ? "Eliminated" : (isPlaying ? "Playing" : "Sitting out · heals");
-      const co = c.carryover[i];
-      const coText = (co.energy > 0 || co.health > 0) ? `Carrying ${co.health} health, ${co.energy} energy` : "";
-      html += `<div class="syzygy-char-card ${cardClass}"><div class="syzygy-char-name">${esc(name)}</div><div class="syzygy-char-role ${roleClass}">${esc(roleText)}</div>${coText ? `<div class="syzygy-char-carryover">${esc(coText)}</div>` : ""}</div>`;
-    });
-    html += `</div></div>`;
+    html += `<div class="panel"><h3 class="panel-title">Campaign Map</h3>${szMapHTML(c)}</div>`;
+    html += szRosterHTML(c);
     html += `</div><div class="sz-layout-stage">`;
 
-    // Branch choice (SYZYGY I stage 1 only, before branch is picked)
-    if (c.mode === "syzygy1" && c.stage === 1 && c.branchChosen === null) {
+    if (c.mode === "syzygy1" && c.card === null) {
+      const [l, r] = SZ1_SECTIONS[c.node];
+      const sec = SZ1_LABELS[c.node];
       html += `
         <div class="panel">
-          <h3 class="panel-title syzygy-heading-focus" id="szStageHeading" tabindex="-1">Choose Your Path</h3>
-          <p class="panel-intro">Stage A won. Pick the scenario to play next: B or C. You play only the one you choose.</p>
+          <h3 class="panel-title syzygy-heading-focus" id="szStageHeading" tabindex="-1">Section ${sec}: Choose a Card</h3>
+          <p class="panel-intro">Section ${SZ1_LABELS[c.node - 1]} won. Pick the left or right scenario of section ${sec}. You only need to complete one.</p>
           <div class="syzygy-branch-cards">
             <button type="button" class="syzygy-branch-card" id="szBranchL">
-              <span class="syzygy-branch-tag" style="display:block;">Option B</span>
-              <span class="syzygy-branch-name" style="display:block;">${scenarioHTML(c.scenarios[1])}</span>
+              <span class="syzygy-branch-tag" style="display:block;">${sec} left</span>
+              <span class="syzygy-branch-name" style="display:block;">${scenarioHTML(c.cards[l])}</span>
             </button>
             <button type="button" class="syzygy-branch-card" id="szBranchR">
-              <span class="syzygy-branch-tag" style="display:block;">Option C</span>
-              <span class="syzygy-branch-name" style="display:block;">${scenarioHTML(c.scenarios[2])}</span>
+              <span class="syzygy-branch-tag" style="display:block;">${sec} right</span>
+              <span class="syzygy-branch-name" style="display:block;">${scenarioHTML(c.cards[r])}</span>
             </button>
           </div>
         </div>`;
-    } else if (sc) {
-      // Stage label
+    } else {
+      const sc = c.cards[c.card];
       const stageLabel = c.mode === "syzygy1"
-        ? ["Stage A — First Mission", `Stage ${c.branchChosen === 1 ? "C" : "B"} — Second Mission`, "Stage D — Final Mission"][c.stage] || "Stage"
-        : `Scenario ${c.stage + 1} of 3`;
+        ? `Section ${SZ1_LABELS[c.node]}${c.retry ? " · Retry" : ""}${c.node === 0 ? " · Starting scenario" : c.node === 3 ? " · Final scenario" : ""}`
+        : (c.node === "S" ? "Start" : `Waypoint ${c.node}`) + ` · ${c.wins} of 3 wins`;
+      const other = c.mode === "syzygy1" && c.retry && SZ1_SECTIONS[c.node].length > 1 ? SZ1_SECTIONS[c.node].find(k => k !== c.card) : null;
+      const benched = ready ? alive.filter(i => !playing.includes(i)) : [];
 
-      const playingNames  = playing.map(i => c.characters[i]);
-      const benchedName   = benched !== null ? c.characters[benched] : null;
-
-      // Scenario card
       html += `
         <div class="syzygy-scenario-card">
           <h3 class="syzygy-heading-focus" id="szStageHeading" tabindex="-1" style="font:inherit;">
             <span class="syzygy-stage-label" style="display:block;">${esc(stageLabel)}</span>
             <span class="syzygy-stage-scenario" style="display:block;">${scenarioHTML(sc)}</span>
           </h3>
-          <div class="syzygy-playing">Playing: <strong>${playingNames.map(esc).join(" &amp; ")}</strong>${benchedName ? ` · Sitting out: ${esc(benchedName)} (heals)` : ""}</div>
-          ${c.retrying ? `<div class="notice notice-danger syzygy-retry-notice">Retry after a defeat: only 3 resource points this attempt.</div>` : ""}
+          <div class="syzygy-playing">${ready ? `Playing: <strong>${playing.map(i => esc(c.characters[i])).join(" &amp; ")}</strong>${benched.length ? ` · Sitting out: ${esc(c.characters[benched[0]])} (heals to full)` : ""}` : "Choose who plays below."}</div>
+          <p class="syzygy-playing sz-next-text">${esc(szNextText(c))}</p>
+          ${c.retry ? `<div class="notice notice-danger syzygy-retry-notice">Retry after a defeat: only 3 resources this attempt.</div>` : ""}
+          ${other !== null ? `<button type="button" class="btn btn-secondary btn-sm sz-switch-btn" id="szSwitchBtn">Switch to the other ${SZ1_LABELS[c.node]} card: ${esc(szShort(c.cards[other]))}</button>` : ""}
         </div>`;
 
-      // Pre-scenario resources
-      const resRows = playing.map((ci, i) => {
-        const name = c.characters[ci];
-        const a    = alloc.chars[i];
-        const co   = c.carryover[ci];
-        return `
+      // Who plays
+      html += `
+        <div class="panel">
+          <h3 class="panel-title" id="szPlayersHeading">Who Plays?</h3>
+          ${alive.length > 2
+            ? `<p class="panel-intro">Choose two characters. The third sits out this scenario and heals to full health.</p>
+               <div class="sz-player-choice" role="group" aria-labelledby="szPlayersHeading">
+                 ${alive.map(i => `<button type="button" class="syzygy-char-btn${playing.includes(i) ? " sel-1" : ""}" data-player="${i}" aria-pressed="${playing.includes(i)}">${esc(c.characters[i])}${playing.includes(i) ? `<span class="sz-sel-num" aria-hidden="true">Plays</span>` : ""}</button>`).join("")}
+               </div>`
+            : `<p class="panel-intro">Only two characters are left, so both play.</p>`}
+        </div>`;
+
+      if (ready) {
+        const resRows = playing.map(ci => {
+          const name = c.characters[ci];
+          const a    = c.alloc[ci];
+          const co   = c.carry[ci];
+          return `
           <div class="syzygy-resource-row">
             <div class="syzygy-resource-char">
               <div class="syzygy-resource-name">${esc(name)}</div>
-              ${co.energy > 0 || co.health > 0 ? `<div class="syzygy-carryover-note">Carryover: <span aria-hidden="true">❤️</span><span class="sr-only">health</span> ${co.health} <span aria-hidden="true">⚡</span><span class="sr-only">energy</span> ${co.energy}</div>` : ""}
+              ${co.energy > 0 || co.health > 0 ? `<div class="syzygy-carryover-note">Carried over: <span aria-hidden="true">❤️</span><span class="sr-only">health</span> ${co.health} <span aria-hidden="true">⚡</span><span class="sr-only">energy</span> ${co.energy}</div>` : ""}
             </div>
             <div class="syzygy-resource-controls">
               <span class="sz-step-group"><span class="syzygy-resource-label" aria-hidden="true">❤️</span>
               <div class="syzygy-stepper" role="group" aria-label="${esc(name)} health">
-                <button class="btn-sz-step" data-ai="${i}" data-t="health" data-d="-1" aria-label="Remove 1 health from ${esc(name)}"${a.health <= 0 ? " disabled" : ""}>−</button>
+                <button class="btn-sz-step" data-ai="${ci}" data-t="health" data-d="-1" aria-label="Remove 1 health from ${esc(name)}"${a.health <= 0 ? " disabled" : ""}>−</button>
                 <span class="sz-step-val"><span class="sr-only">Health </span>${a.health}</span>
-                <button class="btn-sz-step" data-ai="${i}" data-t="health" data-d="1" aria-label="Add 1 health to ${esc(name)}"${remaining <= 0 ? " disabled" : ""}>+</button>
+                <button class="btn-sz-step" data-ai="${ci}" data-t="health" data-d="1" aria-label="Add 1 health to ${esc(name)}"${remaining <= 0 ? " disabled" : ""}>+</button>
               </div></span>
               <span class="sz-step-group"><span class="syzygy-resource-label" aria-hidden="true">⚡</span>
               <div class="syzygy-stepper" role="group" aria-label="${esc(name)} energy">
-                <button class="btn-sz-step" data-ai="${i}" data-t="energy" data-d="-1" aria-label="Remove 1 energy from ${esc(name)}"${a.energy <= 0 ? " disabled" : ""}>−</button>
+                <button class="btn-sz-step" data-ai="${ci}" data-t="energy" data-d="-1" aria-label="Remove 1 energy from ${esc(name)}"${a.energy <= 0 ? " disabled" : ""}>−</button>
                 <span class="sz-step-val"><span class="sr-only">Energy </span>${a.energy}</span>
-                <button class="btn-sz-step" data-ai="${i}" data-t="energy" data-d="1" aria-label="Add 1 energy to ${esc(name)}"${remaining <= 0 ? " disabled" : ""}>+</button>
+                <button class="btn-sz-step" data-ai="${ci}" data-t="energy" data-d="1" aria-label="Add 1 energy to ${esc(name)}"${remaining <= 0 ? " disabled" : ""}>+</button>
               </div></span>
             </div>
           </div>`;
-      }).join("");
+        }).join("");
 
-      html += `
+        html += `
         <div class="panel">
           <h3 class="panel-title">Before the Scenario: Resources</h3>
-          <p class="panel-intro">Share <strong>${pool}</strong> bonus points between the playing characters as <span aria-hidden="true">❤️</span> Health or <span aria-hidden="true">⚡</span> Energy. Energy can't go above the maximum shown on the scenario card.</p>
+          <p class="panel-intro">Share <strong>${pool}</strong> resources between the playing characters as <span aria-hidden="true">❤️</span> health or <span aria-hidden="true">⚡</span> energy. A character's energy can't go above the maximum shown on the scenario card.</p>
           ${resRows}
-          <div class="syzygy-pool-bar">${remaining} point${remaining !== 1 ? "s" : ""} left to share</div>
+          <div class="syzygy-pool-bar">${remaining} resource${remaining !== 1 ? "s" : ""} left to share</div>
         </div>`;
+      }
 
-      // Carryover tracking
-      const coRows = playing.map(ci => {
-        const name = c.characters[ci];
-        const co   = c.carryover[ci];
-        return `
+      if (ready && _szLossPending) {
+        html += `
+        <div class="panel">
+          <h3 class="panel-title syzygy-heading-focus" id="szLossHeading" tabindex="-1">Record a Defeat</h3>
+          <fieldset class="sz-elim">
+            <legend class="panel-intro">Did a character's 0 health cause the loss? That character is removed from the campaign. Leave both unticked if you lost another way.</legend>
+            ${playing.map(i => `<label class="sz-elim-option"><input type="checkbox" id="szElim${i}" value="${i}"> ${esc(c.characters[i])} reached 0 health</label>`).join("")}
+          </fieldset>
+          <div class="syzygy-outcome-btns">
+            <button class="btn btn-secondary" id="szLossCancel">Cancel</button>
+            <button class="btn-sz-loss" id="szLossConfirm"><span aria-hidden="true">✗</span> Record Defeat</button>
+          </div>
+        </div>`;
+      } else {
+        const coRows = ready ? playing.map(ci => {
+          const name = c.characters[ci];
+          const co   = c.carry[ci];
+          return `
           <div class="syzygy-carryover-row">
             <span class="syzygy-carryover-name">${esc(name)}</span>
             <span class="sz-step-group"><span aria-hidden="true">❤️</span>
@@ -2392,18 +2540,19 @@ function getCurrentElapsed() {
               <button class="btn-sz-step" data-ci="${ci}" data-ct="energy" data-cd="1" aria-label="Add 1 left-over energy to ${esc(name)}">+</button>
             </div></span>
           </div>`;
-      }).join("");
+        }).join("") : "";
 
-      html += `
+        html += `
         <div class="panel">
           <h3 class="panel-title">After the Scenario: Outcome</h3>
-          <p class="panel-intro">When the scenario ends, enter each character's left-over <span aria-hidden="true">❤️</span> health and <span aria-hidden="true">⚡</span> energy (they carry over), then record the result.</p>
+          ${ready ? `<p class="panel-intro">When the scenario ends, enter each character's unused <span aria-hidden="true">❤️</span> health and <span aria-hidden="true">⚡</span> energy (they carry over to the next stage), then record the result.</p>` : `<p class="sz-hint" id="szOutcomeHint">Choose the two characters who play first.</p>`}
           ${coRows}
           <div class="syzygy-outcome-btns">
-            <button class="btn-sz-win"  id="szWinBtn"><span aria-hidden="true">✓</span> Victory</button>
-            <button class="btn-sz-loss" id="szLossBtn"><span aria-hidden="true">✗</span> Defeat</button>
+            <button class="btn-sz-win"  id="szWinBtn"${ready ? "" : ` disabled aria-describedby="szOutcomeHint"`}><span aria-hidden="true">✓</span> Victory</button>
+            <button class="btn-sz-loss" id="szLossBtn"${ready ? "" : ` disabled aria-describedby="szOutcomeHint"`}><span aria-hidden="true">✗</span> Defeat</button>
           </div>
         </div>`;
+      }
     }
 
     html += `</div></div>`;
@@ -2414,77 +2563,104 @@ function getCurrentElapsed() {
       openModal("szAbandonModal", "szAbandonCancel");
     });
 
+    const pickCard = k => { c.card = k; saveSz(); renderSz("szStageHeading"); announce(`${szShort(c.cards[k])} chosen.`); };
     const branchL = document.getElementById("szBranchL");
     const branchR = document.getElementById("szBranchR");
-    if (branchL) branchL.addEventListener("click", () => { c.branchChosen = 0; saveSz(); renderSz("szStageHeading"); });
-    if (branchR) branchR.addEventListener("click", () => { c.branchChosen = 1; saveSz(); renderSz("szStageHeading"); });
+    if (branchL) branchL.addEventListener("click", () => pickCard(SZ1_SECTIONS[c.node][0]));
+    if (branchR) branchR.addEventListener("click", () => pickCard(SZ1_SECTIONS[c.node][1]));
+    const sw = document.getElementById("szSwitchBtn");
+    if (sw) sw.addEventListener("click", () => pickCard(SZ1_SECTIONS[c.node].find(k => k !== c.card)));
 
-    // Allocation steppers (data-ai, data-t, data-d)
+    el.querySelectorAll("[data-player]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const i = parseInt(btn.dataset.player, 10);
+        let p = szPlaying(c).slice();
+        if (p.includes(i)) { p = p.filter(x => x !== i); c.alloc[i] = { health: 0, energy: 0 }; }
+        else if (p.length < 2) p.push(i);
+        else { toast("Two characters already play. Tap one of them to sit them out first.", "error"); return; }
+        c.playing = p.length ? p.sort((a, b) => a - b) : null;
+        _szLossPending = false;
+        saveSz(); renderSz();
+        announce(p.length === 2 ? `${p.map(x => c.characters[x]).join(" and ")} play. ${c.characters[alive.find(x => !p.includes(x))]} sits out and heals.` : `${c.characters[i]} ${p.includes(i) ? "plays" : "sits out"}. Choose ${2 - p.length} more.`);
+      });
+    });
+
+    // Allocation steppers (data-ai = character index, data-t, data-d)
     el.querySelectorAll("[data-ai]").forEach(btn => {
       btn.addEventListener("click", () => {
-        const ai  = parseInt(btn.dataset.ai);
+        const ci  = parseInt(btn.dataset.ai, 10);
         const t   = btn.dataset.t;
-        const dir = parseInt(btn.dataset.d);
-        const tot = c.alloc.chars.reduce((s, a) => s + a.energy + a.health, 0);
-        if (dir > 0 && (pool - tot) <= 0) return;
-        if (dir < 0 && c.alloc.chars[ai][t] <= 0) return;
-        c.alloc.chars[ai][t] += dir;
+        const dir = parseInt(btn.dataset.d, 10);
+        const tot = () => szPlaying(c).reduce((s, i) => s + c.alloc[i].energy + c.alloc[i].health, 0);
+        if (dir > 0 && (pool - tot()) <= 0) return;
+        if (dir < 0 && c.alloc[ci][t] <= 0) return;
+        c.alloc[ci][t] += dir;
         saveSz(); renderSz();
-        const left = pool - c.alloc.chars.reduce((s, a) => s + a.energy + a.health, 0);
-        announce(`${c.characters[playing[ai]]} ${t} ${c.alloc.chars[ai][t]}. ${left} point${left !== 1 ? "s" : ""} left.`);
+        const left = pool - tot();
+        announce(`${c.characters[ci]} ${t} ${c.alloc[ci][t]}. ${left} resource${left !== 1 ? "s" : ""} left.`);
       });
     });
 
     // Carryover steppers (data-ci, data-ct, data-cd)
     el.querySelectorAll("[data-ci]").forEach(btn => {
       btn.addEventListener("click", () => {
-        const ci  = parseInt(btn.dataset.ci);
+        const ci  = parseInt(btn.dataset.ci, 10);
         const t   = btn.dataset.ct;
-        const dir = parseInt(btn.dataset.cd);
-        if (dir < 0 && c.carryover[ci][t] <= 0) return;
-        c.carryover[ci][t] = Math.max(0, c.carryover[ci][t] + dir);
+        const dir = parseInt(btn.dataset.cd, 10);
+        if (dir < 0 && c.carry[ci][t] <= 0) return;
+        c.carry[ci][t] = Math.min(99, Math.max(0, c.carry[ci][t] + dir));
         saveSz(); renderSz();
-        announce(`${c.characters[ci]} left-over ${t} ${c.carryover[ci][t]}.`);
+        announce(`${c.characters[ci]} left-over ${t} ${c.carry[ci][t]}.`);
       });
     });
 
     const winBtn  = document.getElementById("szWinBtn");
     const lossBtn = document.getElementById("szLossBtn");
-    if (winBtn)  winBtn .addEventListener("click", () => szRecordOutcome("Win"));
-    if (lossBtn) lossBtn.addEventListener("click", () => szRecordOutcome("Loss"));
+    if (winBtn)  winBtn .addEventListener("click", () => szRecordOutcome("Win", []));
+    if (lossBtn) lossBtn.addEventListener("click", () => { _szLossPending = true; renderSz("szLossHeading"); });
+    const lossOk = document.getElementById("szLossConfirm");
+    const lossNo = document.getElementById("szLossCancel");
+    if (lossOk) lossOk.addEventListener("click", () => {
+      const elim = [...el.querySelectorAll(".sz-elim input:checked")].map(x => parseInt(x.value, 10));
+      szRecordOutcome("Loss", elim);
+    });
+    if (lossNo) lossNo.addEventListener("click", () => { _szLossPending = false; renderSz("szLossBtn"); });
+  }
+
+  function szRankColor(rank) {
+    if (rank === "LEGENDS" || rank === "LOADED") return "var(--accent-yellow)";
+    if (rank === "FREE" || rank === "SAFE")      return "var(--accent-teal)";
+    return "var(--loss-color)";
   }
 
   function szRenderComplete(el) {
-    const c     = _sz;
-    const rank  = c.finalRank || szCalcRank();
-    const wins  = c.stageResults.filter(r => r.result === "Win").length;
-    const modeLabel = c.mode === "syzygy1" ? "SYZYGY Mode I" : "SYZYGY Mode II: Waypoint";
-    const goodRanks = new Set(["LEGENDS","FREE","LOADED","SAFE"]);
-    const rankColor = goodRanks.has(rank.rank) ? (rank.rank === "LEGENDS" || rank.rank === "LOADED" ? "var(--accent-yellow)" : "var(--accent-teal)") : "var(--loss-color)";
-
-    const histRows = c.stageResults.map(r =>
-      `<tr>
-        <td class="cell-meta">${esc(r.scenario)}</td>
-        <td class="cell-meta">${r.chars.map(i => c.characters[i]).map(esc).join(" &amp; ")}</td>
-        <td><span class="result-pill ${r.result === "Win" ? "win" : "loss"}">${esc(r.result)}</span></td>
-      </tr>`
-    ).join("");
+    const c    = _sz;
+    const rank = c.rank || szRank(c);
+    const histRows = c.results.map(r => {
+      const gone = (r.eliminated || []).map(i => c.characters[i]);
+      return `<tr>
+        <td class="cell-meta">${esc(c.mode === "syzygy1" ? `Section ${r.node}` : r.node === "S" ? "Start" : `Waypoint ${r.node}`)}${r.retry ? " (retry)" : ""}: ${esc(r.scenario)}</td>
+        <td class="cell-meta">${r.chars.map(i => esc(c.characters[i])).join(" &amp; ")}${gone.length ? `<br>Eliminated: ${gone.map(esc).join(", ")}` : ""}</td>
+        <td><span class="result-pill ${r.result === "Win" ? "win" : "loss"}"><span aria-hidden="true">${r.result === "Win" ? "✓" : "✗"}</span> ${esc(r.result)}</span></td>
+      </tr>`;
+    }).join("");
 
     el.innerHTML = `
       <div class="panel">
-        <h2 class="panel-title syzygy-heading-focus" id="szStageHeading" tabindex="-1">${modeLabel} — Complete</h2>
+        <h2 class="panel-title syzygy-heading-focus" id="szStageHeading" tabindex="-1">${SZ_MODE_LABEL[c.mode]} — Complete</h2>
         <div class="syzygy-rank-card">
           <div class="syzygy-rank-eyebrow">Final Rank</div>
-          <div class="syzygy-rank-value" style="color:${rankColor};">${esc(rank.rank)}</div>
+          <div class="syzygy-rank-value" style="color:${szRankColor(rank.rank)};">${esc(rank.rank)}</div>
           <div class="syzygy-rank-desc">${esc(rank.desc)}</div>
           <div class="syzygy-rank-stats">
-            <div><div class="syzygy-rank-stat-val">${wins}</div><div class="syzygy-rank-stat-label">${wins === 1 ? "Win" : "Wins"}</div></div>
+            <div><div class="syzygy-rank-stat-val">${c.wins}</div><div class="syzygy-rank-stat-label">${c.wins === 1 ? "Win" : "Wins"}</div></div>
             <div><div class="syzygy-rank-stat-val">${c.losses}</div><div class="syzygy-rank-stat-label">${c.losses === 1 ? "Loss" : "Losses"}</div></div>
-            <div><div class="syzygy-rank-stat-val">${c.stageResults.length}</div><div class="syzygy-rank-stat-label">Scenarios</div></div>
+            <div><div class="syzygy-rank-stat-val">${c.results.length}</div><div class="syzygy-rank-stat-label">Scenarios</div></div>
           </div>
         </div>
-        <h3 class="panel-title" style="margin-bottom:10px;">Characters</h3>
-        <p class="panel-intro">${esc(c.characters.join(" · "))}</p>
+        <h3 class="panel-title">Campaign Map</h3>
+        ${szMapHTML(c)}
+        ${szRosterHTML(c)}
         ${histRows ? `
         <h3 class="section-heading" id="szLogHeading">Campaign Log</h3>
         <div class="history-table-wrap" tabindex="0" role="region" aria-labelledby="szLogHeading">
@@ -2496,12 +2672,117 @@ function getCurrentElapsed() {
         <button class="btn btn-primary" id="szNewCampaignBtn" style="margin-top:16px;">Start New Campaign</button>
       </div>`;
     restoreTableRoles(el);
+    szBindNewCampaign();
+  }
 
+  function szBindNewCampaign() {
     document.getElementById("szNewCampaignBtn").addEventListener("click", () => {
-      _sz = null; _szMode = null; _szChars = [];
+      _sz = null; _szLegacy = null; _szMode = null; _szChars = [];
       saveSz(); renderSz();
       const h = document.querySelector("#syzygyCampaignContent .panel-title");
       if (h) { h.setAttribute("tabindex", "-1"); h.focus(); }
+    });
+  }
+
+  // ─── SYZYGY v1 (pre-rulebook) campaigns ─────────────────────────────────────
+  // Earlier versions saved a different campaign shape that didn't follow the booklets.
+  // It is never converted: a finished one keeps showing its result; an unfinished one is
+  // offered "Abandon" or "Keep read-only" (moved to syzygyCampaignV1 so a new one can start).
+
+  function szLegacyLogHTML(c, idPrefix) {
+    const rows = c.stageResults.map(r => `<tr>
+        <td class="cell-meta">${esc(r.scenario)}</td>
+        <td class="cell-meta">${r.chars.map(i => esc(c.characters[i] || "")).join(" &amp; ")}</td>
+        <td><span class="result-pill ${r.result === "Win" ? "win" : "loss"}"><span aria-hidden="true">${r.result === "Win" ? "✓" : "✗"}</span> ${esc(r.result)}</span></td>
+      </tr>`).join("");
+    if (!rows) return `<p class="panel-intro">No scenarios were recorded.</p>`;
+    return `
+        <h3 class="section-heading" id="${idPrefix}LogHeading">Campaign Log</h3>
+        <div class="history-table-wrap" tabindex="0" role="region" aria-labelledby="${idPrefix}LogHeading">
+          <table>
+            <thead><tr><th>Scenario</th><th>Characters</th><th>Result</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`;
+  }
+
+  function szLegacyPanelHTML(c, kept) {
+    const wins = c.stageResults.filter(r => r.result === "Win").length;
+    return `
+      <div class="panel" id="${kept ? "szKeptPanel" : "szLegacyPanel"}">
+        <h3 class="panel-title">${kept ? "Old Campaign (read-only)" : "Old Campaign Found"}</h3>
+        <p class="panel-intro">${esc(SZ_MODE_LABEL[c.mode])} with ${esc(c.characters.join(", "))}. Started ${esc(c.started || "earlier")} · ${wins} win${wins !== 1 ? "s" : ""} · ${c.losses} loss${c.losses !== 1 ? "es" : ""}.</p>
+        ${szLegacyLogHTML(c, kept ? "szKept" : "szLegacy")}
+        ${kept ? `<button class="btn btn-danger btn-sm btn-compact sz-legacy-actions" id="szKeptDelete">Delete Old Campaign</button>` : ""}
+      </div>`;
+  }
+
+  function szRenderLegacy(el) {
+    const c = _szLegacy;
+    if (c.completed) {
+      const rank = c.finalRank && typeof c.finalRank.rank === "string" ? c.finalRank : { rank: "Finished", desc: "" };
+      const wins = c.stageResults.filter(r => r.result === "Win").length;
+      el.innerHTML = `
+      <div class="panel">
+        <h2 class="panel-title syzygy-heading-focus" id="szStageHeading" tabindex="-1">${SZ_MODE_LABEL[c.mode]} — Complete</h2>
+        <div class="syzygy-rank-card">
+          <div class="syzygy-rank-eyebrow">Final Rank</div>
+          <div class="syzygy-rank-value" style="color:${szRankColor(rank.rank)};">${esc(rank.rank)}</div>
+          <div class="syzygy-rank-desc">${esc(rank.desc || "")}</div>
+          <div class="syzygy-rank-stats">
+            <div><div class="syzygy-rank-stat-val">${wins}</div><div class="syzygy-rank-stat-label">${wins === 1 ? "Win" : "Wins"}</div></div>
+            <div><div class="syzygy-rank-stat-val">${c.losses}</div><div class="syzygy-rank-stat-label">${c.losses === 1 ? "Loss" : "Losses"}</div></div>
+            <div><div class="syzygy-rank-stat-val">${c.stageResults.length}</div><div class="syzygy-rank-stat-label">Scenarios</div></div>
+          </div>
+        </div>
+        <p class="sz-hint">Played with an earlier version of this app, before SYZYGY followed the booklet's rules.</p>
+        <h3 class="panel-title">Characters</h3>
+        <p class="panel-intro">${esc(c.characters.join(" · "))}</p>
+        ${szLegacyLogHTML(c, "sz")}
+        <button class="btn btn-primary" id="szNewCampaignBtn" style="margin-top:16px;">Start New Campaign</button>
+      </div>`;
+      restoreTableRoles(el);
+      szBindNewCampaign();
+      return;
+    }
+    el.innerHTML = `
+      <div class="panel">
+        <h2 class="panel-title syzygy-heading-focus" id="szStageHeading" tabindex="-1">SYZYGY Has Changed</h2>
+        <p class="panel-intro">SYZYGY now follows the booklets: four sections in Mode I, the six-card Waypoint pyramid in Mode II, and you choose who plays each scenario. Your unfinished campaign was started with the old rules and can't be continued.</p>
+        <div class="modal-actions sz-legacy-actions">
+          <button class="btn btn-secondary" id="szLegacyKeep">Keep Read-only</button>
+          <button class="btn btn-danger" id="szLegacyAbandon">Abandon</button>
+        </div>
+      </div>
+      ${szLegacyPanelHTML(c, false)}`;
+    restoreTableRoles(el);
+    document.getElementById("szLegacyKeep").addEventListener("click", () => {
+      _szKept = _szLegacy; _szLegacy = null;
+      saveSz(); renderSz();
+      const h = document.querySelector("#syzygyCampaignContent .panel-title");
+      if (h) { h.setAttribute("tabindex", "-1"); h.focus(); }
+      toast("Old campaign kept read-only. You can start a new campaign.");
+    });
+    document.getElementById("szLegacyAbandon").addEventListener("click", () => {
+      const before = _szLegacy;
+      _szLegacy = null;
+      saveSz(); renderSz();
+      const h = document.querySelector("#syzygyCampaignContent .panel-title");
+      if (h) { h.setAttribute("tabindex", "-1"); h.focus(); }
+      undoToast("Old campaign abandoned.", () => { _szLegacy = before; saveSz(); renderSz("szStageHeading"); toast("Old campaign restored."); });
+    });
+  }
+
+  function szBindLegacyKept() {
+    const del = document.getElementById("szKeptDelete");
+    if (!del) return;
+    del.addEventListener("click", () => {
+      const before = _szKept;
+      _szKept = null;
+      saveSz(); renderSz();
+      const h = document.querySelector("#syzygyCampaignContent .panel-title");
+      if (h) { h.setAttribute("tabindex", "-1"); h.focus(); }
+      undoToast("Old campaign deleted.", () => { _szKept = before; saveSz(); renderSz(); toast("Old campaign restored."); });
     });
   }
 
