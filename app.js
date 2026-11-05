@@ -434,6 +434,8 @@
     unplayedDirty = true;
     statsDirty    = true;
     syncExportBtn();
+    // Feature scripts (insights.js) re-render from this.
+    document.dispatchEvent(new Event("tsr:records-changed"));
   }
 
   // Union by id, first list wins.
@@ -1494,6 +1496,8 @@ function getCurrentElapsed() {
     displayHistory();
     displayUnplayed();
     displayStats();
+    // Feature scripts that draw from the owned pools (insights.js) re-render from this.
+    document.dispatchEvent(new Event("tsr:collection-changed"));
   }
 
   // ─── Generic modal helpers ───────────────────────────────────────────────────
