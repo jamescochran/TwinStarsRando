@@ -680,6 +680,7 @@ function getCurrentElapsed() {
           </table>
         </div>
       </div>`;
+    restoreTableRoles(div);
 
     // Property assignment (not addEventListener): this runs on every render.
     div.onclick = e => {
@@ -2183,13 +2184,14 @@ function getCurrentElapsed() {
           <h2 class="syzygy-campaign-title">${modeLabel}</h2>
           <div class="syzygy-campaign-meta">Started ${esc(c.started)} · ${c.losses} loss${c.losses !== 1 ? "es" : ""}</div>
         </div>
-        <button class="btn btn-danger btn-sm" id="szAbandonBtn">Abandon Campaign</button>
+        <button class="btn btn-danger btn-sm btn-compact" id="szAbandonBtn">Abandon Campaign</button>
       </div>`;
 
     // Path
     // Stage state is shown by colour, a ✓/✗ mark, and screen-reader text.
     const SZ_STATE = { current: ["", "current stage"], win: ["✓", "won"], loss: ["✗", "lost"], "": ["", "not played yet"] };
     const szMark = st => SZ_STATE[st][0] ? `<span class="syzygy-path-mark" aria-hidden="true">${SZ_STATE[st][0]}</span>` : "";
+    html += `<div class="sz-layout"><div class="sz-layout-status">`;
     html += `<div class="panel"><h3 class="panel-title">Campaign Path</h3><ol class="syzygy-path" style="list-style:none;">`;
     if (c.mode === "syzygy1") {
       const stageDefs = [
@@ -2227,6 +2229,7 @@ function getCurrentElapsed() {
       html += `<div class="syzygy-char-card ${cardClass}"><div class="syzygy-char-name">${esc(name)}</div><div class="syzygy-char-role ${roleClass}">${esc(roleText)}</div>${coText ? `<div class="syzygy-char-carryover">${esc(coText)}</div>` : ""}</div>`;
     });
     html += `</div></div>`;
+    html += `</div><div class="sz-layout-stage">`;
 
     // Branch choice (SYZYGY I stage 1 only, before branch is picked)
     if (c.mode === "syzygy1" && c.stage === 1 && c.branchChosen === null) {
@@ -2277,18 +2280,18 @@ function getCurrentElapsed() {
               ${co.energy > 0 || co.health > 0 ? `<div style="font-size:11px;color:var(--text-dim);">Carryover: <span aria-hidden="true">❤️</span><span class="sr-only">health</span> ${co.health} <span aria-hidden="true">⚡</span><span class="sr-only">energy</span> ${co.energy}</div>` : ""}
             </div>
             <div class="syzygy-resource-controls">
-              <span class="syzygy-resource-label" aria-hidden="true">❤️</span>
+              <span class="sz-step-group"><span class="syzygy-resource-label" aria-hidden="true">❤️</span>
               <div class="syzygy-stepper" role="group" aria-label="${esc(name)} health">
                 <button class="btn-sz-step" data-ai="${i}" data-t="health" data-d="-1" aria-label="Remove 1 health from ${esc(name)}"${a.health <= 0 ? " disabled" : ""}>−</button>
                 <span class="sz-step-val"><span class="sr-only">Health </span>${a.health}</span>
                 <button class="btn-sz-step" data-ai="${i}" data-t="health" data-d="1" aria-label="Add 1 health to ${esc(name)}"${remaining <= 0 ? " disabled" : ""}>+</button>
-              </div>
-              <span class="syzygy-resource-label" aria-hidden="true">⚡</span>
+              </div></span>
+              <span class="sz-step-group"><span class="syzygy-resource-label" aria-hidden="true">⚡</span>
               <div class="syzygy-stepper" role="group" aria-label="${esc(name)} energy">
                 <button class="btn-sz-step" data-ai="${i}" data-t="energy" data-d="-1" aria-label="Remove 1 energy from ${esc(name)}"${a.energy <= 0 ? " disabled" : ""}>−</button>
                 <span class="sz-step-val"><span class="sr-only">Energy </span>${a.energy}</span>
                 <button class="btn-sz-step" data-ai="${i}" data-t="energy" data-d="1" aria-label="Add 1 energy to ${esc(name)}"${remaining <= 0 ? " disabled" : ""}>+</button>
-              </div>
+              </div></span>
             </div>
           </div>`;
       }).join("");
@@ -2308,18 +2311,18 @@ function getCurrentElapsed() {
         return `
           <div class="syzygy-carryover-row">
             <span class="syzygy-carryover-name">${esc(name)}</span>
-            <span aria-hidden="true">❤️</span>
-            <div class="syzygy-stepper is-compact" role="group" aria-label="${esc(name)} health left over">
+            <span class="sz-step-group"><span aria-hidden="true">❤️</span>
+            <div class="syzygy-stepper is-compact syzygy-stepper-compact" role="group" aria-label="${esc(name)} health left over">
               <button class="btn-sz-step" data-ci="${ci}" data-ct="health" data-cd="-1" aria-label="Remove 1 left-over health from ${esc(name)}"${co.health <= 0 ? " disabled" : ""}>−</button>
               <span class="sz-step-val"><span class="sr-only">Health </span>${co.health}</span>
               <button class="btn-sz-step" data-ci="${ci}" data-ct="health" data-cd="1" aria-label="Add 1 left-over health to ${esc(name)}">+</button>
-            </div>
-            <span aria-hidden="true">⚡</span>
-            <div class="syzygy-stepper is-compact" role="group" aria-label="${esc(name)} energy left over">
+            </div></span>
+            <span class="sz-step-group"><span aria-hidden="true">⚡</span>
+            <div class="syzygy-stepper is-compact syzygy-stepper-compact" role="group" aria-label="${esc(name)} energy left over">
               <button class="btn-sz-step" data-ci="${ci}" data-ct="energy" data-cd="-1" aria-label="Remove 1 left-over energy from ${esc(name)}"${co.energy <= 0 ? " disabled" : ""}>−</button>
               <span class="sz-step-val"><span class="sr-only">Energy </span>${co.energy}</span>
               <button class="btn-sz-step" data-ci="${ci}" data-ct="energy" data-cd="1" aria-label="Add 1 left-over energy to ${esc(name)}">+</button>
-            </div>
+            </div></span>
           </div>`;
       }).join("");
 
@@ -2335,6 +2338,7 @@ function getCurrentElapsed() {
         </div>`;
     }
 
+    html += `</div></div>`;
     el.innerHTML = html;
 
     // Events
@@ -2423,6 +2427,7 @@ function getCurrentElapsed() {
         </div>` : ""}
         <button class="btn btn-primary" id="szNewCampaignBtn" style="margin-top:16px;">Start New Campaign</button>
       </div>`;
+    restoreTableRoles(el);
 
     document.getElementById("szNewCampaignBtn").addEventListener("click", () => {
       _sz = null; _szMode = null; _szChars = [];
