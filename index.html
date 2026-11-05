@@ -38,51 +38,126 @@
         href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600&display=swap">
   <style>
     :root {
+      color-scheme: dark;
       --bg-deep:      #07091a;
       --bg-panel:     #0e1228;
       --bg-card:      #131830;
-      --border:       #1e2d55;
-      --border-glow:  #2a4a8a;
+      --border:       #1e2d55;   /* decorative dividers / panel edges only */
+      --border-glow:  #2a4a8a;   /* decorative emphasis (cards, modal frame) */
+      --border-control:#5168a8;  /* interactive control boundaries: >= 3:1 on every surface */
+      --border-danger:#c23345;   /* destructive outline buttons: >= 3:1 */
       --accent-orange:#ff6b35;
       --accent-teal:  #00d4aa;
       --accent-yellow:#f0b429;
       --text-primary: #e8eaf6;
-      --text-muted:   #7a88b0;
-      --text-dim:     #7380ab;
-      --loss-color:   #ff4455;
+      --text-muted:   #a0aacb;
+      --text-dim:     #8794bf;
+      --loss-color:   #ff5566;
       --on-orange:    #07091a;
+      --on-teal:      #07091a;
       --orange-hover: #ff855a;
       --teal-hover:   #00edc0;
+      --focus-ring:   var(--accent-teal);
+      /* Tinted fills for chips, selected states, notices (theme-specific: dark tints over dark, light tints over light) */
+      --tint-orange:  rgba(255,107,53,0.12);
+      --tint-teal:    rgba(0,212,170,0.12);
+      --tint-loss:    rgba(255,85,102,0.12);
+      --tint-yellow:  rgba(240,180,41,0.12);
+      --tint-neutral: rgba(135,148,191,0.10);
+      --line-orange:  rgba(255,107,53,0.45);
+      --line-teal:    rgba(0,212,170,0.4);
+      --line-loss:    rgba(255,85,102,0.45);
+      --line-yellow:  rgba(240,180,41,0.45);
+      --hover-row:    rgba(81,104,168,0.12);
+      --overlay:      rgba(4,6,18,0.86);
+      --shadow-pop:   0 4px 24px rgba(0,0,0,0.4);
+      --shadow-modal: 0 24px 64px rgba(0,0,0,0.55);
+      --die-face:     #0d1240;
+      --die-pip:      #f0b429;
+      --die-locked:   #00d4aa;
+
+      /* Type scale — nothing renders below --fs-label */
+      --font-display: 'Orbitron', sans-serif;
+      --font-body:    'Exo 2', sans-serif;
+      --fs-label:  10px;   /* Orbitron caps eyebrows, table heads, chips */
+      --fs-xs:     11px;
+      --fs-sm:     12px;
+      --fs-md:     13px;
+      --fs-body:   14px;
+      --fs-input:  15px;   /* base body + primary form selects */
+      --fs-control:    var(--fs-input);  /* full-size form selects */
+      --fs-control-sm: var(--fs-body);   /* compact selects, textareas; both become 16px on touch (iOS zooms <16px) */
+      --fs-button: 11px;   /* Orbitron button labels */
+      --fs-title:  13px;   /* modal / dialog titles */
+      --fs-stat:   18px;
+      --fs-timer:  22px;
+      --tracking-tight: 1px;
+      --tracking-label: 2px;
+      --tracking-wide:  3px;
+      --lh-tight: 1.3;
+      --lh-body:  1.6;
+
+      /* Spacing, radius */
+      --space-1: 4px;  --space-2: 8px;  --space-3: 12px; --space-4: 16px;
+      --space-5: 20px; --space-6: 24px; --space-8: 32px;
+      --radius-sm: 4px;
+      --radius:    6px;    /* buttons, inputs */
+      --radius-md: 8px;    /* small cards, list items */
+      --radius-lg: 10px;   /* feature cards */
+      --radius-xl: 12px;   /* panels, dialogs */
+      --radius-pill: 999px;
     }
 
     /* Light mode overrides — same space-computer feel, brighter environment */
     [data-theme="light"] {
+      color-scheme: light;
       --bg-deep:      #f0f2fb;
       --bg-panel:     #e4e8f8;
       --bg-card:      #dce0f4;
       --border:       #b8c4e0;
       --border-glow:  #7890cc;
-      --accent-orange: #b03a0a;
-      --accent-teal:   #006e5a;
-      --accent-yellow: #7d5a00;
+      --border-control:#6a7db3;
+      --border-danger:#c8475a;
+      --accent-orange: #a3350a;
+      --accent-teal:   #00654f;
+      --accent-yellow: #6e5000;
       --text-primary: #0b0f28;
-      --text-muted:   #2a3868;
-      --text-dim:     #4f5e8a;
-      --loss-color:   #c8001e;
+      --text-muted:   #323f6c;
+      --text-dim:     #4a5884;
+      --loss-color:   #b4001b;
       --on-orange:    #ffffff;
-      --orange-hover: #c4440f;
-      --teal-hover:   #007a64;
+      --on-teal:      #ffffff;
+      --orange-hover: #b8460f;
+      --teal-hover:   #007a62;
+      --tint-orange:  #fbe4da;
+      --tint-teal:    #d5f0e8;
+      --tint-loss:    #fbdfe3;
+      --tint-yellow:  #f6edd2;
+      --tint-neutral: #eef0fa;
+      --line-orange:  #d98a6a;
+      --line-teal:    #6fb5a3;
+      --line-loss:    #e0808e;
+      --line-yellow:  #c5a85a;
+      --hover-row:    rgba(106,125,179,0.12);
+      --overlay:      rgba(20,28,64,0.66);
+      --shadow-pop:   0 6px 24px rgba(20,28,64,0.18);
+      --shadow-modal: 0 18px 48px rgba(20,28,64,0.28);
     }
+    /* Theme toggle swaps all colours at once (class set briefly by toggleTheme in app.js) */
+    .theme-switching *, .theme-switching *::before, .theme-switching *::after { transition: none !important; }
     /* Hide the dark starfield background in light mode */
+
     [data-theme="light"] body::before { display: none; }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    /* Form controls don't inherit the page font by default (they render in the UA font, e.g. Arial) */
+    button, input, select, textarea { font-family: inherit; }
 
     body {
       background-color: var(--bg-deep);
       color: var(--text-primary);
       font-family: 'Exo 2', sans-serif;
-      font-size: 15px;
+      font-size: var(--fs-input);
       min-height: 100vh;
       overflow-x: hidden;
     }
@@ -118,7 +193,7 @@
     .app-header { text-align: center; margin-bottom: 32px; padding-top: 44px; position: relative; }
     .app-header .author-label {
       font-family: 'Orbitron', sans-serif;
-      font-size: 10px;
+      font-size: var(--fs-label);
       font-weight: 400;
       letter-spacing: 3px;
       text-transform: uppercase;
@@ -164,18 +239,21 @@
       border: none;
       color: var(--text-muted);
       font-family: 'Orbitron', sans-serif;
-      font-size: 10px;
+      font-size: var(--fs-label);
       font-weight: 700;
       letter-spacing: 2px;
       text-transform: uppercase;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: background-color 0.2s, border-color 0.2s, color 0.2s, box-shadow 0.2s;
       -webkit-tap-highlight-color: transparent;
       min-height: 48px;
     }
     .tab-btn:not(:last-child) { border-right: 1px solid var(--border); }
     .tab-btn.active { background: var(--accent-orange); color: var(--on-orange); }
-    .tab-btn:not(.active):hover { color: var(--text-primary); background: rgba(255,107,53,0.1); }
+    .tab-btn:not(.active):hover { color: var(--text-primary); background: var(--tint-orange); }
+    /* .tab-nav clips overflow, so draw the focus ring inside the tab */
+    .tab-btn:focus-visible { outline-offset: -4px; }
+    .tab-btn.active:focus-visible { outline-color: var(--on-orange); }
 
     /* Panels */
     .panel {
@@ -187,7 +265,7 @@
     }
     .panel-title {
       font-family: 'Orbitron', sans-serif;
-      font-size: 10px;
+      font-size: var(--fs-label);
       font-weight: 700;
       letter-spacing: 3px;
       text-transform: uppercase;
@@ -203,90 +281,123 @@
       gap: 8px;
       padding: 12px 20px;
       border: none;
-      border-radius: 6px;
-      font-family: 'Orbitron', sans-serif;
-      font-size: 10px;
+      border-radius: var(--radius);
+      font-family: var(--font-display);
+      font-size: var(--fs-button);
       font-weight: 700;
-      letter-spacing: 2px;
+      letter-spacing: var(--tracking-label);
+      line-height: var(--lh-tight);
       text-transform: uppercase;
       cursor: pointer;
-      transition: all 0.18s;
+      transition: background-color 0.18s, border-color 0.18s, color 0.18s, box-shadow 0.18s, transform 0.08s;
       -webkit-tap-highlight-color: transparent;
       min-height: 48px;
     }
+    .btn:active:not(:disabled) { transform: translateY(1px); }
+    /* Primary: the one unmistakable action per area — solid orange, slightly larger label */
     .btn-primary {
       background: var(--accent-orange);
       color: var(--on-orange);
       width: 100%;
-      font-size: 11px;
+      font-size: var(--fs-sm);
       padding: 15px;
+      box-shadow: 0 2px 0 rgba(0,0,0,0.25), 0 6px 18px -8px var(--accent-orange);
     }
     .btn-primary:hover  { background: var(--orange-hover); }
-    .btn-primary:active { opacity: 0.85; }
+    .btn-primary:active { background: var(--accent-orange); box-shadow: none; }
+    /* Secondary: outline, subordinate to primary but clearly a button (border >= 3:1) */
     .btn-secondary {
       background: transparent;
-      border: 1px solid var(--border-glow);
+      border: 1px solid var(--border-control);
       color: var(--text-muted);
     }
-    .btn-secondary:hover { border-color: var(--accent-teal); color: var(--accent-teal); }
+    .btn-secondary:hover { border-color: var(--accent-teal); color: var(--accent-teal); background: var(--tint-teal); }
     .btn-danger {
       background: transparent;
-      border: 1px solid rgba(255,68,85,0.35);
+      border: 1px solid var(--border-danger);
       color: var(--loss-color);
     }
-    .btn-danger:hover { border-color: var(--loss-color); background: rgba(255,68,85,0.1); }
+    .btn-danger:hover { border-color: var(--loss-color); background: var(--tint-loss); }
+    /* Solid destructive — for the confirm button inside a destructive dialog */
+    .modal-danger .btn-danger { background: var(--loss-color); border-color: var(--loss-color); color: var(--on-orange); }
+    .modal-danger .btn-danger:hover { background: var(--loss-color); box-shadow: 0 0 0 3px var(--tint-loss); }
     .btn-load {
       background: var(--bg-card);
-      border: 1px solid var(--border-glow);
+      border: 1px solid var(--border-control);
       color: var(--accent-teal);
       width: 100%;
       margin-top: 10px;
     }
-    .btn-load:hover { border-color: var(--accent-teal); background: rgba(0,212,170,0.1); }
+    .btn-load:hover { border-color: var(--accent-teal); background: var(--tint-teal); }
     .btn-save {
       background: var(--accent-teal);
-      color: var(--bg-deep);
+      color: var(--on-teal);
       width: 100%;
-      font-size: 11px;
+      font-size: var(--fs-sm);
       padding: 14px;
       font-weight: 700;
     }
     .btn-save:hover  { background: var(--teal-hover); }
-    .btn-save:active { opacity: 0.85; }
+    .btn-save:active { background: var(--accent-teal); }
+    /* Compact size modifier (dialog headers, inline toolbars) */
+    .btn-sm { min-height: 40px; padding: 8px 14px; font-size: var(--fs-label); }
+    /* Disabled: no fill, dashed edge, dim-but-legible label (>= 4.5:1) — reads "not now", not "broken" */
     .btn:disabled,
-    .btn-pause:disabled { opacity: 0.4; pointer-events: none; }
+    .btn-pause:disabled {
+      background: transparent;
+      border: 1px dashed var(--border-control);
+      color: var(--text-dim);
+      box-shadow: none;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
 
     /* Forms */
     .form-row { margin-bottom: 12px; }
     .form-row label {
       display: block;
-      font-size: 10px;
+      font-size: var(--fs-xs);
       font-weight: 600;
-      letter-spacing: 2px;
+      letter-spacing: 1.5px;
       text-transform: uppercase;
       color: var(--text-muted);
       margin-bottom: 6px;
     }
-    .form-row select {
+    .form-row select,
+    .form-row textarea {
       width: 100%;
       background: var(--bg-card);
-      border: 1px solid var(--border);
+      border: 1px solid var(--border-control);
       color: var(--text-primary);
-      font-family: 'Exo 2', sans-serif;
-      font-size: 15px;
+      font-family: var(--font-body);
+      font-size: var(--fs-control);
       padding: 11px 36px 11px 12px;
       border-radius: 6px;
       appearance: none;
       -webkit-appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237a88b0' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23a0aacb' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
       background-repeat: no-repeat;
       background-position: right 12px center;
       cursor: pointer;
       transition: border-color 0.2s;
       min-height: 48px;
     }
-    .form-row select:focus { outline: 2px solid var(--accent-teal); outline-offset: 1px; border-color: var(--accent-teal); }
-    [data-theme="light"] .form-row select {
+    .form-row textarea {
+      background-image: none;
+      cursor: text;
+      min-height: 0;
+      padding: 10px 12px;
+      font-size: var(--fs-control-sm);
+      line-height: 1.5;
+      resize: vertical;
+    }
+    .form-row select:hover, .form-row textarea:hover,
+    .history-select:hover, .droid-select:hover { border-color: var(--accent-teal); }
+    .form-row select:focus, .form-row textarea:focus { border-color: var(--accent-teal); }
+    ::placeholder { color: var(--text-dim); opacity: 1; }
+    [data-theme="light"] .form-row select,
+    [data-theme="light"] .history-select {
+
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%232a3868' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
     }
     .form-row-inline {
@@ -323,11 +434,11 @@
       margin-bottom: 6px;
       line-height: 1.4;
     }
-    .combo-vs { color: var(--accent-orange); font-size: 12px; margin: 0 14px; }
+    .combo-vs { color: var(--accent-orange); font-size: var(--fs-sm); margin: 0 14px; }
     .char-role {
       display: block;
       font-family: 'Orbitron', sans-serif;
-      font-size: 9px;
+      font-size: var(--fs-label);
       font-weight: 700;
       letter-spacing: 2px;
       text-transform: uppercase;
@@ -336,7 +447,7 @@
     .primary-role   { color: var(--accent-orange); }
     .secondary-role { color: var(--accent-teal); }
     .combo-scenario {
-      font-size: 12px;
+      font-size: var(--fs-sm);
       color: var(--accent-teal);
       letter-spacing: 1px;
       text-transform: uppercase;
@@ -352,15 +463,15 @@
       gap: 6px;
       padding: 6px 12px;
       border-radius: 20px;
-      font-size: 11px;
+      font-size: var(--fs-xs);
       font-weight: 600;
       letter-spacing: 1px;
       text-transform: uppercase;
       border: 1px solid;
     }
-    .diff-badge.unplayed { border-color: var(--text-dim);   color: var(--text-dim);   background: rgba(62,79,120,0.15); }
-    .diff-badge.win      { border-color: var(--accent-teal); color: var(--accent-teal); background: rgba(0,212,170,0.1); }
-    .diff-badge.loss     { border-color: var(--loss-color); color: var(--loss-color); background: rgba(255,68,85,0.1); }
+    .diff-badge.unplayed { border-color: var(--border-control); color: var(--text-muted); background: var(--tint-neutral); }
+    .diff-badge.win      { border-color: var(--line-teal); color: var(--accent-teal); background: var(--tint-teal); }
+    .diff-badge.loss     { border-color: var(--line-loss); color: var(--loss-color); background: var(--tint-loss); }
     .diff-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
     .diff-badge.unplayed .diff-dot { background: var(--text-dim); }
     .diff-badge.win      .diff-dot { background: var(--accent-teal); }
@@ -371,7 +482,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      font-size: 10px;
+      font-size: var(--fs-label);
       font-weight: 600;
       letter-spacing: 2px;
       text-transform: uppercase;
@@ -380,11 +491,11 @@
     }
     .btn-lock {
       background: var(--bg-card);
-      border: 1px solid var(--border-glow);
-      border-radius: 5px;
+      border: 1px solid var(--border-control);
+      border-radius: var(--radius);
       color: var(--text-muted);
       cursor: pointer;
-      font-size: 12px;
+      font-size: var(--fs-sm);
       line-height: 1;
       padding: 7px 9px;
       transition: border-color 0.15s, background 0.15s, color 0.15s;
@@ -392,14 +503,14 @@
       flex-shrink: 0;
     }
     .btn-lock:hover  { border-color: var(--accent-teal); color: var(--accent-teal); }
-    .btn-lock.locked { border-color: var(--accent-orange); background: rgba(255,107,53,0.15); color: var(--accent-orange); }
+    .btn-lock.locked { border-color: var(--accent-orange); background: var(--tint-orange); color: var(--accent-orange); }
     .btn-faq-inline {
       background: none;
-      border: 1px solid var(--border);
+      border: 1px solid var(--border-control);
       border-radius: 50%;
-      color: var(--text-dim);
+      color: var(--text-muted);
       cursor: pointer;
-      font-size: 10px;
+      font-size: var(--fs-label);
       width: 18px; height: 18px;
       line-height: 1;
       display: inline-flex;
@@ -426,7 +537,7 @@
       border-top: 1px solid var(--border);
     }
     .timer-label {
-      font-size: 9px;
+      font-size: var(--fs-label);
       font-weight: 600;
       letter-spacing: 2px;
       text-transform: uppercase;
@@ -435,7 +546,7 @@
     }
     .timer-display {
       font-family: 'Orbitron', sans-serif;
-      font-size: 22px;
+      font-size: var(--fs-timer);
       font-weight: 700;
       color: var(--text-primary);
       letter-spacing: 3px;
@@ -444,29 +555,29 @@
     .timer-display.stopped  { color: var(--text-dim); font-style: italic; }
     .btn-pause {
       background: transparent;
-      border: 1px solid var(--border-glow);
+      border: 1px solid var(--border-control);
       color: var(--text-muted);
       font-family: 'Orbitron', sans-serif;
-      font-size: 9px;
+      font-size: var(--fs-label);
       font-weight: 700;
       letter-spacing: 2px;
       text-transform: uppercase;
       padding: 8px 14px;
       border-radius: 6px;
       cursor: pointer;
-      transition: all 0.18s;
+      transition: background-color 0.18s, border-color 0.18s, color 0.18s, box-shadow 0.18s;
       min-height: 40px;
       -webkit-tap-highlight-color: transparent;
     }
-    .btn-pause:hover  { border-color: var(--accent-teal); color: var(--accent-teal); }
-    .btn-pause.paused { border-color: var(--accent-orange); color: var(--accent-orange); }
+    .btn-pause:hover  { border-color: var(--accent-teal); color: var(--accent-teal); background: var(--tint-teal); }
+    .btn-pause.paused { border-color: var(--accent-orange); color: var(--accent-orange); background: var(--tint-orange); }
 
     /* Tables */
     .history-table-wrap { overflow-x: auto; margin-top: 12px; }
-    table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 380px; }
+    table { width: 100%; border-collapse: collapse; font-size: var(--fs-md); min-width: 380px; }
     thead th {
       font-family: 'Orbitron', sans-serif;
-      font-size: 9px;
+      font-size: var(--fs-label);
       font-weight: 700;
       letter-spacing: 2px;
       text-transform: uppercase;
@@ -478,30 +589,30 @@
     }
     tbody td {
       padding: 10px;
-      border-bottom: 1px solid rgba(30,45,85,0.5);
+      border-bottom: 1px solid var(--border);
       vertical-align: middle;
     }
     tbody tr:last-child td { border-bottom: none; }
-    tbody tr:hover td { background: rgba(42,74,138,0.12); }
+    tbody tr:hover td { background: var(--hover-row); }
     .btn-delete-record {
       background: none;
-      border: none;
-      color: var(--text-dim);
+      border: 1px solid transparent;
+      color: var(--text-muted);
       cursor: pointer;
-      font-size: 14px;
+      font-size: var(--fs-body);
       padding: 8px 9px;
       border-radius: 4px;
       line-height: 1;
       transition: color 0.15s;
       -webkit-tap-highlight-color: transparent;
     }
-    .btn-delete-record:hover { color: var(--loss-color); }
+    .btn-delete-record:hover { color: var(--loss-color); border-color: var(--border-danger); background: var(--tint-loss); }
     .btn-edit-record {
       background: none;
-      border: none;
-      color: var(--text-dim);
+      border: 1px solid transparent;
+      color: var(--text-muted);
       cursor: pointer;
-      font-size: 14px;
+      font-size: var(--fs-body);
       padding: 8px 9px;
       border-radius: 4px;
       line-height: 1;
@@ -509,51 +620,52 @@
       transition: color 0.15s;
       -webkit-tap-highlight-color: transparent;
     }
-    .btn-edit-record:hover { color: var(--accent-teal); }
+    .btn-edit-record:hover { color: var(--accent-teal); border-color: var(--accent-teal); background: var(--tint-teal); }
     .btn-delete-record { vertical-align: middle; }
     .notes-row td {
-      font-size: 12px;
+      font-size: var(--fs-sm);
       color: var(--text-muted);
       font-style: italic;
       padding-top: 2px;
       padding-bottom: 10px;
-      border-bottom: 1px solid rgba(30,45,85,0.5);
+      border-bottom: 1px solid var(--border);
     }
+    /* Chips: result / difficulty share one recipe (tint fill + 1px line + label-size caps) */
     .result-pill {
       display: inline-block;
       padding: 3px 10px;
-      border-radius: 12px;
-      font-size: 11px;
+      border-radius: var(--radius-pill);
+      font-size: var(--fs-xs);
       font-weight: 600;
       letter-spacing: 1px;
       text-transform: uppercase;
     }
-    .result-pill.win  { background: rgba(0,212,170,0.15); color: var(--accent-teal); border: 1px solid rgba(0,212,170,0.3); }
-    .result-pill.loss { background: rgba(255,68,85,0.15);  color: var(--loss-color);  border: 1px solid rgba(255,68,85,0.3); }
+    .result-pill.win  { background: var(--tint-teal); color: var(--accent-teal); border: 1px solid var(--line-teal); }
+    .result-pill.loss { background: var(--tint-loss); color: var(--loss-color);  border: 1px solid var(--line-loss); }
     .diff-pill {
       display: inline-block;
       padding: 3px 10px;
-      border-radius: 12px;
-      font-size: 11px;
+      border-radius: var(--radius-pill);
+      font-size: var(--fs-xs);
       font-weight: 600;
       letter-spacing: 1px;
       text-transform: uppercase;
-      background: rgba(30,45,85,0.5);
+      background: var(--tint-neutral);
       color: var(--text-muted);
-      border: 1px solid var(--border);
+      border: 1px solid var(--border-glow);
     }
 
     /* Table cell helpers — replaces scattered inline styles in history tables */
-    .td-meta     { color: var(--text-muted); font-size: 12px; }
+    .td-meta     { color: var(--text-muted); font-size: var(--fs-sm); }
     .td-nowrap   { white-space: nowrap; }
-    .td-scenario { color: var(--accent-teal); font-size: 12px; }
-    .td-time     { color: var(--text-muted); font-size: 12px; white-space: nowrap; }
+    .td-scenario { color: var(--accent-teal); font-size: var(--fs-sm); }
+    .td-time     { color: var(--text-muted); font-size: var(--fs-sm); white-space: nowrap; }
 
-    /* Phones: the 7-column Mission Log would be ~740px wide, hiding Result and the
-       edit/delete buttons off-screen. Below 560px each record becomes a stacked card.
+    /* Phones and landscape phones: the 7-column Mission Log needs ~680px, hiding Result and
+       the edit/delete buttons off-screen. Below 720px each record becomes a stacked card.
        (Table roles are restored from JS — see restoreTableRoles — because display
        overrides remove native table semantics.) */
-    @media (max-width: 560px) {
+    @media (max-width: 719px) {
       #historyTableContainer table,
       #historyTableContainer tbody { display: block; min-width: 0; }
       #historyTableContainer thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
@@ -582,17 +694,59 @@
       #historyTableContainer tbody tr:not(.notes-row) td:nth-child(7) { grid-area: act; justify-self: end; }
       #historyTableContainer tbody tr.notes-row { display: block; padding: 0 2px 12px; margin-top: -6px; }
       #historyTableContainer tbody tr.notes-row td { padding: 0; }
-      /* Per-combination history (5 columns) just needs to fit */
-      #comboHistory table { min-width: 0; }
-      #comboHistory td, #comboHistory th { padding-left: 4px; padding-right: 4px; }
-      #comboHistory .td-nowrap { white-space: normal; }
-      #comboHistory .result-pill, #comboHistory .diff-pill { padding: 3px 7px; letter-spacing: 0; }
+      #historyTableContainer tbody tr:not(.notes-row) td:nth-child(6)::before { content: "Time "; color: var(--text-dim); }
+      #historyTableContainer tbody tr:not(.notes-row) td:nth-child(7) { margin: -8px 0; }
+
+      /* Per-combination history (5 columns): same card treatment */
+      #comboHistory table,
+      #comboHistory tbody { display: block; min-width: 0; }
+      #comboHistory thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+      #comboHistory tbody tr {
+        display: grid;
+        grid-template-columns: auto auto 1fr auto;
+        grid-template-areas:
+          "date date date act"
+          "res  diff time time";
+        gap: 6px 8px;
+        align-items: center;
+        padding: 10px 2px;
+        border-top: 1px solid var(--border);
+      }
+      #comboHistory tbody tr:first-child { border-top: none; }
+      #comboHistory tbody tr:hover td { background: none; }
+      #comboHistory tbody td { display: block; padding: 0; border: 0; }
+      #comboHistory tbody td:nth-child(1) { grid-area: date; }
+      #comboHistory tbody td:nth-child(2) { grid-area: res; }
+      #comboHistory tbody td:nth-child(3) { grid-area: diff; }
+      #comboHistory tbody td:nth-child(4) { grid-area: time; justify-self: end; }
+      #comboHistory tbody td:nth-child(4)::before { content: "Time "; color: var(--text-dim); }
+      #comboHistory tbody td:nth-child(5) { grid-area: act; justify-self: end; margin: -8px 0; }
+
+      /* SYZYGY campaign log (3 columns): scenario + result on top, characters below */
+      #syzygyCampaignContent table,
+      #syzygyCampaignContent tbody { display: block; min-width: 0; }
+      #syzygyCampaignContent thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+      #syzygyCampaignContent tbody tr {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        grid-template-areas: "scen res" "chars chars";
+        gap: 4px 10px;
+        align-items: center;
+        padding: 10px 2px;
+        border-top: 1px solid var(--border);
+      }
+      #syzygyCampaignContent tbody tr:first-child { border-top: none; }
+      #syzygyCampaignContent tbody tr:hover td { background: none; }
+      #syzygyCampaignContent tbody td { display: block; padding: 0; border: 0; }
+      #syzygyCampaignContent tbody td:nth-child(1) { grid-area: scen; }
+      #syzygyCampaignContent tbody td:nth-child(2) { grid-area: chars; }
+      #syzygyCampaignContent tbody td:nth-child(3) { grid-area: res; justify-self: end; }
     }
 
     /* Section heading */
     .section-heading {
       font-family: 'Orbitron', sans-serif;
-      font-size: 10px;
+      font-size: var(--fs-label);
       font-weight: 700;
       letter-spacing: 3px;
       text-transform: uppercase;
@@ -627,26 +781,31 @@
       gap: 8px;
     }
     #historySortBy { grid-column: 1 / -1; }
+    /* Filter/sort selects share the form-select look (body font, custom chevron) at a compact size */
     .history-select {
       background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 6px;
+      border: 1px solid var(--border-control);
+      border-radius: var(--radius);
       color: var(--text-primary);
-      font-family: 'Orbitron', sans-serif;
-      font-size: 9px;
-      font-weight: 700;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      padding: 8px 10px;
+      font-family: var(--font-body);
+      font-size: var(--fs-control-sm);
+      font-weight: 400;
+      padding: 8px 30px 8px 10px;
       cursor: pointer;
       min-height: 40px;
       width: 100%;
       -webkit-tap-highlight-color: transparent;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23a0aacb' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      text-overflow: ellipsis;
     }
-    .history-select:focus { outline: 2px solid var(--accent-teal); outline-offset: 2px; }
+    .history-select:focus { border-color: var(--accent-teal); }
     #historyFilterChar, #historyFilterScenario { max-width: none; }
     @media (max-width: 480px) {
-      .history-select { letter-spacing: 0; padding: 8px 6px; text-overflow: ellipsis; }
+      .history-select { letter-spacing: 0; padding: 8px 26px 8px 8px; background-position: right 8px center; text-overflow: ellipsis; }
     }
     .import-label {
       display: inline-flex;
@@ -655,65 +814,73 @@
       padding: 12px 20px;
       border-radius: 6px;
       font-family: 'Orbitron', sans-serif;
-      font-size: 10px;
+      font-size: var(--fs-label);
       font-weight: 700;
       letter-spacing: 2px;
       text-transform: uppercase;
       cursor: pointer;
       background: transparent;
-      border: 1px solid var(--border-glow);
+      border: 1px solid var(--border-control);
       color: var(--text-muted);
-      transition: all 0.18s;
+      transition: background-color 0.18s, border-color 0.18s, color 0.18s, box-shadow 0.18s;
       min-height: 48px;
       -webkit-tap-highlight-color: transparent;
     }
-    .import-label:hover { border-color: var(--accent-teal); color: var(--accent-teal); }
+    .import-label:hover { border-color: var(--accent-teal); color: var(--accent-teal); background: var(--tint-teal); }
     /* Visually hidden (not display:none) so the file input stays keyboard-focusable */
     #importFile { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; clip: rect(0,0,0,0); }
-    .import-label:focus-within { outline: 2px solid var(--accent-teal); outline-offset: 2px; }
+    .import-label:focus-within { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 
     /* Footer links — hover handled in CSS, not inline JS */
     .footer-link {
       font-family: 'Orbitron', sans-serif;
-      font-size: 9px;
+      font-size: var(--fs-label);
       letter-spacing: 2px;
       text-transform: uppercase;
-      color: var(--text-dim);
+      color: var(--text-muted);
       text-decoration: none;
       background: none;
-      border: 1px solid var(--border);
+      border: 1px solid var(--border-control);
       padding: 8px 14px;
       border-radius: 6px;
       cursor: pointer;
-      transition: all 0.18s;
+      transition: background-color 0.18s, border-color 0.18s, color 0.18s, box-shadow 0.18s;
     }
-    .footer-link:hover { color: var(--accent-teal); border-color: var(--accent-teal); }
+    .footer-link:hover { color: var(--accent-teal); border-color: var(--accent-teal); background: var(--tint-teal); }
 
     /* Misc */
     .empty-state { text-align: center; padding: 36px 20px; color: var(--text-dim); }
-    .empty-state p { font-size: 13px; font-style: italic; }
+    .empty-state p { font-size: var(--fs-md); font-style: italic; line-height: var(--lh-body); }
+    .empty-state p.empty-state-title {
+      font-family: var(--font-display); font-style: normal; font-size: var(--fs-label); font-weight: 700;
+      letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--text-muted); margin-bottom: var(--space-2);
+    }
+    .combo-empty { padding: 28px 20px; margin-bottom: var(--space-4); border: 1px dashed var(--border-glow); border-radius: var(--radius-lg); }
+    .combo-empty p:not(.empty-state-title) { max-width: 40ch; margin: 0 auto; color: var(--text-dim); }
     .notice {
       padding: 10px 14px;
       border-radius: 6px;
-      font-size: 12px;
+      font-size: var(--fs-sm);
       color: var(--text-muted);
-      background: rgba(122,136,176,0.08);
-      border: 1px solid rgba(122,136,176,0.2);
+      background: var(--tint-neutral);
+      border: 1px solid var(--border-glow);
       margin-bottom: 14px;
     }
+    .notice-danger { color: var(--loss-color); background: var(--tint-loss); border-color: var(--line-loss); }
+
 
     /* Play count badge on combo card */
     .combo-play-count {
       display: inline-flex;
       align-items: center;
       gap: 5px;
-      font-size: 11px;
+      font-size: var(--fs-xs);
       color: var(--text-dim);
       margin-bottom: 12px;
     }
     .combo-play-count span {
       font-family: 'Orbitron', sans-serif;
-      font-size: 11px;
+      font-size: var(--fs-xs);
       color: var(--text-muted);
       font-weight: 700;
     }
@@ -736,17 +903,17 @@
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: 8px;
-      font-size: 13px;
+      font-size: var(--fs-md);
       gap: 10px;
     }
     .unplayed-item-text { color: var(--text-muted); flex: 1; line-height: 1.4; }
-    .unplayed-item-scenario { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+    .unplayed-item-scenario { font-size: var(--fs-xs); color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
     .btn-load-unplayed {
       background: transparent;
-      border: 1px solid var(--border-glow);
+      border: 1px solid var(--border-control);
       color: var(--accent-teal);
       font-family: 'Orbitron', sans-serif;
-      font-size: 9px;
+      font-size: var(--fs-label);
       font-weight: 700;
       letter-spacing: 1px;
       text-transform: uppercase;
@@ -754,10 +921,10 @@
       border-radius: 6px;
       cursor: pointer;
       white-space: nowrap;
-      transition: all 0.18s;
+      transition: background-color 0.18s, border-color 0.18s, color 0.18s, box-shadow 0.18s;
       -webkit-tap-highlight-color: transparent;
     }
-    .btn-load-unplayed:hover { background: rgba(0,212,170,0.1); border-color: var(--accent-teal); }
+    .btn-load-unplayed:hover { background: var(--tint-teal); border-color: var(--accent-teal); }
 
     /* Droid Assistant row on combo card */
     .droid-row {
@@ -771,7 +938,7 @@
       border-radius: 8px;
     }
     .droid-row-label {
-      font-size: 9px;
+      font-size: var(--fs-label);
       font-family: 'Orbitron', sans-serif;
       font-weight: 700;
       letter-spacing: 1.5px;
@@ -782,16 +949,16 @@
     .droid-select {
       flex: 1;
       background: var(--bg-panel);
-      border: 1px solid var(--border);
-      border-radius: 4px;
+      border: 1px solid var(--border-control);
+      border-radius: var(--radius);
       color: var(--text-primary);
-      font-size: 13px;
+      font-size: var(--fs-control-sm);
       padding: 8px 28px 8px 8px;
       cursor: pointer;
       min-width: 0;
       appearance: none;
       -webkit-appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237a88b0' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23a0aacb' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
       background-repeat: no-repeat;
       background-position: right 8px center;
     }
@@ -800,21 +967,21 @@
     }
     .btn-droid-rand {
       background: transparent;
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      color: var(--text-dim);
-      font-size: 9px;
+      border: 1px solid var(--border-control);
+      border-radius: var(--radius);
+      color: var(--text-muted);
+      font-size: var(--fs-label);
       font-family: 'Orbitron', sans-serif;
       font-weight: 700;
       letter-spacing: 1px;
       text-transform: uppercase;
       padding: 9px 12px;
       cursor: pointer;
-      transition: all 0.15s;
+      transition: background-color 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s;
       white-space: nowrap;
       -webkit-tap-highlight-color: transparent;
     }
-    .btn-droid-rand:hover { border-color: var(--accent-teal); color: var(--accent-teal); }
+    .btn-droid-rand:hover { border-color: var(--accent-teal); color: var(--accent-teal); background: var(--tint-teal); }
     .droid-coverage-row {
       display: flex;
       align-items: center;
@@ -825,10 +992,10 @@
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: 6px;
-      font-size: 12px;
+      font-size: var(--fs-sm);
     }
     .droid-coverage-label {
-      font-size: 9px;
+      font-size: var(--fs-label);
       font-family: 'Orbitron', sans-serif;
       font-weight: 700;
       letter-spacing: 1.5px;
@@ -840,21 +1007,21 @@
     .droid-coverage-pill {
       display: inline-block;
       padding: 2px 8px;
-      border-radius: 10px;
-      background: rgba(0,212,170,0.12);
-      border: 1px solid rgba(0,212,170,0.35);
+      border-radius: var(--radius-pill);
+      background: var(--tint-teal);
+      border: 1px solid var(--line-teal);
       color: var(--accent-teal);
-      font-size: 11px;
+      font-size: var(--fs-xs);
       white-space: nowrap;
     }
     .droid-coverage-none {
-      font-size: 11px;
+      font-size: var(--fs-xs);
       color: var(--text-muted);
       font-style: italic;
     }
     .droid-tag {
       display: block;
-      font-size: 10px;
+      font-size: var(--fs-label);
       color: var(--accent-teal);
       font-style: italic;
       white-space: nowrap;
@@ -866,36 +1033,44 @@
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(7,9,26,0.88);
+      background: var(--overlay);
       z-index: 100;
       align-items: center;
       justify-content: center;
       padding: 20px;
     }
     .modal-overlay.open { display: flex; }
+    /* Dialog surfaces — one recipe shared by .modal-box, .rules-box, .settings-box, .faq-box */
+    .modal-box, .rules-box, .settings-box, .faq-box { box-shadow: var(--shadow-modal); }
     .modal-box {
       background: var(--bg-panel);
       border: 1px solid var(--border-glow);
-      border-radius: 12px;
+      border-radius: var(--radius-xl);
       padding: 28px 24px;
       max-width: 360px;
       width: 100%;
-      text-align: center;
+      text-align: left;
     }
+    /* Dialog title: teal by default; red only on destructive confirmations (.modal-danger) */
     .modal-box h2 {
-      font-family: 'Orbitron', sans-serif;
-      font-size: 13px;
+      font-family: var(--font-display);
+      font-size: var(--fs-title);
       font-weight: 700;
-      letter-spacing: 2px;
+      letter-spacing: var(--tracking-label);
       text-transform: uppercase;
-      color: var(--loss-color);
+      color: var(--accent-teal);
       margin-bottom: 12px;
     }
-    .modal-box p { font-size: 14px; color: var(--text-muted); margin-bottom: 24px; line-height: 1.6; }
+    .modal-box.modal-danger h2 { color: var(--loss-color); }
+    .modal-box p { font-size: var(--fs-body); color: var(--text-muted); margin-bottom: 24px; line-height: var(--lh-body); }
+    /* Dialogs containing forms or lists read left-aligned */
+    .modal-box.modal-form, .tips-box { text-align: left; }
     .modal-actions { display: flex; gap: 12px; }
-    .modal-actions .btn { flex: 1; }
+    .modal-actions .btn { flex: 1; padding-left: var(--space-3); padding-right: var(--space-3); white-space: nowrap; }
+    @media (max-width: 400px) { .modal-actions .btn { letter-spacing: var(--tracking-tight); } }
 
     /* Toast */
+    /* Toast: opaque surface (it floats over content) + coloured edge for status */
     .toast {
       position: fixed;
       bottom: calc(28px + env(safe-area-inset-bottom, 0px));
@@ -903,17 +1078,24 @@
       transform: translateX(-50%);
       z-index: 200;
       min-width: 220px;
+      width: max-content;
+      max-width: min(92vw, 440px);
       text-align: center;
-      padding: 10px 18px;
-      border-radius: 6px;
-      font-size: 12px;
+      padding: 12px 18px;
+      border-radius: var(--radius-md);
+      font-size: var(--fs-md);
       font-weight: 600;
-      letter-spacing: 1px;
+      letter-spacing: 0.3px;
+      line-height: 1.45;
+      color: var(--text-primary);
+      background: var(--bg-panel);
+      box-shadow: var(--shadow-pop);
       animation: fadeIn 0.2s ease;
       pointer-events: none;
     }
-    .toast.info  { color: var(--accent-teal); background: rgba(0,212,170,0.12);  border: 1px solid rgba(0,212,170,0.3); }
-    .toast.error { color: var(--loss-color);  background: rgba(255,68,85,0.12);  border: 1px solid rgba(255,68,85,0.3); }
+    .toast.info  { border: 1px solid var(--accent-teal); border-left-width: 4px; }
+    .toast.error { border: 1px solid var(--loss-color);  border-left-width: 4px; color: var(--loss-color); }
+
 
     .hidden { display: none !important; }
 
@@ -936,31 +1118,44 @@
     }
 
     /* Dice Roller */
-    .dice-box { max-width: 300px; text-align: center; }
-    .dice-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 20px;
-    }
+    .dice-box { max-width: 360px; text-align: center; }
     .dice-modal-title {
-      font-family: 'Orbitron', sans-serif;
-      font-size: 13px;
+      font-family: var(--font-display);
+      font-size: var(--fs-title);
       font-weight: 700;
-      letter-spacing: 2px;
+      letter-spacing: var(--tracking-label);
       text-transform: uppercase;
       color: var(--accent-teal);
       margin: 0;
     }
-    .dice-close {
-      background: none;
-      border: none;
-      font-size: 18px;
+    /* Dialog header: title left, ✕ close right — the one dismiss control on every
+       non-destructive dialog (Tips, Dice, Rulebooks, Rules FAQ, My Collection).
+       Confirmations and forms use Cancel + action buttons instead. */
+    .dialog-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-3);
+      margin-bottom: var(--space-4);
+      flex-shrink: 0;
+      text-align: left;
+    }
+    .modal-overlay .dialog-header h2 { margin: 0; }
+    .dialog-close, .dice-close, .tips-modal-close {
+      background: transparent;
+      border: 1px solid var(--border-control);
+      border-radius: var(--radius);
+      font-size: var(--fs-input);
       line-height: 1;
       color: var(--text-muted);
       cursor: pointer;
-      padding: 4px 8px;
+      width: 40px; height: 40px;
+      padding: 0;
+      display: inline-flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: color 0.15s, border-color 0.15s, background-color 0.15s;
     }
+    .dialog-close:hover, .dice-close:hover, .tips-modal-close:hover { color: var(--accent-teal); border-color: var(--accent-teal); background: var(--tint-teal); }
     .dice-tray {
       display: flex;
       justify-content: center;
@@ -970,7 +1165,7 @@
     }
     .die-wrap { display: flex; flex-direction: column; align-items: center; gap: 8px; }
     .die-char-label {
-      font-size: 11px;
+      font-size: var(--fs-xs);
       font-weight: 600;
       color: var(--text-muted);
       text-align: center;
@@ -983,7 +1178,7 @@
     .die-adj-row { display: flex; width: 96px; justify-content: space-between; }
     .die-adj {
       background: var(--bg-card);
-      border: 1px solid var(--border);
+      border: 1px solid var(--border-control);
       border-radius: 50%;
       width: 32px;
       height: 32px;
@@ -995,15 +1190,16 @@
       align-items: center;
       justify-content: center;
     }
-    .die-adj:active { opacity: 0.7; }
-    .adj-flip { border-radius: 6px; font-size: 10px; }
+    .die-adj:hover { border-color: var(--accent-teal); color: var(--accent-teal); }
+    .die-adj:active { background: var(--tint-teal); }
+    .adj-flip { border-radius: 6px; font-size: var(--fs-label); }
     .die {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       width: 82px;
       height: 82px;
-      background: #0d1240;
-      border: 2px solid var(--border);
+      background: var(--die-face);
+      border: 2px solid var(--border-control);
       border-radius: 12px;
       padding: 12px;
       gap: 5px;
@@ -1026,18 +1222,18 @@
     .die[data-val="4"] .d1, .die[data-val="4"] .d3, .die[data-val="4"] .d7, .die[data-val="4"] .d9,
     .die[data-val="5"] .d1, .die[data-val="5"] .d3, .die[data-val="5"] .d5, .die[data-val="5"] .d7, .die[data-val="5"] .d9,
     .die[data-val="6"] .d1, .die[data-val="6"] .d3, .die[data-val="6"] .d4, .die[data-val="6"] .d6, .die[data-val="6"] .d7, .die[data-val="6"] .d9
-    { background: #f0b429; }
+    { background: var(--die-pip); }
     /* Locked die — teal border + teal dots */
-    .die.locked { border-color: #00d4aa; box-shadow: 0 0 10px rgba(0,212,170,.3); cursor: default; }
+    .die.locked { border-color: var(--die-locked); box-shadow: 0 0 0 1px var(--die-locked), 0 0 12px rgba(0,212,170,.35); cursor: default; }
     .die.locked[data-val="1"] .d5,
     .die.locked[data-val="2"] .d3, .die.locked[data-val="2"] .d7,
     .die.locked[data-val="3"] .d3, .die.locked[data-val="3"] .d5, .die.locked[data-val="3"] .d7,
     .die.locked[data-val="4"] .d1, .die.locked[data-val="4"] .d3, .die.locked[data-val="4"] .d7, .die.locked[data-val="4"] .d9,
     .die.locked[data-val="5"] .d1, .die.locked[data-val="5"] .d3, .die.locked[data-val="5"] .d5, .die.locked[data-val="5"] .d7, .die.locked[data-val="5"] .d9,
     .die.locked[data-val="6"] .d1, .die.locked[data-val="6"] .d3, .die.locked[data-val="6"] .d4, .die.locked[data-val="6"] .d6, .die.locked[data-val="6"] .d7, .die.locked[data-val="6"] .d9
-    { background: #00d4aa; }
+    { background: var(--die-locked); }
     /* Skill check dice — white with black pips */
-    .dice-modal-skill .die { background: #f5f5f5; border-color: #bbb; cursor: default; }
+    .dice-modal-skill .die { background: #f5f5f5; border-color: var(--border-control); cursor: default; }
     .dice-modal-skill .die[data-val="1"] .d5,
     .dice-modal-skill .die[data-val="2"] .d3, .dice-modal-skill .die[data-val="2"] .d7,
     .dice-modal-skill .die[data-val="3"] .d3, .dice-modal-skill .die[data-val="3"] .d5, .dice-modal-skill .die[data-val="3"] .d7,
@@ -1046,7 +1242,7 @@
     .dice-modal-skill .die[data-val="6"] .d1, .dice-modal-skill .die[data-val="6"] .d3, .dice-modal-skill .die[data-val="6"] .d4, .dice-modal-skill .die[data-val="6"] .d6, .dice-modal-skill .die[data-val="6"] .d7, .dice-modal-skill .die[data-val="6"] .d9
     { background: #1a1a1a; }
     /* Override teal-locked dots when in skill mode (shouldn't happen, but safety) */
-    .dice-modal-skill .die.locked { border-color: #bbb; box-shadow: none; }
+    .dice-modal-skill .die.locked { border-color: var(--border-control); box-shadow: none; }
     @keyframes diceShake {
       0%   { transform: rotate(0deg) scale(1); }
       20%  { transform: rotate(-14deg) scale(0.93); }
@@ -1056,10 +1252,10 @@
       100% { transform: rotate(0deg) scale(1); }
     }
     .die.rolling { animation: diceShake 0.12s ease-in-out infinite; }
-    .dice-hint { font-size: 12px; color: var(--text-muted); margin: 0 0 16px; line-height: 1.5; }
+    .dice-hint { font-size: var(--fs-sm); color: var(--text-muted); margin: 0 0 16px; line-height: 1.5; }
     .dice-swap-mid {
       background: var(--bg-card);
-      border: 1px solid var(--border);
+      border: 1px solid var(--border-control);
       border-radius: 50%;
       width: 32px;
       height: 32px;
@@ -1073,37 +1269,24 @@
       align-self: center;
       transition: opacity 0.15s;
     }
-    .dice-swap-mid:disabled { opacity: 0.25; cursor: default; }
+    .dice-swap-mid:hover:not(:disabled) { border-color: var(--accent-teal); color: var(--accent-teal); }
+    .dice-swap-mid:disabled { border-style: dashed; color: var(--text-dim); background: transparent; cursor: not-allowed; }
     .dice-row { display: flex; justify-content: center; margin-top: 10px; }
-    .btn-dice { font-size: 14px; }
+    .btn-dice { font-size: var(--fs-sm); }
     @media (prefers-reduced-motion: reduce) { .die.rolling { animation: none; } }
 
     /* --- Tips modal --- */
     .tips-box { max-width: 380px; }
-    .tips-modal-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 16px;
-    }
-    .tips-modal-header h2 { margin: 0; font-size: 16px; }
-    .tips-modal-close {
-      background: none;
-      border: none;
-      font-size: 18px;
-      color: var(--text-muted);
-      cursor: pointer;
-      padding: 4px 8px;
-      line-height: 1;
-    }
     .tips-content {
       max-height: 65vh;
       overflow-y: auto;
+      text-align: left;
     }
     .tips-section-heading {
-      font-size: 11px;
+      font-family: var(--font-display);
+      font-size: var(--fs-label);
       font-weight: 700;
-      letter-spacing: 0.08em;
+      letter-spacing: var(--tracking-label);
       text-transform: uppercase;
       color: var(--accent-teal);
       margin: 16px 0 6px;
@@ -1111,11 +1294,12 @@
     .tips-section-heading:first-child { margin-top: 0; }
     .tips-list {
       margin: 0;
-      padding: 0 0 0 16px;
+      padding: 0 0 0 18px;
       list-style: disc;
     }
+    .tips-list li::marker { color: var(--text-dim); }
     .tips-list li {
-      font-size: 13px;
+      font-size: var(--fs-md);
       line-height: 1.5;
       color: var(--text-primary);
       margin-bottom: 5px;
@@ -1126,52 +1310,54 @@
     .rules-box {
       background: var(--bg-panel);
       border: 1px solid var(--border-glow);
-      border-radius: 12px;
+      border-radius: var(--radius-xl);
       width: 100%;
       max-width: 600px;
       max-height: 90vh;
       display: flex;
       flex-direction: column;
     }
-    .rules-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 20px 24px 12px;
-      flex-shrink: 0;
-    }
+    .rules-header { padding: 20px 24px 0; margin-bottom: var(--space-3); }
     .rules-header h2 {
-      font-family: 'Orbitron', sans-serif;
-      font-size: 13px;
+      font-family: var(--font-display);
+      font-size: var(--fs-title);
       font-weight: 700;
-      letter-spacing: 2px;
+      letter-spacing: var(--tracking-label);
       text-transform: uppercase;
       color: var(--accent-teal);
       margin: 0;
     }
+    /* One row of rulebook tabs; scrolls sideways when it doesn't fit (phones) */
     .rules-tabs {
       display: flex;
-      gap: 8px;
+      gap: var(--space-2);
       padding: 0 24px 12px;
       flex-shrink: 0;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      overscroll-behavior-x: contain;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
     }
+    .rules-tabs::-webkit-scrollbar { display: none; }
+    .rules-tab { flex: 1 0 auto; white-space: nowrap; }
     .rules-tab {
       background: transparent;
-      border: 1px solid var(--border);
-      border-radius: 6px;
+      border: 1px solid var(--border-control);
+      border-radius: var(--radius);
       color: var(--text-muted);
       font-family: 'Orbitron', sans-serif;
-      font-size: 10px;
+      font-size: var(--fs-label);
       font-weight: 700;
       letter-spacing: 1px;
       text-transform: uppercase;
       padding: 9px 12px;
       cursor: pointer;
-      transition: all 0.15s;
+      transition: background-color 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s;
       -webkit-tap-highlight-color: transparent;
     }
-    .rules-tab:hover { border-color: var(--accent-teal); color: var(--accent-teal); }
+    .rules-tab:hover { border-color: var(--accent-teal); color: var(--accent-teal); background: var(--tint-teal); }
+
     .rules-tab.active { background: var(--accent-orange); color: var(--on-orange); border-color: var(--accent-orange); }
     .rules-img-wrap {
       overflow: auto;
@@ -1183,14 +1369,14 @@
     /* Footer */
     .footer-byline {
       font-family: 'Orbitron', sans-serif;
-      font-size: 10px;
+      font-size: var(--fs-label);
       letter-spacing: 2px;
       text-transform: uppercase;
       color: var(--text-dim);
       margin-bottom: 14px;
     }
     .footer-text {
-      font-size: 13px;
+      font-size: var(--fs-md);
       color: var(--text-muted);
       line-height: 1.8;
       margin-bottom: 18px;
@@ -1203,7 +1389,7 @@
       flex-wrap: wrap;
     }
     .footer-disclaimer {
-      font-size: 11px;
+      font-size: var(--fs-xs);
       color: var(--text-dim);
       line-height: 1.8;
       margin: 24px auto 0;
@@ -1228,9 +1414,9 @@
     }
     .btn-settings, .btn-theme {
       background: none;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      color: var(--text-dim);
+      border: 1px solid var(--border-control);
+      border-radius: var(--radius);
+      color: var(--text-muted);
       cursor: pointer;
       line-height: 1;
       transition: color 0.15s, border-color 0.15s;
@@ -1239,10 +1425,11 @@
     .btn-settings:hover, .btn-theme:hover {
       color: var(--accent-teal);
       border-color: var(--accent-teal);
+      background: var(--tint-teal);
     }
     .btn-settings {
       font-family: 'Orbitron', sans-serif;
-      font-size: 10px;
+      font-size: var(--fs-label);
       font-weight: 700;
       letter-spacing: 1px;
       text-transform: uppercase;
@@ -1256,55 +1443,56 @@
     }
     .btn-radio, .btn-volume {
       background: none;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      color: var(--text-dim);
+      border: 1px solid var(--border-control);
+      border-radius: var(--radius);
+      color: var(--text-muted);
       cursor: pointer;
       padding: 7px 9px;
       display: flex;
       align-items: center;
       justify-content: center;
       line-height: 1;
-      font-size: 14px;
+      font-size: var(--fs-body);
       transition: color 0.15s, border-color 0.15s;
       -webkit-tap-highlight-color: transparent;
     }
-    .btn-radio:hover      { color: var(--accent-teal);   border-color: var(--accent-teal); }
-    .btn-radio.is-playing { color: var(--accent-teal);   border-color: var(--accent-teal); }
-    .btn-radio.is-loading { color: var(--accent-yellow); border-color: var(--accent-yellow); }
-    .btn-radio.is-error   { color: var(--loss-color);    border-color: var(--loss-color); }
-    .btn-radio:disabled   { opacity: 0.35; cursor: not-allowed; }
+    .btn-radio:hover, .btn-volume:hover { color: var(--accent-teal); border-color: var(--accent-teal); background: var(--tint-teal); }
+    .btn-radio.is-playing { color: var(--accent-teal);   border-color: var(--accent-teal); background: var(--tint-teal); }
+    .btn-radio.is-loading { color: var(--accent-yellow); border-color: var(--accent-yellow); background: var(--tint-yellow); }
+    .btn-radio.is-error   { color: var(--loss-color);    border-color: var(--loss-color); background: var(--tint-loss); }
+    .btn-radio:disabled   { border-style: dashed; color: var(--text-dim); background: transparent; cursor: not-allowed; }
     .btn-volume           { display: none; }
     .btn-volume.visible   { display: flex; }
     .btn-tips-trigger {
       background: none;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      color: var(--text-dim);
+      border: 1px solid var(--border-control);
+      border-radius: var(--radius);
+      color: var(--text-muted);
       cursor: pointer;
       padding: 7px 9px;
       display: flex;
       align-items: center;
       justify-content: center;
       line-height: 1;
-      font-size: 13px;
+      font-size: var(--fs-md);
       font-weight: 700;
       transition: color 0.15s, border-color 0.15s;
       -webkit-tap-highlight-color: transparent;
     }
-    .btn-tips-trigger:hover { color: var(--accent-teal); border-color: var(--accent-teal); }
+    .btn-tips-trigger:hover { color: var(--accent-teal); border-color: var(--accent-teal); background: var(--tint-teal); }
     .volume-popover {
       display: none;
       background: var(--bg-panel);
-      border: 1px solid var(--border);
-      border-radius: 6px;
+      border: 1px solid var(--border-glow);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-pop);
       padding: 8px 10px;
       width: 160px;
     }
     .volume-popover.open { display: block; }
     .radio-status-label {
       font-family: 'Orbitron', sans-serif;
-      font-size: 9px;
+      font-size: var(--fs-label);
       font-weight: 700;
       letter-spacing: 2px;
       color: var(--accent-teal);
@@ -1318,7 +1506,7 @@
       cursor: pointer;
     }
     .active-packs-label {
-      font-size: 10px;
+      font-size: var(--fs-xs);
       color: var(--text-dim);
       letter-spacing: 1px;
       margin-top: 10px;
@@ -1334,7 +1522,7 @@
       padding: 14px 16px 12px;
       width: 248px;
       z-index: 100;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.35);
+      box-shadow: var(--shadow-pop);
       text-align: left;
     }
     .onboarding-tip::before {
@@ -1348,7 +1536,7 @@
       transform: rotate(45deg);
     }
     .onboarding-tip p {
-      font-size: 12px;
+      font-size: var(--fs-sm);
       color: var(--text-muted);
       line-height: 1.6;
       margin-bottom: 8px;
@@ -1361,37 +1549,30 @@
       margin-top: 12px;
       padding: 7px;
       background: var(--accent-teal);
-      color: var(--bg-deep);
+      color: var(--on-teal);
       border: none;
-      border-radius: 6px;
-      font-family: 'Orbitron', sans-serif;
-      font-size: 9px;
+      border-radius: var(--radius);
+      font-family: var(--font-display);
+      font-size: var(--fs-label);
       font-weight: 700;
       letter-spacing: 1px;
       text-transform: uppercase;
       cursor: pointer;
+      min-height: 36px;
     }
+    .btn-tip-dismiss:hover { background: var(--teal-hover); }
     /* Settings modal */
     .settings-box {
       background: var(--bg-panel);
       border: 1px solid var(--border-glow);
-      border-radius: 12px;
+      border-radius: var(--radius-xl);
       padding: 28px 24px;
       max-width: 380px;
       width: 100%;
     }
-    .settings-box h2 {
-      font-family: 'Orbitron', sans-serif;
-      font-size: 13px;
-      font-weight: 700;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: var(--accent-teal);
-      margin-bottom: 8px;
-    }
     .settings-box > p {
-      font-size: 12px;
-      color: var(--text-dim);
+      font-size: var(--fs-md);
+      color: var(--text-muted);
       margin-bottom: 20px;
       line-height: 1.5;
     }
@@ -1404,26 +1585,27 @@
       cursor: pointer;
     }
     .pack-item:last-child { border-bottom: none; }
+    .pack-item:hover .pack-item-name { color: var(--accent-teal); }
     .pack-item input[type="checkbox"] {
-      margin-top: 3px;
+      margin-top: 1px;
       accent-color: var(--accent-teal);
-      width: 16px; height: 16px;
+      width: 20px; height: 20px;
       flex-shrink: 0;
       cursor: pointer;
     }
     .pack-item-info { flex: 1; }
     .pack-item-name {
       font-family: 'Orbitron', sans-serif;
-      font-size: 10px;
+      font-size: var(--fs-label);
       font-weight: 700;
       letter-spacing: 1px;
       text-transform: uppercase;
       color: var(--text-primary);
       margin-bottom: 3px;
     }
-    .pack-item-desc { font-size: 11px; color: var(--text-dim); line-height: 1.4; }
+    .pack-item-desc { font-size: var(--fs-xs); color: var(--text-dim); line-height: 1.4; }
     .settings-warning {
-      font-size: 11px;
+      font-size: var(--fs-xs);
       color: var(--loss-color);
       margin-top: 12px;
       min-height: 16px;
@@ -1433,7 +1615,7 @@
     .faq-box {
       background: var(--bg-panel);
       border: 1px solid var(--border-glow);
-      border-radius: 12px;
+      border-radius: var(--radius-xl);
       padding: 28px 24px 20px;
       max-width: 480px;
       width: 100%;
@@ -1441,15 +1623,13 @@
       display: flex;
       flex-direction: column;
     }
-    .faq-box h2 {
-      font-family: 'Orbitron', sans-serif;
-      font-size: 13px;
+    .faq-box h2, .settings-box h2 {
+      font-family: var(--font-display);
+      font-size: var(--fs-title);
       font-weight: 700;
-      letter-spacing: 2px;
+      letter-spacing: var(--tracking-label);
       text-transform: uppercase;
       color: var(--accent-teal);
-      margin-bottom: 16px;
-      flex-shrink: 0;
     }
     .faq-content {
       overflow-y: auto;
@@ -1457,7 +1637,7 @@
     }
     .faq-section-header {
       font-family: 'Orbitron', sans-serif;
-      font-size: 9px;
+      font-size: var(--fs-label);
       font-weight: 700;
       letter-spacing: 2px;
       text-transform: uppercase;
@@ -1472,7 +1652,7 @@
     }
     .faq-char-header, .faq-scenario-header {
       font-family: 'Orbitron', sans-serif;
-      font-size: 9px;
+      font-size: var(--fs-label);
       font-weight: 700;
       letter-spacing: 1px;
       text-transform: uppercase;
@@ -1484,29 +1664,30 @@
       padding: 2px 0;
     }
     details.faq-item summary {
-      font-size: 13px;
+      font-size: var(--fs-body);
       color: var(--text-primary);
       cursor: pointer;
       padding: 8px 0;
       line-height: 1.5;
       list-style: none;
-      padding-right: 16px;
+      padding-right: 22px;
       position: relative;
     }
+    details.faq-item summary:hover { color: var(--accent-teal); }
     details.faq-item summary::-webkit-details-marker { display: none; }
     details.faq-item summary::after {
       content: '+';
       position: absolute;
       right: 0;
       top: 8px;
-      color: var(--text-dim);
-      font-size: 16px;
+      color: var(--text-muted);
+      font-size: 18px;
       line-height: 1;
     }
     details.faq-item[open] summary::after { content: '−'; color: var(--accent-teal); }
     details.faq-item[open] summary { color: var(--accent-teal); }
     details.faq-item p {
-      font-size: 13px;
+      font-size: var(--fs-body);
       color: var(--text-muted);
       line-height: 1.6;
       padding: 0 0 10px 0;
@@ -1521,8 +1702,11 @@
       text-align: center;
     }
 
-    /* Keyboard focus ring — consistent across all interactive elements */
-    :focus-visible { outline: 2px solid var(--accent-teal); outline-offset: 2px; }
+    /* Keyboard focus ring — ONE style for every interactive element (3px, >= 3:1 on all surfaces).
+       Components may only change the offset (e.g. clipped containers), never colour/width. */
+    :focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+    :focus:not(:focus-visible) { outline: none; }
+
 
     /* Utility — suppress default form-row bottom margin */
     .form-row-flush { margin-bottom: 0; }
@@ -1538,8 +1722,9 @@
       gap: 10px;
       margin-bottom: 18px;
     }
+    /* Narrow phones keep three columns (a 2-column grid left an orphan third card) */
     @media (max-width: 380px) {
-      .stats-summary { grid-template-columns: 1fr 1fr; }
+      .stats-summary { gap: 6px; }
     }
     .stats-summary-card {
       background: var(--bg-card);
@@ -1550,13 +1735,15 @@
     }
     .stats-summary-value {
       font-family: 'Orbitron', sans-serif;
-      font-size: 18px;
+      font-size: var(--fs-stat);
       font-weight: 700;
       color: var(--accent-teal);
       line-height: 1.2;
     }
+    .stats-summary-value.is-small { font-size: var(--fs-input); }
+    .stats-summary-value.is-yellow { color: var(--accent-yellow); }
     .stats-summary-label {
-      font-size: 10px;
+      font-size: var(--fs-label);
       color: var(--text-muted);
       letter-spacing: 1px;
       text-transform: uppercase;
@@ -1569,7 +1756,9 @@
       margin-bottom: 18px;
     }
     @media (max-width: 380px) {
-      .stats-playtime { grid-template-columns: 1fr 1fr; }
+      .stats-playtime { gap: 6px; }
+      .stats-summary-card { padding: 10px 4px; }
+      .stats-summary-label { letter-spacing: 0.5px; }
     }
 
     /* ─── SYZYGY Campaign ────────────────────────────────────────────────── */
@@ -1590,19 +1779,22 @@
       text-align: center;
       -webkit-tap-highlight-color: transparent;
     }
+    .syzygy-mode-card { border-color: var(--border-control); }
     .syzygy-mode-card:hover { border-color: var(--accent-teal); }
-    .syzygy-mode-card.selected { border-color: var(--accent-orange); background: rgba(255,107,53,0.1); }
-    .syzygy-mode-card.disabled { opacity: 0.38; cursor: not-allowed; pointer-events: none; }
+    .syzygy-mode-card.selected { border-color: var(--accent-orange); background: var(--tint-orange); box-shadow: inset 0 0 0 1px var(--accent-orange); }
+    .syzygy-mode-card.disabled { border-style: dashed; border-color: var(--border-glow); background: transparent; cursor: not-allowed; pointer-events: none; }
+    .syzygy-mode-card.disabled .syzygy-mode-card-title,
+    .syzygy-mode-card.disabled .syzygy-mode-card-desc { color: var(--text-dim); }
     .syzygy-mode-card-title {
       font-family: 'Orbitron', sans-serif;
-      font-size: 12px;
+      font-size: var(--fs-sm);
       font-weight: 700;
       letter-spacing: 2px;
       text-transform: uppercase;
       color: var(--text-primary);
       margin-bottom: 6px;
     }
-    .syzygy-mode-card-desc { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+    .syzygy-mode-card-desc { font-size: var(--fs-sm); color: var(--text-muted); line-height: 1.5; }
 
     .syzygy-char-grid {
       display: grid;
@@ -1613,10 +1805,10 @@
     @media (max-width: 400px) { .syzygy-char-grid { grid-template-columns: 1fr 1fr; } }
     .syzygy-char-btn {
       background: var(--bg-card);
-      border: 1px solid var(--border);
+      border: 1px solid var(--border-control);
       border-radius: 8px;
       padding: 8px 6px;
-      font-size: 12px;
+      font-size: var(--fs-sm);
       color: var(--text-muted);
       cursor: pointer;
       text-align: center;
@@ -1626,12 +1818,16 @@
       min-height: 44px;
     }
     .syzygy-char-btn:hover { border-color: var(--accent-teal); color: var(--text-primary); }
-    .syzygy-char-btn.sel-1 { border-color: var(--accent-orange); background: rgba(255,107,53,0.12); color: var(--text-primary); }
-    .syzygy-char-btn.sel-2 { border-color: var(--accent-teal);   background: rgba(0,212,170,0.1);  color: var(--text-primary); }
-    .syzygy-char-btn.sel-3 { border-color: var(--accent-yellow);  background: rgba(240,180,41,0.1); color: var(--text-primary); }
+    .syzygy-char-btn.sel-1 { border-color: var(--accent-orange); background: var(--tint-orange); color: var(--text-primary); box-shadow: inset 0 0 0 1px var(--accent-orange); }
+    .syzygy-char-btn.sel-2 { border-color: var(--accent-teal);   background: var(--tint-teal);   color: var(--text-primary); box-shadow: inset 0 0 0 1px var(--accent-teal); }
+    .syzygy-char-btn.sel-3 { border-color: var(--accent-yellow); background: var(--tint-yellow); color: var(--text-primary); box-shadow: inset 0 0 0 1px var(--accent-yellow); }
+    .sz-sel-num { display: block; font-family: var(--font-display); font-size: var(--fs-label); font-weight: 700; margin-top: 2px; }
+    .sel-1 .sz-sel-num { color: var(--accent-orange); }
+    .sel-2 .sz-sel-num { color: var(--accent-teal); }
+    .sel-3 .sz-sel-num { color: var(--accent-yellow); }
 
     .syzygy-campaign-header {
-      background: linear-gradient(135deg, rgba(255,107,53,0.07), rgba(0,212,170,0.07));
+      background: linear-gradient(135deg, var(--tint-orange), var(--tint-teal));
       border: 1px solid var(--border-glow);
       border-radius: 10px;
       padding: 14px 16px;
@@ -1644,13 +1840,13 @@
     }
     .syzygy-campaign-title {
       font-family: 'Orbitron', sans-serif;
-      font-size: 12px;
+      font-size: var(--fs-sm);
       font-weight: 700;
       letter-spacing: 2px;
       text-transform: uppercase;
       color: var(--accent-orange);
     }
-    .syzygy-campaign-meta { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    .syzygy-campaign-meta { font-size: var(--fs-sm); color: var(--text-muted); margin-top: 2px; }
 
     .syzygy-path {
       display: flex;
@@ -1673,19 +1869,20 @@
       align-items: center;
       justify-content: center;
       font-family: 'Orbitron', sans-serif;
-      font-size: 10px;
+      font-size: var(--fs-label);
       font-weight: 700;
       border: 2px solid var(--border);
       color: var(--text-dim);
       background: var(--bg-card);
       flex-shrink: 0;
     }
-    .syzygy-path-stage.current { border-color: var(--accent-orange); color: var(--accent-orange); background: rgba(255,107,53,0.1); }
-    .syzygy-path-stage.win     { border-color: var(--accent-teal);   color: var(--accent-teal);   background: rgba(0,212,170,0.1); }
-    .syzygy-path-stage.loss    { border-color: var(--loss-color);    color: var(--loss-color);    background: rgba(255,68,85,0.1); }
+    .syzygy-path-stage { border-color: var(--border-glow); }
+    .syzygy-path-stage.current { border-color: var(--accent-orange); color: var(--accent-orange); background: var(--tint-orange); }
+    .syzygy-path-stage.win     { border-color: var(--accent-teal);   color: var(--accent-teal);   background: var(--tint-teal); }
+    .syzygy-path-stage.loss    { border-color: var(--loss-color);    color: var(--loss-color);    background: var(--tint-loss); }
     .syzygy-path-label {
-      font-size: 9px;
-      color: var(--text-dim);
+      font-size: var(--fs-label);
+      color: var(--text-muted);
       letter-spacing: 0.5px;
       text-align: center;
       max-width: 62px;
@@ -1707,12 +1904,15 @@
       padding: 10px 10px;
       text-align: center;
     }
-    .syzygy-char-card.playing { border-color: var(--accent-orange); }
-    .syzygy-char-card.benched { opacity: 0.6; }
-    .syzygy-char-card.removed { opacity: 0.3; }
+    .syzygy-char-card.playing { border-color: var(--accent-orange); box-shadow: inset 0 0 0 1px var(--accent-orange); }
+    /* Benched / removed: de-emphasised with surface + border style, not opacity, so text stays >= 4.5:1 */
+    .syzygy-char-card.benched { background: transparent; border-style: dashed; border-color: var(--border-glow); }
+    .syzygy-char-card.benched .syzygy-char-name { color: var(--text-muted); }
+    .syzygy-char-card.removed { background: transparent; border-style: dashed; border-color: var(--line-loss); }
+    .syzygy-char-card.removed .syzygy-char-name { color: var(--text-dim); text-decoration: line-through; }
     .syzygy-char-name {
       font-family: 'Orbitron', sans-serif;
-      font-size: 9px;
+      font-size: var(--fs-label);
       font-weight: 700;
       letter-spacing: 1px;
       text-transform: uppercase;
@@ -1720,11 +1920,11 @@
       margin-bottom: 4px;
       line-height: 1.3;
     }
-    .syzygy-char-role { font-size: 10px; margin-bottom: 4px; }
+    .syzygy-char-role { font-size: var(--fs-label); margin-bottom: 4px; }
     .role-playing { color: var(--accent-orange); }
     .role-benched { color: var(--text-dim); }
     .role-removed { color: var(--loss-color); text-decoration: line-through; }
-    .syzygy-char-carryover { font-size: 10px; color: var(--text-muted); line-height: 1.6; }
+    .syzygy-char-carryover { font-size: var(--fs-label); color: var(--text-muted); line-height: 1.6; }
 
     .syzygy-resource-row {
       display: flex;
@@ -1735,29 +1935,32 @@
       flex-wrap: wrap;
     }
     .syzygy-resource-row:last-of-type { border-bottom: none; }
-    .syzygy-resource-char { flex: 1; min-width: 80px; font-size: 13px; color: var(--text-primary); }
+    .syzygy-resource-char { flex: 1; min-width: 80px; font-size: var(--fs-md); color: var(--text-primary); }
     .syzygy-resource-controls { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-    .syzygy-resource-label { font-size: 14px; }
+    .syzygy-resource-label { font-size: var(--fs-body); }
     .syzygy-stepper { display: flex; align-items: center; gap: 4px; }
     .btn-sz-step {
       width: 32px; height: 32px;
       border-radius: 50%;
-      border: 1px solid var(--border-glow);
+      border: 1px solid var(--border-control);
       background: var(--bg-card);
       color: var(--text-muted);
       font-size: 16px;
       line-height: 1;
       cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      transition: all 0.15s;
+      transition: background-color 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s;
       -webkit-tap-highlight-color: transparent;
       flex-shrink: 0;
     }
     .btn-sz-step:hover:not(:disabled) { border-color: var(--accent-teal); color: var(--accent-teal); }
-    .btn-sz-step:disabled { opacity: 0.3; cursor: not-allowed; }
+    .btn-sz-step:disabled { border-style: dashed; color: var(--text-dim); background: transparent; cursor: not-allowed; }
+    .syzygy-stepper.is-compact { gap: 3px; }
+    .syzygy-stepper.is-compact .btn-sz-step { width: 28px; height: 28px; font-size: var(--fs-body); }
+    .syzygy-stepper.is-compact .sz-step-val { font-size: var(--fs-md); min-width: 18px; }
     .sz-step-val {
       font-family: 'Orbitron', sans-serif;
-      font-size: 15px;
+      font-size: var(--fs-input);
       font-weight: 700;
       color: var(--text-primary);
       min-width: 22px;
@@ -1770,7 +1973,7 @@
       gap: 8px;
       padding: 10px 0 0;
       font-family: 'Orbitron', sans-serif;
-      font-size: 12px;
+      font-size: var(--fs-sm);
       font-weight: 700;
       color: var(--accent-yellow);
     }
@@ -1793,7 +1996,7 @@
     }
     .syzygy-stage-label {
       font-family: 'Orbitron', sans-serif;
-      font-size: 9px;
+      font-size: var(--fs-label);
       font-weight: 700;
       letter-spacing: 2px;
       text-transform: uppercase;
@@ -1802,7 +2005,7 @@
     }
     .syzygy-stage-scenario {
       font-family: 'Orbitron', sans-serif;
-      font-size: 13px;
+      font-size: var(--fs-md);
       font-weight: 700;
       color: var(--accent-teal);
       letter-spacing: 1px;
@@ -1818,7 +2021,7 @@
     }
     .syzygy-branch-card {
       background: var(--bg-card);
-      border: 2px solid var(--border);
+      border: 2px solid var(--border-control);
       border-radius: 8px;
       padding: 12px;
       text-align: center;
@@ -1827,17 +2030,17 @@
       -webkit-tap-highlight-color: transparent;
     }
     .syzygy-branch-card:hover { border-color: var(--accent-teal); }
-    .syzygy-branch-card.chosen { border-color: var(--accent-orange); background: rgba(255,107,53,0.1); }
+    .syzygy-branch-card.chosen { border-color: var(--accent-orange); background: var(--tint-orange); }
     .syzygy-branch-tag {
       font-family: 'Orbitron', sans-serif;
-      font-size: 9px;
+      font-size: var(--fs-label);
       font-weight: 700;
       letter-spacing: 1px;
       color: var(--text-dim);
       text-transform: uppercase;
       margin-bottom: 5px;
     }
-    .syzygy-branch-name { font-size: 12px; color: var(--accent-teal); line-height: 1.4; }
+    .syzygy-branch-name { font-size: var(--fs-sm); color: var(--accent-teal); line-height: 1.4; }
 
     .syzygy-outcome-btns {
       display: grid;
@@ -1847,11 +2050,11 @@
     }
     .btn-sz-win {
       background: var(--accent-teal);
-      color: var(--bg-deep);
+      color: var(--on-teal);
       border: none;
       border-radius: 6px;
       font-family: 'Orbitron', sans-serif;
-      font-size: 10px;
+      font-size: var(--fs-label);
       font-weight: 700;
       letter-spacing: 2px;
       text-transform: uppercase;
@@ -1865,32 +2068,32 @@
     .btn-sz-loss {
       background: transparent;
       color: var(--loss-color);
-      border: 1px solid rgba(255,68,85,0.35);
+      border: 1px solid var(--border-danger);
       border-radius: 6px;
       font-family: 'Orbitron', sans-serif;
-      font-size: 10px;
+      font-size: var(--fs-label);
       font-weight: 700;
       letter-spacing: 2px;
       text-transform: uppercase;
       padding: 14px;
       cursor: pointer;
       min-height: 48px;
-      transition: all 0.15s;
+      transition: background-color 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s;
       -webkit-tap-highlight-color: transparent;
     }
-    .btn-sz-loss:hover { border-color: var(--loss-color); background: rgba(255,68,85,0.1); }
+    .btn-sz-loss:hover { border-color: var(--loss-color); background: var(--tint-loss); }
 
     .syzygy-rank-card {
       text-align: center;
       padding: 28px 20px;
-      background: linear-gradient(135deg, rgba(255,107,53,0.07), rgba(0,212,170,0.07));
+      background: linear-gradient(135deg, var(--tint-orange), var(--tint-teal));
       border: 1px solid var(--border-glow);
       border-radius: 12px;
       margin-bottom: 16px;
     }
     .syzygy-rank-eyebrow {
       font-family: 'Orbitron', sans-serif;
-      font-size: 9px;
+      font-size: var(--fs-label);
       letter-spacing: 3px;
       color: var(--text-dim);
       text-transform: uppercase;
@@ -1904,7 +2107,7 @@
       text-transform: uppercase;
       margin-bottom: 10px;
     }
-    .syzygy-rank-desc { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+    .syzygy-rank-desc { font-size: var(--fs-md); color: var(--text-muted); line-height: 1.6; }
     .syzygy-rank-stats {
       display: flex;
       justify-content: center;
@@ -1914,22 +2117,301 @@
     }
     .syzygy-rank-stat-val {
       font-family: 'Orbitron', sans-serif;
-      font-size: 18px;
+      font-size: var(--fs-stat);
       font-weight: 700;
       color: var(--accent-teal);
     }
-    .syzygy-rank-stat-label { font-size: 10px; color: var(--text-dim); letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
+    .syzygy-rank-stat-label { font-size: var(--fs-label); color: var(--text-dim); letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
 
     .syzygy-carryover-row {
       display: flex;
       align-items: center;
       gap: 8px;
       padding: 6px 0;
-      font-size: 12px;
+      font-size: var(--fs-sm);
       color: var(--text-muted);
       flex-wrap: wrap;
     }
     .syzygy-carryover-name { min-width: 90px; font-weight: 600; color: var(--text-primary); }
+
+    /* Shared text helpers — replace inline style="" literals in markup and app.js templates */
+    .text-dim   { color: var(--text-dim); }
+    .text-muted { color: var(--text-muted); }
+    .text-teal  { color: var(--accent-teal); }
+    .help-text  { font-size: var(--fs-md); color: var(--text-muted); line-height: var(--lh-body); margin-bottom: var(--space-3); }
+    .help-text strong { color: var(--text-primary); }
+    .help-text.is-center { text-align: center; }
+    .help-text.is-loose  { margin-bottom: var(--space-4); }
+    .label-optional { font-weight: 400; color: var(--text-dim); text-transform: none; letter-spacing: 0; }
+    .footer-meta { font-size: var(--fs-label); color: var(--text-dim); margin-top: 10px; letter-spacing: 1px; }
+    .footer-meta a { color: inherit; text-decoration: none; border-bottom: 1px dotted currentColor; }
+    .link-inline { text-decoration: none; border-bottom: 1px solid currentColor; padding-bottom: 1px; }
+    .link-inline:hover { border-bottom-width: 2px; }
+    .link-orange { color: var(--accent-orange); }
+    .link-yellow { color: var(--accent-yellow); }
+    .link-teal   { color: var(--accent-teal); }
+
+
+    /* ─── Interaction & accessibility additions (ux/interaction) ─────────────
+       New elements/states only; base component styling lives above. */
+    .die-adj[hidden], .die-adj-row[hidden] { display: none; }
+    /* .tab-nav clips overflow, so draw the tab focus ring inside the button. */
+    .tab-btn:focus-visible { outline-offset: -4px; }
+    .tab-btn.active:focus-visible { outline-color: var(--on-orange); }
+    h2.panel-title, h3.section-heading { font-weight: 700; }
+    [tabindex="-1"]:focus:not(:focus-visible) { outline: none; }
+    .all-locked-hint { font-size: var(--fs-sm); color: var(--text-muted); margin-top: var(--space-3); text-align: center; line-height: var(--lh-body); }
+    .notes-input {
+      width: 100%; background: var(--bg-card); border: 1px solid var(--border-control); border-radius: var(--radius);
+      color: var(--text-primary); padding: 10px 12px; font-size: var(--fs-control-sm); font-family: var(--font-body); resize: vertical;
+    }
+    /* Inline confirmation after saving: teal check line + next step, like a notice */
+    .save-status { margin-top: var(--space-3); text-align: center; }
+    .save-status p { font-size: var(--fs-md); font-weight: 600; color: var(--accent-teal); margin-bottom: var(--space-3); line-height: var(--lh-tight); }
+    .save-status .btn { width: 100%; }
+    .modal-box p.edit-record-summary { font-size: var(--fs-md); margin-bottom: var(--space-4); }
+    .history-count { font-size: var(--fs-sm); color: var(--text-muted); margin: 0 0 var(--space-2); min-height: 1em; }
+    .history-count:empty { display: none; }
+    /* "Clear Filters" in the empty filtered log is a standard secondary button (class .btn .btn-secondary) */
+    .empty-state .btn { margin-top: var(--space-4); font-style: normal; }
+    .rules-status { font-size: var(--fs-md); color: var(--text-muted); padding: var(--space-2) 0; }
+    .rules-status:empty { display: none; }
+    .diff-mark { font-weight: 700; }
+    .syzygy-path-mark { font-weight: 700; margin-right: 2px; }
+    .syzygy-mode-card-check {
+      display: block; margin-top: var(--space-2);
+      font-family: var(--font-display); font-size: var(--fs-label); font-weight: 700;
+      letter-spacing: var(--tracking-tight); text-transform: uppercase; color: var(--accent-orange);
+    }
+    .syzygy-branch-card { font: inherit; color: inherit; width: 100%; }
+    .sz-hint { font-size: var(--fs-sm); color: var(--text-muted); text-align: center; margin: 0 0 var(--space-3); line-height: var(--lh-body); }
+    .syzygy-heading-focus:focus { outline: none; }
+    /* Toast with an action (Undo): text + a compact outline button in the toast colour */
+    .toast.has-action { pointer-events: auto; display: flex; align-items: center; gap: var(--space-3); justify-content: space-between; text-align: left; padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4); }
+    .toast-action {
+      background: transparent; border: 1px solid var(--accent-teal); color: var(--accent-teal); border-radius: var(--radius);
+      font-family: var(--font-display); font-size: var(--fs-button); font-weight: 700;
+      letter-spacing: var(--tracking-label); text-transform: uppercase; line-height: var(--lh-tight);
+      padding: var(--space-2) var(--space-4); min-height: 40px; cursor: pointer; flex-shrink: 0;
+      transition: background-color 0.18s, color 0.18s;
+    }
+    .toast-action:hover { background: var(--tint-teal); }
+    .toast.error .toast-action { border-color: var(--loss-color); color: var(--loss-color); }
+    .toast.error .toast-action:hover { background: var(--tint-loss); }
+    /* Panel intro copy (SYZYGY, unplayed summary) — one size for the same role everywhere */
+    .panel-intro { font-size: var(--fs-md); color: var(--text-muted); line-height: var(--lh-body); margin-bottom: var(--space-4); }
+    .syzygy-playing { font-size: var(--fs-sm); color: var(--text-muted); line-height: var(--lh-body); }
+    .syzygy-playing strong { color: var(--text-primary); font-weight: 600; }
+    .syzygy-retry-notice { margin-top: var(--space-3); }
+    .syzygy-resource-name { font-weight: 600; }
+    .syzygy-carryover-note { font-size: var(--fs-xs); color: var(--text-dim); }
+    .cell-meta { font-size: var(--fs-sm); color: var(--text-muted); }
+    .settings-actions { margin-top: var(--space-5); }
+
+    /* ─── Responsive layout ──────────────────────────────────────────────────
+       Consolidated layout rules for phones, landscape phones, touch devices and
+       wide desktops. Component looks live above; this block only sizes and
+       arranges them. */
+
+    /* Notched phones in landscape (viewport-fit=cover): keep content out of the cut-outs */
+    .app-shell {
+      padding-left:  max(var(--space-4), env(safe-area-inset-left, 0px));
+      padding-right: max(var(--space-4), env(safe-area-inset-right, 0px));
+    }
+
+    /* Compact button variant (replaces inline sizing on Rulebooks Close / SYZYGY Abandon) */
+    .btn-compact { min-height: 36px; padding: var(--space-2) 14px; font-size: var(--fs-label); }
+
+    /* Combo card: keep each role label with its character name, wrap as whole units */
+    .combo-characters { display: flex; flex-wrap: wrap; align-items: flex-end; row-gap: var(--space-2); }
+    .combo-char-wrap  { display: inline-block; }
+    .combo-vs         { line-height: var(--lh-body); }
+    @media (max-width: 480px) {
+      .combo-characters { flex-direction: column; align-items: flex-start; }
+      /* Stacked: the role labels already pair them; keep "&" for screen readers only */
+      .combo-vs { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+    }
+
+    /* SYZYGY steppers: a label + stepper pair never splits across lines */
+    .sz-step-group { display: inline-flex; align-items: center; gap: var(--space-1); white-space: nowrap; }
+    .syzygy-resource-controls { gap: var(--space-2) var(--space-3); }
+    .syzygy-carryover-row { gap: var(--space-2) var(--space-3); }
+    @media (max-width: 480px) {
+      .syzygy-resource-row { flex-direction: column; align-items: stretch; gap: var(--space-2); }
+      .syzygy-resource-controls { justify-content: space-between; }
+      .syzygy-carryover-row { justify-content: space-between; }
+      .syzygy-carryover-name { flex-basis: 100%; }
+    }
+
+    /* Narrow phones: tabs and toolbar labels on one line */
+    @media (max-width: 420px) {
+      .tab-btn { letter-spacing: var(--tracking-tight); padding: var(--space-2) var(--space-1); }
+      .history-actions .btn, .history-actions .import-label { letter-spacing: 0.5px; padding: var(--space-3) var(--space-1); white-space: nowrap; }
+    }
+
+    /* History filters: sort on its own row, filters in pairs, a lone last filter spans the row */
+    @media (max-width: 767px) {
+      #historyFilterDroid { grid-column: 1 / -1; }
+    }
+    @media (min-width: 768px) {
+      .history-filters { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      #historySortBy { grid-column: auto; }
+      .unplayed-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); align-content: start; }
+      .syzygy-char-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+    }
+
+    /* ── Modals ── every dialog scrolls instead of being cut off on short screens;
+       the action row stays reachable at the bottom of long dialogs. */
+    .modal-overlay { overflow-y: auto; overscroll-behavior: contain; }
+    .modal-box, .settings-box {
+      max-height: calc(100vh - 40px);
+      max-height: calc(100dvh - 40px);
+      overflow-y: auto;
+      overscroll-behavior: contain;
+    }
+    .faq-box, .rules-box {
+      max-height: calc(100vh - 40px);
+      max-height: min(90dvh, calc(100dvh - 40px));
+    }
+    .modal-box > .modal-actions:last-child,
+    .settings-box > .modal-actions:last-child {
+      position: sticky;
+      bottom: -28px;
+      margin: 0 -24px -28px;
+      padding: 14px 24px 28px;
+      background: var(--bg-panel);
+    }
+    #packList .pack-item input[type="checkbox"] { width: 20px; height: 20px; margin-top: 1px; }
+
+    /* Phones: dialogs become bottom sheets — full width, thumb-reachable actions */
+    @media (max-width: 560px) {
+      .modal-overlay { padding: var(--space-3) 0 0; align-items: flex-end; }
+      .modal-box, .settings-box, .faq-box, .rules-box {
+        max-width: none;
+        width: 100%;
+        border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+        border-bottom: none;
+        max-height: calc(100vh - 12px);
+        max-height: calc(100dvh - 12px);
+        padding-left: max(20px, env(safe-area-inset-left, 0px));
+        padding-right: max(20px, env(safe-area-inset-right, 0px));
+        padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+      }
+      .rules-box { height: calc(100vh - 12px); height: calc(100dvh - 12px); padding: 0 0 env(safe-area-inset-bottom, 0px); }
+      .rules-header { padding: var(--space-4) var(--space-4) 0; }
+      .rules-tabs   { padding: 0 var(--space-3) var(--space-3); }
+      .rules-tab    { padding-left: var(--space-2); padding-right: var(--space-2); letter-spacing: 0.5px; }
+      .rules-img-wrap { padding: 0 var(--space-3) var(--space-3); min-height: 0; }
+      /* Fit the rulebook sheet to the sheet's height and pan sideways: ~3x larger than
+         squeezing a landscape page into 330px of width */
+      #rulesImage { height: 100%; width: auto; max-width: none; }
+      .modal-box > .modal-actions:last-child,
+      .settings-box > .modal-actions:last-child {
+        bottom: calc(-20px - env(safe-area-inset-bottom, 0px));
+        margin: 0 -20px calc(-20px - env(safe-area-inset-bottom, 0px));
+        padding: 14px 20px calc(20px + env(safe-area-inset-bottom, 0px));
+      }
+      .tips-content { max-height: none; }
+      .dice-tray { gap: var(--space-3); }
+    }
+
+    /* ── Touch layouts: ~44px targets for frequent actions ── */
+    /* iOS Safari zooms the page when a focused control's text is under 16px */
+    @media (pointer: coarse), (max-width: 767px) {
+      :root { --fs-control: 16px; --fs-control-sm: 16px; }
+    }
+    @media (pointer: coarse), (max-width: 560px) {
+      .app-header { padding-top: 0; }
+      .header-actions { position: static; margin-bottom: var(--space-3); }
+      .header-btn-row { flex-wrap: wrap; justify-content: flex-end; }
+      .onboarding-tip { top: 56px; }
+      .btn-tips-trigger, .btn-radio, .btn-volume, .btn-theme { min-width: 44px; min-height: 44px; }
+      .btn-settings { min-height: 44px; }
+      .btn-lock { min-width: 44px; min-height: 44px; }
+      .form-row-label { margin-bottom: var(--space-1); }
+      .btn-faq-inline::after { inset: -13px; }
+      .droid-select, .btn-droid-rand { min-height: 44px; }
+      .btn-pause { min-height: 44px; }
+      .btn-edit-record, .btn-delete-record { min-width: 44px; min-height: 44px; }
+      .btn-load-unplayed { min-height: 44px; padding: 8px 14px; }
+      .history-select { min-height: 44px; }
+      .footer-link { display: inline-flex; align-items: center; min-height: 44px; }
+      .btn-compact { min-height: 44px; }
+      .rules-tab { min-height: 44px; }
+      .btn-sz-step,
+      .syzygy-stepper.is-compact .btn-sz-step { width: 44px; height: 44px; }
+      .syzygy-stepper { gap: 2px; }
+      .die-adj-row { width: auto; gap: var(--space-1); justify-content: center; flex-wrap: wrap; max-width: 92px; }
+      .die-adj, .dice-swap-mid { width: 44px; height: 44px; }
+      /* Flip (Hebolt Rom, locked die) drops to its own full-width row under −/+ */
+      .die-adj.adj-flip { order: 3; width: 100%; }
+      .dialog-close, .dice-close, .tips-modal-close { min-width: 44px; min-height: 44px; }
+      details.faq-item summary { padding-top: 13px; padding-bottom: 13px; }
+      details.faq-item summary::after { top: 15px; }
+      .btn-tip-dismiss { min-height: 44px; }
+      .toast-action { min-height: 44px; }
+    }
+    /* Tablets (table layout + 44px edit/delete): tighter cell padding so the log fits */
+    @media (pointer: coarse) and (min-width: 720px) and (max-width: 1023px) {
+      #historyTableContainer thead th, #historyTableContainer tbody td { padding-left: 6px; padding-right: 6px; }
+    }
+
+    /* ── Short landscape phones: compact one-row header so content starts on screen one ── */
+    @media (max-height: 500px) and (orientation: landscape) {
+      .app-shell { padding-top: var(--space-3); }
+      .app-header {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        column-gap: var(--space-3);
+        text-align: left;
+        padding-top: 0;
+        margin-bottom: var(--space-3);
+      }
+      .app-header h1 { grid-row: 1; grid-column: 1; font-size: var(--fs-timer); letter-spacing: var(--tracking-wide); }
+      .app-header h1 br:not(:nth-of-type(3)) { display: none; }
+      .app-header h1 .sub { font-size: var(--fs-xs); }
+      .header-actions { position: static; grid-row: 1; grid-column: 2; margin: 0; }
+      .header-rule, .app-header .author-label { display: none; }
+      .active-packs-label { grid-column: 1 / -1; margin-top: var(--space-1); }
+      .tab-nav { margin-bottom: var(--space-4); }
+    }
+
+    /* ── Wide screens: use the space instead of a phone column in a huge page ── */
+    @media (min-width: 1024px) {
+      .app-shell { max-width: 1120px; padding-left: var(--space-6); padding-right: var(--space-6); }
+      #randomizerPage {
+        display: grid;
+        grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+        gap: 0 var(--space-5);
+        align-items: start;
+      }
+      .sz-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+        gap: 0 var(--space-5);
+        align-items: start;
+      }
+      .history-toolbar { flex-direction: row; flex-wrap: wrap; align-items: center; }
+      .history-actions { margin-left: auto; }
+      .history-actions > * { flex: 0 0 auto; min-width: 120px; }
+      .history-filters { flex: 1 1 100%; grid-template-columns: repeat(6, minmax(0, 1fr)); }
+      .unplayed-grid { max-height: 560px; }
+    }
+    /* Desktop: setup column stays in view while the mission card / log scroll */
+    @media (min-width: 1024px) and (min-height: 640px) {
+      .rand-col-setup { position: sticky; top: var(--space-4); }
+      /* Empty mission area fills the play column beside the setup panels instead of floating */
+      .rand-col-play { align-self: stretch; display: flex; flex-direction: column; }
+      #combinationDisplay:has(.combo-empty) { flex: 1; display: flex; }
+      .combo-empty { flex: 1; display: flex; flex-direction: column; justify-content: center; margin-bottom: 0; }
+      .syzygy-mode-cards { max-width: 760px; }
+      /* Comfortable measure for running text in wide panels */
+      .panel > p:not(.panel-title):not(.section-heading),
+      .syzygy-rank-desc { max-width: 72ch; }
+      .syzygy-rank-desc { margin-left: auto; margin-right: auto; }
+      .footer-text { max-width: 72ch; margin-left: auto; margin-right: auto; }
+    }
   </style>
 </head>
 <body>
@@ -1937,9 +2419,9 @@
 <div id="ariaLive" role="status" aria-live="polite" aria-atomic="true" class="sr-only"></div>
 
 <div class="modal-overlay" id="restartModal">
-  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="restartModalTitle">
-    <h2 id="restartModalTitle">Restart Timer</h2>
-    <p>Are you sure? The current elapsed time will be lost.</p>
+  <div class="modal-box modal-danger" role="dialog" aria-modal="true" aria-labelledby="restartModalTitle" aria-describedby="restartModalMsg">
+    <h2 id="restartModalTitle">Restart Timer?</h2>
+    <p id="restartModalMsg">The timer goes back to 00:00 and the time played so far is lost.</p>
     <div class="modal-actions">
       <button class="btn btn-secondary" id="restartCancel">Cancel</button>
       <button class="btn btn-danger"    id="restartConfirm">Restart</button>
@@ -1948,9 +2430,9 @@
 </div>
 
 <div class="modal-overlay" id="confirmModal">
-  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle">
-    <h2 id="confirmModalTitle">Warning</h2>
-    <p>Clear ALL mission records? This cannot be undone.</p>
+  <div class="modal-box modal-danger" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle" aria-describedby="confirmModalMsg">
+    <h2 id="confirmModalTitle">Clear All Records?</h2>
+    <p id="confirmModalMsg">This deletes every mission in your log. Export a backup first if you might want them later.</p>
     <div class="modal-actions">
       <button class="btn btn-secondary" id="modalCancel">Cancel</button>
       <button class="btn btn-danger"    id="modalConfirm">Clear All</button>
@@ -1959,21 +2441,21 @@
 </div>
 
 <div class="modal-overlay" id="importConfirmModal">
-  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="importConfirmModalTitle">
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="importConfirmModalTitle" aria-describedby="importConfirmMsg">
     <h2 id="importConfirmModalTitle">Import Records</h2>
     <p id="importConfirmMsg"></p>
     <div class="modal-actions" style="flex-wrap:wrap;">
-      <button class="btn btn-secondary" id="importCancel"  style="flex-basis:100%;">Cancel</button>
-      <button class="btn btn-secondary" id="importMerge">Merge</button>
-      <button class="btn btn-danger"    id="importReplace">Replace</button>
+      <button class="btn btn-secondary" id="importCancel">Cancel</button>
+      <button class="btn btn-danger"    id="importReplace">Replace All</button>
+      <button class="btn btn-primary"   id="importMerge">Merge</button>
     </div>
   </div>
 </div>
 
 <div class="modal-overlay" id="szAbandonModal">
-  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="szAbandonModalTitle">
-    <h2 id="szAbandonModalTitle">Abandon Campaign</h2>
-    <p>Abandon this SYZYGY campaign? All progress will be lost.</p>
+  <div class="modal-box modal-danger" role="dialog" aria-modal="true" aria-labelledby="szAbandonModalTitle" aria-describedby="szAbandonModalMsg">
+    <h2 id="szAbandonModalTitle">Abandon Campaign?</h2>
+    <p id="szAbandonModalMsg">This SYZYGY campaign and its progress will be removed.</p>
     <div class="modal-actions">
       <button class="btn btn-secondary" id="szAbandonCancel">Cancel</button>
       <button class="btn btn-danger"    id="szAbandonConfirm">Abandon</button>
@@ -1982,9 +2464,9 @@
 </div>
 
 <div class="modal-overlay" id="deleteRecordModal">
-  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="deleteRecordModalTitle">
-    <h2 id="deleteRecordModalTitle">Delete Record</h2>
-    <p>Delete this mission record? This cannot be undone.</p>
+  <div class="modal-box modal-danger" role="dialog" aria-modal="true" aria-labelledby="deleteRecordModalTitle" aria-describedby="deleteRecordMsg">
+    <h2 id="deleteRecordModalTitle">Delete Record?</h2>
+    <p id="deleteRecordMsg">Delete this mission record?</p>
     <div class="modal-actions">
       <button class="btn btn-secondary" id="deleteRecordCancel">Cancel</button>
       <button class="btn btn-danger"    id="deleteRecordConfirm">Delete</button>
@@ -1992,9 +2474,21 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="discardGameModal">
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="discardGameTitle" aria-describedby="discardGameMsg">
+    <h2 id="discardGameTitle">Start a New Mission?</h2>
+    <p id="discardGameMsg">Your current game hasn't been saved yet.</p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="discardGameCancel">Keep Playing</button>
+      <button class="btn btn-danger"    id="discardGameConfirm">Discard Game</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="editRecordModal">
-  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="editRecordModalTitle">
+  <div class="modal-box modal-form" role="dialog" aria-modal="true" aria-labelledby="editRecordModalTitle" aria-describedby="editRecordSummary">
     <h2 id="editRecordModalTitle">Edit Record</h2>
+    <p class="edit-record-summary" id="editRecordSummary"></p>
     <div class="form-row">
       <label for="editResult">Result</label>
       <select id="editResult">
@@ -2011,12 +2505,12 @@
       </select>
     </div>
     <div class="form-row">
-      <label for="editNotes">Notes <span style="font-weight:400;color:var(--text-muted)">(optional)</span></label>
-      <textarea id="editNotes" rows="3" maxlength="2000" style="width:100%;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);padding:8px 10px;font-size:13px;resize:vertical;font-family:inherit;" placeholder="e.g. Close game, used advanced variant…"></textarea>
+      <label for="editNotes">Notes <span class="label-optional">(optional)</span></label>
+      <textarea id="editNotes" rows="3" maxlength="2000" placeholder="e.g. Close game, used advanced variant…"></textarea>
     </div>
     <div class="modal-actions">
       <button class="btn btn-secondary" id="editRecordCancel">Cancel</button>
-      <button class="btn btn-primary"   id="editRecordSave">Save</button>
+      <button class="btn btn-primary"   id="editRecordSave">Save Changes</button>
     </div>
   </div>
 </div>
@@ -2024,12 +2518,13 @@
 <!-- RULEBOOK MODAL -->
 <div class="modal-overlay" id="rulesModal">
   <div class="rules-box" role="dialog" aria-modal="true" aria-labelledby="rulesModalTitle">
-    <div class="rules-header">
+    <div class="rules-header dialog-header">
       <h2 id="rulesModalTitle">Rulebooks</h2>
-      <button class="btn btn-secondary" id="rulesClose" style="min-height:36px;padding:8px 16px;">Close</button>
+      <button type="button" class="dialog-close" id="rulesClose" aria-label="Close Rulebooks">✕</button>
     </div>
     <div class="rules-tabs" id="rulesTabs"></div>
-    <div class="rules-img-wrap">
+    <div class="rules-img-wrap" tabindex="0" role="region" aria-label="Rulebook page (scroll with the arrow keys)">
+      <p class="rules-status" id="rulesStatus" role="status"></p>
       <img id="rulesImage" alt="Rulebook" src="">
     </div>
   </div>
@@ -2037,12 +2532,15 @@
 
 <!-- SETTINGS MODAL -->
 <div class="modal-overlay" id="settingsModal">
-  <div class="settings-box" role="dialog" aria-modal="true" aria-labelledby="settingsModalTitle">
-    <h2 id="settingsModalTitle">Content Packs</h2>
-    <p>Select which expansions you own to include their characters and scenarios in the randomizer.</p>
+  <div class="settings-box" role="dialog" aria-modal="true" aria-labelledby="settingsModalTitle" aria-describedby="settingsModalDesc">
+    <div class="dialog-header">
+      <h2 id="settingsModalTitle">My Collection</h2>
+      <button type="button" class="dialog-close" id="settingsDismiss" aria-label="Close My Collection">✕</button>
+    </div>
+    <p id="settingsModalDesc">Tick the Twin Stars products you own. Only their characters, scenarios and droids are used.</p>
     <div id="packList"></div>
-    <p class="settings-warning" id="settingsWarning"></p>
-    <div class="modal-actions" style="margin-top:20px;">
+    <p class="settings-warning" id="settingsWarning" role="alert"></p>
+    <div class="modal-actions settings-actions">
       <button class="btn btn-primary" id="settingsClose">Done</button>
     </div>
   </div>
@@ -2051,10 +2549,13 @@
 <!-- FAQ MODAL -->
 <div class="modal-overlay" id="faqModal">
   <div class="faq-box" role="dialog" aria-modal="true" aria-labelledby="faqModalTitle">
-    <h2 id="faqModalTitle">Rules FAQ</h2>
-    <div class="faq-content">
+    <div class="dialog-header">
+      <h2 id="faqModalTitle">Rules FAQ</h2>
+      <button type="button" class="dialog-close" id="faqClose" aria-label="Close Rules FAQ">✕</button>
+    </div>
+    <div class="faq-content" tabindex="-1">
 
-      <p class="faq-section-header">General</p>
+      <h3 class="faq-section-header">General</h3>
 
       <details class="faq-item">
         <summary>If you win by performing an action that requires a skill check, do you win immediately or perform the check first?</summary>
@@ -2097,9 +2598,9 @@
         <p>No. The universal special is to re-roll a die by spending energy, and many others require energy too. But if a special does not have an energy cost, it activates in some other way instead.</p>
       </details>
 
-      <p class="faq-section-header">Characters</p>
+      <h3 class="faq-section-header">Characters</h3>
 
-      <p class="faq-char-header" id="faq-char-bood">Bood</p>
+      <h4 class="faq-char-header" id="faq-char-bood">Bood</h4>
       <details class="faq-item">
         <summary>Can Bood's special action be used to re-roll skill check dice, or only character dice?</summary>
         <p>No; only energy can be used to re-roll skill check dice.</p>
@@ -2109,19 +2610,19 @@
         <p>Whenever both dice are rolled, they're always rolled together; Bood is no different.</p>
       </details>
 
-      <p class="faq-char-header" id="faq-char-brenimov-x">Brenimov-X</p>
+      <h4 class="faq-char-header" id="faq-char-brenimov-x">Brenimov-X</h4>
       <details class="faq-item">
         <summary>How do you get the star on Brenimov-X's 2-spot?</summary>
         <p>If you roll a two, you need to re-roll the die. However, effects do not activate upon die reduction — so if you reduce the die to two, it stays there.</p>
       </details>
 
-      <p class="faq-char-header" id="faq-char-fanoobia">Fanoobia</p>
+      <h4 class="faq-char-header" id="faq-char-fanoobia">Fanoobia</h4>
       <details class="faq-item">
         <summary>When reducing to Fanoobia's one-spot, can you choose which character to heal?</summary>
         <p>No; Fanoobia can only heal herself.</p>
       </details>
 
-      <p class="faq-char-header" id="faq-char-grant">Grant Rockgardner</p>
+      <h4 class="faq-char-header" id="faq-char-grant">Grant Rockgardner</h4>
       <details class="faq-item">
         <summary>Does Grant's special ability work for any die roll, or does he roll a special die after activating it?</summary>
         <p>Grant can spend energy to call the number of a die rolled during regular gameplay — it's an excellent insurance policy against a roll that, if it fails, will sink you.</p>
@@ -2131,7 +2632,7 @@
         <p>No; when rolling two dice, they are always rolled together, and Grant's ability can only be activated when rolling "a die."</p>
       </details>
 
-      <p class="faq-char-header" id="faq-char-inpon-gol">Inpon Gol</p>
+      <h4 class="faq-char-header" id="faq-char-inpon-gol">Inpon Gol</h4>
       <details class="faq-item">
         <summary>Does Inpon Gol's token move every time the die is removed from his 3-spot?</summary>
         <p>No; any time the die is on the 3-spot and is then re-rolled or reduced, the token moves to the other side of the spot.</p>
@@ -2141,7 +2642,7 @@
         <p>If the broken heart is uncovered and the die is placed on Inpon's 3-spot, he immediately loses health.</p>
       </details>
 
-      <p class="faq-char-header" id="faq-char-inzill-mey">Inzill Mey</p>
+      <h4 class="faq-char-header" id="faq-char-inzill-mey">Inzill Mey</h4>
       <details class="faq-item">
         <summary>When using Inzill Mey's instant action to place the other die on any number and re-roll this die, which die goes where?</summary>
         <p>You can place Inzill's partner's die on any spot on Inzill's partner. Then pick up Inzill's die and re-roll it on her card.</p>
@@ -2151,7 +2652,7 @@
         <p>Inzill Mey adopts the other character's instant action and uses it as if it were her own.</p>
       </details>
 
-      <p class="faq-char-header" id="faq-char-kinglan">Kinglan</p>
+      <h4 class="faq-char-header" id="faq-char-kinglan">Kinglan</h4>
       <details class="faq-item">
         <summary>After placing a coin heads-up on Kinglan's card, is the coin removed after it's used in place of a flip?</summary>
         <p>Yes; it's a one-time effect. The next time a coin flip is needed, it must be flipped randomly as usual.</p>
@@ -2161,25 +2662,25 @@
         <p>The effect is redundant and ignored. You only need one coin for the game.</p>
       </details>
 
-      <p class="faq-char-header" id="faq-char-phaeton">Phaeton</p>
+      <h4 class="faq-char-header" id="faq-char-phaeton">Phaeton</h4>
       <details class="faq-item">
         <summary>With Phaeton in play, !! counts as a combo but !!! does not. What about !!!!?</summary>
         <p>Only !!! does not count as a combo; !!!! counts the same as a regular !!.</p>
       </details>
 
-      <p class="faq-char-header" id="faq-char-roux">Roux Jaezmina</p>
+      <h4 class="faq-char-header" id="faq-char-roux">Roux Jaezmina</h4>
       <details class="faq-item">
         <summary>When using Roux's instant action (re-roll both dice, add them, make two new dice with the same sum), must both new dice show the same number?</summary>
         <p>No; get the sum and split it between the two dice any way you choose.</p>
       </details>
 
-      <p class="faq-char-header" id="faq-char-smiff">Smiff</p>
+      <h4 class="faq-char-header" id="faq-char-smiff">Smiff</h4>
       <details class="faq-item">
         <summary>How does Smiff's "Focus *" work?</summary>
         <p>If a skill check succeeds and Smiff's die is a three, you gain a * icon; if the other die is already on a *, it counts as a ** combo. Otherwise, continue play as normal.</p>
       </details>
 
-      <p class="faq-char-header" id="faq-char-strezelsior">Strezelsior</p>
+      <h4 class="faq-char-header" id="faq-char-strezelsior">Strezelsior</h4>
       <details class="faq-item">
         <summary>When combining both dice, using the sum, and re-rolling the other die — which die uses the combined number and which is re-rolled?</summary>
         <p>You can choose which character to place the set die on and which character to re-roll.</p>
@@ -2189,7 +2690,7 @@
         <p>You can only use this ability when the dice combine to a sum of six or less.</p>
       </details>
 
-      <p class="faq-char-header" id="faq-char-yanfred">Yanfred Jima</p>
+      <h4 class="faq-char-header" id="faq-char-yanfred">Yanfred Jima</h4>
       <details class="faq-item">
         <summary>Do both dice need to be on !! to activate Yanfred's special?</summary>
         <p>No; the special can be activated at any time. Take the effect of a !! combo as shown on the scenario card, then swap the positions of the dice. You may then activate any instants or combos achieved through the swap, after the !! has taken effect.</p>
@@ -2199,15 +2700,15 @@
         <p>Normally yes; this ability, however, activates a combo and then allows the dice to be manipulated after as part of the action.</p>
       </details>
 
-      <p class="faq-char-header" id="faq-char-zoaze">Zoaze</p>
+      <h4 class="faq-char-header" id="faq-char-zoaze">Zoaze</h4>
       <details class="faq-item">
         <summary>What do the "re-rolls" in Zoaze's special action refer to?</summary>
         <p>Anytime you use Zoaze's reaction abilities on her one- and two-spots, you may add one to the result of the die roll in exchange for conducting a skill check.</p>
       </details>
 
-      <p class="faq-section-header">Scenarios</p>
+      <h3 class="faq-section-header">Scenarios</h3>
 
-      <p class="faq-scenario-header" id="faq-sc-01">Scenario 01: Escape the Brig!</p>
+      <h4 class="faq-scenario-header" id="faq-sc-01">Scenario 01: Escape the Brig!</h4>
       <details class="faq-item">
         <summary>Do you need to acquire the Pick (with a ** combo) before you can use it?</summary>
         <p>Yes; the pick is covered at the start of the game. Use a ** combo to uncover it and then use it at will.</p>
@@ -2221,7 +2722,7 @@
         <p>No; it returns to its spot on the scenario card and can be reacquired with another ** combo.</p>
       </details>
 
-      <p class="faq-scenario-header" id="faq-sc-02">Scenario 02: Confine the Quarks!</p>
+      <h4 class="faq-scenario-header" id="faq-sc-02">Scenario 02: Confine the Quarks!</h4>
       <details class="faq-item">
         <summary>Do base precision and precision begin at the same spot at the start of the scenario?</summary>
         <p>Yes, they both share the first spot on the precision track.</p>
@@ -2251,13 +2752,13 @@
         <p>Doubles are normally required. Once this track point is reached, a roll of two even numbers (e.g., 2 and 4) also yields one quark.</p>
       </details>
 
-      <p class="faq-scenario-header" id="faq-sc-03">Scenario 03: Rule the World!</p>
+      <h4 class="faq-scenario-header" id="faq-sc-03">Scenario 03: Rule the World!</h4>
       <details class="faq-item">
         <summary>Are the enemy ships covered at the start of the scenario?</summary>
         <p>No; the enemy ships begin uncovered and ready to attack.</p>
       </details>
 
-      <p class="faq-scenario-header" id="faq-sc-04">Scenario 04: Stop the Virus!</p>
+      <h4 class="faq-scenario-header" id="faq-sc-04">Scenario 04: Stop the Virus!</h4>
       <details class="faq-item">
         <summary>When using the check-check combo to cover a virus, if you roll the number of the marked virus, can you cover the marked virus?</summary>
         <p>Yes, you got a lucky roll.</p>
@@ -2275,7 +2776,7 @@
         <p>No. "Treating" the marked virus has nothing to do with healing attempts. Successful healing attempts either heal or restore stamina; they do not interact with the virus row.</p>
       </details>
 
-      <p class="faq-scenario-header" id="faq-sc-05">Scenario 05: Steal the Plans!</p>
+      <h4 class="faq-scenario-header" id="faq-sc-05">Scenario 05: Steal the Plans!</h4>
       <details class="faq-item">
         <summary>At the start of the scenario, how many guards begin at the Guard Start location?</summary>
         <p>Just one; others may appear later.</p>
@@ -2301,7 +2802,7 @@
         <p>Yes; the plans passed through that spot and new guards appear at their starting location.</p>
       </details>
 
-      <p class="faq-scenario-header" id="faq-sc-06">Scenario 06: Hunt the Bounty!</p>
+      <h4 class="faq-scenario-header" id="faq-sc-06">Scenario 06: Hunt the Bounty!</h4>
       <details class="faq-item">
         <summary>How many resources do you start with?</summary>
         <p>Both characters start with full health. You choose how much energy to begin with (depending on your preferred difficulty). You start with five supplies (also the maximum).</p>
@@ -2323,7 +2824,7 @@
         <p>Resources — energy, health, and supplies — are expended to add to the capture die roll and the information track in any amount you choose. Each resource spent adds one to the roll and is then lost.</p>
       </details>
 
-      <p class="faq-scenario-header" id="faq-sc-07">Scenario 07: Master the Trials!</p>
+      <h4 class="faq-scenario-header" id="faq-sc-07">Scenario 07: Master the Trials!</h4>
       <details class="faq-item">
         <summary>What does it mean that you must take a skill check "at each reduction"?</summary>
         <p>Each time the die is reduced (due to not activating a combo), you must also take a skill check and lose a health point (on the character that reduced a die) in case of failure.</p>
@@ -2333,7 +2834,7 @@
         <p>To attempt a trial, roll one die — if it's equal to or greater than the number on the next trial spot, you succeed. If using the check-check combo, subtract the difference between the Master's and Apprentice's levels from your roll. (For example, if both are at their starting locations, subtract three.)</p>
       </details>
 
-      <p class="faq-scenario-header" id="faq-sc-08">Scenario 08: Beat the Odds!</p>
+      <h4 class="faq-scenario-header" id="faq-sc-08">Scenario 08: Beat the Odds!</h4>
       <details class="faq-item">
         <summary>The description says to use five coins, but the scenario side says six. How many?</summary>
         <p>Five; the scenario side is incorrect. The scenario is a "best out of five" contest — the first to win three coins wins.</p>
@@ -2347,7 +2848,7 @@
         <p>Use a ** combo to mark one of the four positions on the "re-roll" track. Thereafter, when betting, if your combined roll equals that marked number, you may choose to re-roll (and take the skill check if necessary). The re-roll track only comes into play while betting.</p>
       </details>
 
-      <p class="faq-scenario-header" id="faq-sc-09">Scenario 09: Control the Skies!</p>
+      <h4 class="faq-scenario-header" id="faq-sc-09">Scenario 09: Control the Skies!</h4>
       <details class="faq-item">
         <summary>When beginning, do you place your character token first or the enemy starfighter first?</summary>
         <p>You must begin by placing a token for your characters, then place the enemy starfighter after.</p>
@@ -2369,7 +2870,7 @@
         <p>No; there is only one shield token and one missile token. Once acquired, they cannot be re-acquired until used.</p>
       </details>
 
-      <p class="faq-scenario-header" id="faq-sc-10">Scenario 10: Sell the Junk!</p>
+      <h4 class="faq-scenario-header" id="faq-sc-10">Scenario 10: Sell the Junk!</h4>
       <details class="faq-item">
         <summary>At the very start, do you begin with $0 or $1?</summary>
         <p>You begin with $1, and place the token on the money track accordingly.</p>
@@ -2379,7 +2880,7 @@
         <p>Yes; you must gain $2 to make those jumps. A single dollar gained when you're already at $8 (or $10) is wasted.</p>
       </details>
 
-      <p class="faq-scenario-header" id="faq-sc-11">Scenario 11: Destroy the Order!</p>
+      <h4 class="faq-scenario-header" id="faq-sc-11">Scenario 11: Destroy the Order!</h4>
       <details class="faq-item">
         <summary>After passing a law, are you required to follow it in all cases or can you choose when it applies?</summary>
         <p>If a law is in effect, it must be followed whenever applicable.</p>
@@ -2389,7 +2890,7 @@
         <p>A law is "used" only when a combo is activated that is in some way modified by the law. An icon that does not result in a combo does not count as a use.</p>
       </details>
 
-      <p class="faq-scenario-header" id="faq-sc-12">Scenario 12: Serve the Rabble!</p>
+      <h4 class="faq-scenario-header" id="faq-sc-12">Scenario 12: Serve the Rabble!</h4>
       <details class="faq-item">
         <summary>Do the primary and secondary character tokens placed on "bouncer" and "server" ever move or interact with the scenario?</summary>
         <p>No; they are simply there to mark which character acts as which.</p>
@@ -2400,23 +2901,20 @@
       </details>
 
     </div>
-    <div class="modal-actions" style="margin-top:16px;flex-shrink:0;">
-      <button class="btn btn-secondary" id="faqClose">Close</button>
-    </div>
   </div>
 </div>
 
 <!-- DICE ROLLER MODAL -->
 <div class="modal-overlay" id="diceModal">
   <div class="modal-box dice-box" role="dialog" aria-modal="true" aria-labelledby="diceModalTitle">
-    <div class="dice-header">
+    <div class="dice-header dialog-header">
       <h2 class="dice-modal-title" id="diceModalTitle">Dice Roller</h2>
-      <button class="dice-close" id="diceModalClose" aria-label="Close">✕</button>
+      <button type="button" class="dice-close dialog-close" id="diceModalClose" aria-label="Close Dice Roller">✕</button>
     </div>
     <div class="dice-tray" id="diceTray">
       <div class="die-wrap" id="dieWrap0">
         <span class="die-char-label" id="dieLabel0"></span>
-        <div class="die" id="die0" data-val="1" role="button" tabindex="0" aria-label="Die 1, value 1, unlocked">
+        <div class="die" id="die0" data-val="1" role="button" tabindex="0" aria-pressed="false" aria-label="Die 1, value 1, unlocked">
           <span class="dot d1"></span><span class="dot d2"></span><span class="dot d3"></span>
           <span class="dot d4"></span><span class="dot d5"></span><span class="dot d6"></span>
           <span class="dot d7"></span><span class="dot d8"></span><span class="dot d9"></span>
@@ -2427,10 +2925,10 @@
           <button class="die-adj adj-plus"  id="diePlus0"  aria-label="Increase die 1">+</button>
         </div>
       </div>
-      <button class="dice-swap-mid" id="diceSwapBtn" title="Swap dice">⇄</button>
+      <button class="dice-swap-mid" id="diceSwapBtn" title="Swap dice values" aria-label="Swap dice values"><span aria-hidden="true">⇄</span></button>
       <div class="die-wrap" id="dieWrap1">
         <span class="die-char-label" id="dieLabel1"></span>
-        <div class="die" id="die1" data-val="1" role="button" tabindex="0" aria-label="Die 2, value 1, unlocked">
+        <div class="die" id="die1" data-val="1" role="button" tabindex="0" aria-pressed="false" aria-label="Die 2, value 1, unlocked">
           <span class="dot d1"></span><span class="dot d2"></span><span class="dot d3"></span>
           <span class="dot d4"></span><span class="dot d5"></span><span class="dot d6"></span>
           <span class="dot d7"></span><span class="dot d8"></span><span class="dot d9"></span>
@@ -2442,9 +2940,10 @@
         </div>
       </div>
     </div>
-    <p class="dice-hint" id="diceHint">Tap a die to lock it.</p>
+    <p class="dice-hint" id="diceHint">Tap a die to lock or unlock it. Locked dice keep their value when you roll.</p>
+    <p class="sr-only" id="diceLive" role="status" aria-live="polite" aria-atomic="true"></p>
     <div class="modal-actions" id="normalDiceRow">
-      <button class="btn btn-secondary" id="rollBtn">Roll</button>
+      <button class="btn btn-primary" id="rollBtn">Roll</button>
       <button class="btn btn-secondary" id="skillCheckBtn">Skill Check</button>
     </div>
     <div class="modal-actions hidden" id="skillDoneRow">
@@ -2455,39 +2954,41 @@
 
 <div class="modal-overlay" id="tipsModal">
   <div class="modal-box tips-box" role="dialog" aria-modal="true" aria-labelledby="tipsModalTitle">
-    <div class="tips-modal-header">
+    <div class="tips-modal-header dialog-header">
       <h2 id="tipsModalTitle">Tips &amp; Features</h2>
-      <button class="tips-modal-close" id="tipsModalClose" aria-label="Close">✕</button>
+      <button type="button" class="tips-modal-close dialog-close" id="tipsModalClose" aria-label="Close Tips">✕</button>
     </div>
-    <div class="tips-content">
+    <div class="tips-content" tabindex="0" role="region" aria-labelledby="tipsModalTitle">
       <h3 class="tips-section-heading">Randomizing</h3>
       <ul class="tips-list">
-        <li>Lock 🔒 any character or scenario to keep it when you randomize</li>
+        <li>Lock <span aria-hidden="true">🔒</span> any character or scenario to keep it when you randomize</li>
         <li>Your last result and difficulty are remembered across sessions</li>
       </ul>
       <h3 class="tips-section-heading">During Play</h3>
       <ul class="tips-list">
-        <li><strong>🎲 Roll Dice</strong> — appears below the timer during active sessions</li>
+        <li><strong>Roll Dice</strong> appears below the timer once a mission is loaded</li>
+        <li>Add optional notes when you save a record, or later from the Mission Log</li>
         <li>Tap a die to lock it (teal glow = locked) — locked dice keep their value on the next roll</li>
         <li>Tap +/− on a locked die to fine-tune its value; wraps 6→1</li>
         <li><strong>Skill Check</strong> rolls white dice temporarily, then restores your normal dice exactly as you left them</li>
-        <li><strong>Yanfred Jima</strong> — ⇄ Swap button exchanges both dice values and lock states</li>
-        <li><strong>Hebolt Rom</strong> — ↕ Flip appears on locked dice; flips to the opposite face (7 − value)</li>
+        <li><strong>Yanfred Jima</strong> — the ⇄ button swaps the two dice values (unlock both dice first)</li>
+        <li><strong>Hebolt Rom</strong> — a Flip button appears under each die; it turns the die to the opposite face (7 − value)</li>
       </ul>
       <h3 class="tips-section-heading">Ambient Radio</h3>
       <ul class="tips-list">
-        <li>Tap ♫ in the header to stream SomaFM Mission Control (online only)</li>
+        <li>Tap <span aria-hidden="true">♫</span> in the header to stream SomaFM Mission Control (online only)</li>
         <li>Volume slider in the popover; lock-screen controls work too</li>
       </ul>
       <h3 class="tips-section-heading">Mission Log</h3>
       <ul class="tips-list">
         <li>Sort and filter records by date, result, difficulty, character, or scenario</li>
-        <li>Tap ✎ on any record to edit result, difficulty, or add notes</li>
-        <li>Import/Export your full record history from the History tab</li>
+        <li>Tap <span aria-hidden="true">✎</span> Edit on any record to change its result, difficulty or notes</li>
+        <li>Deleted something by mistake? Tap Undo in the message that appears</li>
+        <li>Export a backup of your records, or Import one, from the Mission Log tab</li>
       </ul>
       <h3 class="tips-section-heading">Stats</h3>
       <ul class="tips-list">
-        <li>Stats tab shows win rate, completion %, and average playtime at a glance</li>
+        <li>The Mission Log tab shows games played, win rate, how many combinations you've tried, and playtimes</li>
       </ul>
     </div>
   </div>
@@ -2500,8 +3001,8 @@
       <div class="header-btn-row">
         <button class="btn-tips-trigger" id="tipsTriggerBtn" title="Tips &amp; Features" aria-label="Tips and features">?</button>
         <button class="btn-radio"  id="radioBtn"  title="SomaFM Mission Control" aria-label="Play ambient radio">♫</button>
-        <button class="btn-volume" id="volumeBtn" title="Volume" aria-label="Adjust volume">🔊</button>
-        <button class="btn-theme"  id="themeBtn"  title="Toggle theme" aria-label="Toggle theme"></button>
+        <button class="btn-volume" id="volumeBtn" title="Volume" aria-label="Adjust volume" aria-expanded="false" aria-controls="volumePopover">🔊</button>
+        <button class="btn-theme"  id="themeBtn"  title="Switch theme" aria-label="Switch theme"></button>
         <button class="btn-settings" id="settingsBtn" title="My Collection">My Collection</button>
       </div>
       <div class="volume-popover" id="volumePopover">
@@ -2512,38 +3013,41 @@
     </div>
     <div class="onboarding-tip hidden" id="onboardingTip">
       <p><strong>My Collection</strong> — tell the app which Twin Stars games you own. Only your content gets randomized.</p>
-      <p><strong>&#9790; / &#9728;</strong> — switch between dark and light mode.</p>
-      <p><strong>🔒</strong> — lock a character or scenario to keep it when you randomize.</p>
+      <p><strong aria-hidden="true">&#9790; / &#9728;</strong><span class="sr-only">Theme button</span> — switch between dark and light mode.</p>
+      <p><strong aria-hidden="true">🔒</strong><span class="sr-only">Lock button</span> — lock a character or scenario to keep it when you randomize.</p>
       <p>Tap <strong>?</strong> anytime to see all features.</p>
-      <button class="btn-tip-dismiss" id="tipDismiss">Got it</button>
+      <button class="btn-tip-dismiss" id="tipDismiss">Got It</button>
     </div>
-    <h1>Twin<br>Stars<br><span>Adventure</span><br><span class="sub">Randomizer</span></h1>
+    <h1>Twin<br> Stars<br> <span>Adventure</span><br><span class="sub">Randomizer</span></h1>
     <div class="header-rule"></div>
     <p class="author-label" style="margin-top:10px;">A game by Jason Tagmire &amp; Mike Mullins</p>
     <p class="active-packs-label" id="activePacksLabel"></p>
   </header>
 
+  <main id="main">
   <nav class="tab-nav" role="tablist" aria-label="App sections">
-    <button class="tab-btn active" id="randomizerTab"    role="tab" aria-selected="true"  aria-controls="randomizerPage">Randomizer</button>
-    <button class="tab-btn"        id="historyTab"       role="tab" aria-selected="false" aria-controls="historyPage">Mission Log</button>
-    <button class="tab-btn"        id="syzygyCampaignTab" role="tab" aria-selected="false" aria-controls="syzygyCampaignPage">SYZYGY</button>
+    <button class="tab-btn active" id="randomizerTab"    role="tab" aria-selected="true"  aria-controls="randomizerPage" tabindex="0">Randomizer</button>
+    <button class="tab-btn"        id="historyTab"       role="tab" aria-selected="false" aria-controls="historyPage" tabindex="-1">Mission Log</button>
+    <button class="tab-btn"        id="syzygyCampaignTab" role="tab" aria-selected="false" aria-controls="syzygyCampaignPage" tabindex="-1">SYZYGY</button>
   </nav>
 
   <!-- RANDOMIZER PAGE -->
   <div id="randomizerPage" role="tabpanel" aria-labelledby="randomizerTab" tabindex="0">
+  <div class="rand-col rand-col-setup">
 
     <div class="panel">
-      <p class="panel-title">Random Mission</p>
+      <h2 class="panel-title">Random Mission</h2>
       <button class="btn btn-primary" id="generateBtn">
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;">
+        <svg aria-hidden="true" focusable="false" width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;">
           <path d="M7 1L12.196 4V10L7 13L1.804 10V4L7 1Z" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linejoin="round"/>
         </svg>
         Randomize Combination
       </button>
+      <p class="all-locked-hint hidden" id="allLockedHint">All three are locked. Unlock one to randomize, or tap Load Mission.</p>
     </div>
 
     <div class="panel" id="manualPanel">
-      <p class="panel-title">Manual Selection</p>
+      <h2 class="panel-title">Manual Selection</h2>
       <div class="form-row-inline">
         <div class="form-row form-row-flush">
           <div class="form-row-label">Character 1 <button type="button" class="btn-lock" id="lockChar1" title="Lock" aria-label="Lock Character 1" aria-pressed="false"><svg aria-hidden="true" width="12" height="14" viewBox="0 0 12 14" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="6" width="10" height="8" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M3 6V4a3 3 0 0 1 6 0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button></div>
@@ -2561,10 +3065,13 @@
       <button class="btn btn-load" id="loadManualCombo">Load Mission</button>
     </div>
 
+  </div>
+  <div class="rand-col rand-col-play">
+
     <div id="combinationDisplay"></div>
 
     <div id="annotationSection" class="panel hidden">
-      <p class="panel-title">Record Outcome</p>
+      <h2 class="panel-title" id="recordOutcomeHeading">Record Outcome</h2>
       <div class="form-row-inline">
         <div class="form-row form-row-flush">
           <label for="result">Result</label>
@@ -2582,13 +3089,22 @@
           </select>
         </div>
       </div>
+      <div class="form-row form-row-top">
+        <label for="recordNotes">Notes <span class="label-optional">(optional)</span></label>
+        <textarea id="recordNotes" class="notes-input" rows="2" maxlength="2000" placeholder="e.g. Close game, used advanced variant…"></textarea>
+      </div>
       <div class="form-row-top">
         <button class="btn btn-save" id="saveRecordBtn">Save Record</button>
+      </div>
+      <div class="save-status hidden" id="saveStatus">
+        <p id="saveStatusText" tabindex="-1"></p>
+        <button class="btn btn-secondary" id="viewLogBtn">View Mission Log</button>
       </div>
     </div>
 
     <div id="comboHistory"></div>
 
+  </div>
   </div>
 
   <!-- SYZYGY CAMPAIGN PAGE -->
@@ -2599,26 +3115,26 @@
   <!-- HISTORY PAGE -->
   <div id="historyPage" role="tabpanel" aria-labelledby="historyTab" tabindex="0" class="hidden">
     <div class="panel" id="statsPanel">
-      <p class="panel-title">Statistics</p>
+      <h2 class="panel-title">Statistics</h2>
       <div id="statsContent"></div>
     </div>
     <div class="panel">
-      <p class="panel-title">Mission Log</p>
+      <h2 class="panel-title" id="missionLogHeading" tabindex="-1">Mission Log</h2>
       <div class="history-toolbar">
         <div class="history-actions">
           <button class="btn btn-secondary" id="exportBtn" disabled>Export</button>
-          <label class="import-label" for="importFile">Import</label>
-          <input type="file" id="importFile" accept=".json">
+          <button type="button" class="btn btn-secondary" id="importBtn">Import</button>
+          <input type="file" id="importFile" accept=".json,application/json" tabindex="-1" aria-hidden="true">
           <button class="btn btn-danger" id="clearDataBtn">Clear All</button>
         </div>
         <div class="history-filters">
           <select id="historySortBy" class="history-select" aria-label="Sort by">
-            <option value="date-desc">Newest first</option>
-            <option value="date-asc">Oldest first</option>
-            <option value="result">Result</option>
-            <option value="difficulty">Difficulty</option>
-            <option value="characters">Characters</option>
-            <option value="scenario">Scenario</option>
+            <option value="date-desc">Sort: Newest first</option>
+            <option value="date-asc">Sort: Oldest first</option>
+            <option value="result">Sort: Result</option>
+            <option value="difficulty">Sort: Difficulty</option>
+            <option value="characters">Sort: Characters</option>
+            <option value="scenario">Sort: Scenario</option>
           </select>
           <select id="historyFilterResult" class="history-select" aria-label="Filter by result">
             <option value="">All results</option>
@@ -2643,29 +3159,31 @@
           </select>
         </div>
       </div>
+      <p class="history-count" id="historyCount" role="status"></p>
       <div id="historyTableContainer"></div>
     </div>
     <div class="panel">
-      <p class="panel-title">Unplayed Combinations</p>
+      <h2 class="panel-title">Unplayed Combinations</h2>
       <div id="unplayedContainer"></div>
     </div>
   </div>
+  </main>
 
   <footer>
     <p class="footer-byline">
-      Made with love by <a href="https://bsky.app/profile/jamescochran.bsky.social" target="_blank" rel="noopener noreferrer" style="color:var(--accent-teal);font-style:italic;text-decoration:none;">THE</a> James Dean Cochran
+      Made with love by <a href="https://bsky.app/profile/jamescochran.bsky.social" target="_blank" rel="noopener noreferrer" class="link-teal" style="font-style:italic;text-decoration:none;">THE</a> James Dean Cochran
     </p>
     <p class="footer-text">
       If you enjoy this tool,
-      <a href="https://ko-fi.com/jamescochran" target="_blank" rel="noopener noreferrer" style="color:var(--accent-orange);border-bottom:1px solid rgba(255,107,53,0.4);">buy me a coffee</a>
-      or send me a copy of <a href="https://boardgamegeek.com/boardgame/211988/hot-dogs" target="_blank" rel="noopener noreferrer" style="color:var(--accent-yellow);border-bottom:1px solid rgba(240,180,41,0.4);">Hot Dogs</a>.
+      <a href="https://ko-fi.com/jamescochran" target="_blank" rel="noopener noreferrer" class="link-inline link-orange">buy me a coffee</a>
+      or send me a copy of <a href="https://boardgamegeek.com/boardgame/211988/hot-dogs" target="_blank" rel="noopener noreferrer" class="link-inline link-yellow">Hot Dogs</a>.
     </p>
     <p class="footer-text">
       Come play amazing Button Shy games with us and talk about them at the
-      <a href="https://discord.gg/aUBMvnu" target="_blank" rel="noopener noreferrer" style="color:var(--accent-yellow);border-bottom:1px solid rgba(240,180,41,0.4);">Button Shy Discord</a>.
+      <a href="https://discord.gg/aUBMvnu" target="_blank" rel="noopener noreferrer" class="link-inline link-yellow">Button Shy Discord</a>.
     </p>
     <p class="footer-text">
-      Ambient radio by <a href="https://somafm.com/missioncontrol/" target="_blank" rel="noopener noreferrer" style="color:var(--accent-teal);border-bottom:1px solid rgba(0,212,170,0.4);">SomaFM Mission Control</a>. If you enjoy the stream, <a href="https://somafm.com/support/" target="_blank" rel="noopener noreferrer" style="color:var(--accent-teal);border-bottom:1px solid rgba(0,212,170,0.4);">support SomaFM</a>.
+      Ambient radio by <a href="https://somafm.com/missioncontrol/" target="_blank" rel="noopener noreferrer" class="link-inline link-teal">SomaFM Mission Control</a>. If you enjoy the stream, <a href="https://somafm.com/support/" target="_blank" rel="noopener noreferrer" class="link-inline link-teal">support SomaFM</a>.
     </p>
     <div class="footer-links">
       <a href="https://buttonshygames.com/products/twin-stars" target="_blank" rel="noopener noreferrer" class="footer-link">Buy Twin Stars</a>
@@ -2676,10 +3194,12 @@
     <p class="footer-disclaimer">
       Twin Stars Adventure Series is designed by Jason Tagmire &amp; Mike Mullins and published by Button Shy Games. All characters, scenarios, and game content are the intellectual property of Button Shy Games and their creators. This is an unofficial, free, fan-made companion app made out of love for an incredible game — not affiliated with or endorsed by Button Shy Games. If you don't own Twin Stars yet, please go buy it. It's worth every penny.
     </p>
-    <p style="font-size:10px;color:var(--text-dim);margin-top:10px;letter-spacing:1px;">2026-10-14 15:29 EST · <a href="https://github.com/jamescochran/TwinStarsRando/commit/4df5946" style="color:inherit;text-decoration:none;border-bottom:1px dotted currentColor;" target="_blank" rel="noopener noreferrer">4df5946</a></p>
+    <p class="footer-meta">2026-10-14 15:29 EST · <a href="https://github.com/jamescochran/TwinStarsRando/commit/4df5946" target="_blank" rel="noopener noreferrer">4df5946</a></p>
   </footer>
 
 </div>
+
+<section id="toastRegion" class="toast-region" aria-label="Notifications"></section>
 
 <audio id="radioAudio" preload="none"></audio>
 <script src="app.js"></script>
