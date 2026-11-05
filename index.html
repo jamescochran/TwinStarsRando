@@ -2593,6 +2593,67 @@
       .syzygy-rank-desc { margin-left: auto; margin-right: auto; }
       .footer-text { max-width: 72ch; margin-left: auto; margin-right: auto; }
     }
+    /* ── Collection by item + Collection Shelf (collection.js) ── */
+    @media (min-width: 561px) { .settings-box { max-width: 460px; } }
+    #packList .pack-row { border-bottom: 1px solid var(--border); padding-bottom: var(--space-2); }
+    #packList .pack-row:last-child { border-bottom: none; }
+    #packList .pack-row .pack-item { border-bottom: none; padding-bottom: var(--space-1); }
+    .pack-item-count { font-size: var(--fs-xs); color: var(--text-dim); margin-top: 2px; }
+    .pack-item-count[data-state="all"] { color: var(--accent-teal); }
+    .pack-expand {
+      margin-left: 32px; min-height: 44px; padding: 0 var(--space-3);
+      background: none; border: 1px solid var(--border-glow); border-radius: var(--radius-md);
+      color: var(--text-muted); font-size: var(--fs-sm); cursor: pointer;
+    }
+    .pack-expand:hover { color: var(--accent-teal); border-color: var(--accent-teal); }
+    .pack-expand::after { content: " \25BE"; }
+    .pack-expand[aria-expanded="true"]::after { content: " \25B4"; }
+    .pack-items { margin: var(--space-2) 0 var(--space-2) 32px; }
+    .pack-item-group { border: none; padding: 0; margin: 0 0 var(--space-2); }
+    .pack-item-group legend, .collection-presets legend, .preset-label {
+      font-family: var(--font-display); font-size: var(--fs-label); letter-spacing: 1px;
+      text-transform: uppercase; color: var(--text-dim); margin-bottom: var(--space-1);
+    }
+    .own-item { display: flex; align-items: center; gap: 10px; min-height: 40px; font-size: var(--fs-md); color: var(--text-primary); cursor: pointer; }
+    .own-item input, .preset-mode input, .shelf-own input { width: 20px; height: 20px; accent-color: var(--accent-teal); flex-shrink: 0; }
+    .collection-presets { border: 1px solid var(--border); border-radius: var(--radius-md); padding: var(--space-3); margin: var(--space-3) 0 0; }
+    .preset-mode { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); margin-bottom: var(--space-2); }
+    .preset-mode label { display: flex; align-items: center; gap: 8px; min-height: 40px; font-size: var(--fs-md); color: var(--text-primary); }
+    .preset-row, .wallet-chars { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+    .collection-presets select {
+      flex: 1 1 160px; min-width: 0; min-height: 44px; font-size: 16px;
+      background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-glow);
+      border-radius: var(--radius-md); padding: 0 var(--space-2);
+    }
+    .wallet-pick { margin-top: var(--space-3); display: flex; flex-direction: column; gap: var(--space-2); }
+    .wallet-pick > select { flex: none; width: 100%; }
+    .wallet-pick .btn { align-self: flex-start; }
+    .shelf-wrap { margin-top: var(--space-3); }
+    #collectionShelf { margin-top: var(--space-3); }
+    .shelf-intro, .shelf-summary { font-size: var(--fs-sm); color: var(--text-muted); line-height: 1.5; margin-bottom: var(--space-2); }
+    .shelf-summary { color: var(--text-primary); }
+    .shelf-group { font-family: var(--font-display); font-size: var(--fs-label); letter-spacing: 1px; text-transform: uppercase; color: var(--text-dim); margin: var(--space-3) 0 var(--space-2); }
+    .shelf-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); }
+    .shelf-item { border: 1px solid var(--border); border-left: 4px solid var(--border); border-radius: var(--radius-md); padding: var(--space-2) var(--space-3); background: var(--bg-card); }
+    .shelf-item[data-state="owned"] { border-left-color: var(--accent-teal); }
+    .shelf-item[data-state="partial"] { border-left-color: var(--accent-yellow); }
+    .shelf-item[data-state="unsupported"] { opacity: 0.85; border-style: dashed; }
+    .shelf-item-head { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-2); align-items: baseline; justify-content: space-between; }
+    .shelf-name { font-weight: 700; font-size: var(--fs-md); color: var(--text-primary); }
+    .shelf-kind { font-size: var(--fs-label); letter-spacing: 0.5px; text-transform: uppercase; color: var(--text-dim); border: 1px solid var(--border-glow); border-radius: 999px; padding: 2px 8px; }
+    .shelf-how { font-size: var(--fs-xs); color: var(--text-muted); line-height: 1.45; margin: var(--space-1) 0; }
+    .shelf-item-foot { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-3); align-items: center; font-size: var(--fs-sm); }
+    .shelf-status { color: var(--text-primary); font-weight: 600; }
+    .shelf-item[data-state="owned"] .shelf-status { color: var(--accent-teal); }
+    .shelf-own { display: flex; align-items: center; gap: 8px; min-height: 40px; color: var(--text-primary); cursor: pointer; }
+    .shelf-link { color: var(--accent-teal); margin-left: auto; min-height: 40px; display: inline-flex; align-items: center; }
+    /* Stats scope (collection.js feature, M6) */
+    .stats-scope { display: inline-flex; border: 1px solid var(--border-glow); border-radius: var(--radius-md); overflow: hidden; margin-bottom: var(--space-2); }
+    .stats-scope-btn { min-height: 44px; padding: 0 var(--space-3); background: none; border: none; color: var(--text-muted); font-size: var(--fs-sm); cursor: pointer; }
+    .stats-scope-btn + .stats-scope-btn { border-left: 1px solid var(--border-glow); }
+    .stats-scope-btn[aria-pressed="true"] { background: var(--tint-teal); color: var(--accent-teal); font-weight: 700; }
+    .stats-scope-note, .stats-combo-note { font-size: var(--fs-sm); color: var(--text-muted); line-height: 1.5; margin: 0 0 var(--space-3); }
+    .stats-summary-sub { font-size: var(--fs-xs); color: var(--text-dim); margin-top: 2px; }
     /* ── Pairing Lab + Gauntlet (insights.js) ── */
     .ins-lede { font-size: var(--fs-md); color: var(--text-muted); line-height: var(--lh-body); margin-bottom: var(--space-3); }
     .ins-note { font-size: var(--fs-sm); color: var(--text-muted); line-height: var(--lh-body); margin: 0 0 var(--space-3); }
@@ -2793,9 +2854,14 @@
       <h2 id="settingsModalTitle">My Collection</h2>
       <button type="button" class="dialog-close" id="settingsDismiss" aria-label="Close My Collection">✕</button>
     </div>
-    <p id="settingsModalDesc">Tick the Twin Stars products you own. Only their characters, scenarios and droids are used.</p>
+    <p id="settingsModalDesc">Tick the Twin Stars products you own, or open a pack to pick single scenarios, characters and droids. Only what you own is drawn.</p>
     <div id="packList"></div>
+    <div id="collectionPresets"></div>
     <p class="settings-warning" id="settingsWarning" role="alert"></p>
+    <div class="shelf-wrap">
+      <button type="button" class="btn btn-secondary btn-sm" id="shelfToggle" aria-expanded="false" aria-controls="collectionShelf">Collection Shelf</button>
+      <div id="collectionShelf" hidden></div>
+    </div>
     <div class="modal-actions settings-actions">
       <button class="btn btn-primary" id="settingsClose">Done</button>
     </div>
@@ -4116,6 +4182,7 @@
 
 <audio id="radioAudio" preload="none"></audio>
 <script src="app.js" defer></script>
+<script src="collection.js" defer></script>
 <script src="insights.js" defer></script>
 <noscript><p style="font-family:sans-serif;text-align:center;padding:40px;">Twin Stars Randomizer requires JavaScript to run.</p></noscript>
 </body>

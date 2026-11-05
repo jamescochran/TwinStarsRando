@@ -8,6 +8,7 @@ const ASSETS = [
   BASE + "index.html",
   BASE + "head.js",
   BASE + "app.js",
+  BASE + "collection.js",
   BASE + "insights.js",
   BASE + "manifest.json",
   BASE + "icon-192.png",
