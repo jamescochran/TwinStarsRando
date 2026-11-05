@@ -34,9 +34,9 @@ test.describe("Teach Mode", () => {
     await expect(page.locator("#teachStepTitle")).toHaveText("What you need");
     await expect(page.locator("#teachStepTitle")).toBeFocused();
     await expect(page.locator("#teachBack")).toBeDisabled();
-    // Illustrated with SVG die faces, no images.
-    expect(await page.locator(".teach-art svg.tdie").count()).toBe(4);
-    expect(await page.locator("#teachModal img").count()).toBe(0);
+    // Illustrated with Unicode die faces and CSS only: no images or SVG graphics.
+    await expect(page.locator(".teach-art .tdie")).toHaveText(["⚂", "⚄", "⚁", "⚅"]);
+    expect(await page.locator("#teachModal img, #teachModal svg").count()).toBe(0);
 
     await page.locator("#teachNext").click();
     await page.locator("#teachNext").click();
@@ -63,6 +63,7 @@ test.describe("Teach Mode", () => {
     await expect(dlg.getByRole("link", { name: /Escape the Brig \(BoardGameGeek\)/ })).toHaveAttribute("href", /boardgamegeek\.com\/filepage\/171071\//);
     await expect(dlg.getByRole("link", { name: /Master the Trials \(BoardGameGeek\)/ })).toHaveAttribute("href", /boardgamegeek\.com\/filepage\/171067\//);
     await expect(dlg.getByRole("link", { name: /Escape the Brig/ })).toHaveAttribute("rel", /noopener/);
+    await expect(dlg.getByRole("button", { name: "Open the rulebooks in the app" })).toBeVisible();
     await page.getByRole("button", { name: "Start your first mission" }).click();
     await expect(dlg).toBeHidden();
 

@@ -1,7 +1,8 @@
 // Twin Stars Randomizer: Teach Mode, setup checklist and turn-step rail.
 // Plain classic script loaded after app.js; uses its globals (track, toast, openModal,
 // closeModal, loadCombination, guardUnsaved, characters, scenarios, ...).
-// Rules are described in our own words; no card text, art or per-card values.
+// Rules are described in our own words; no card text, art or per-card values. Illustrations
+// use only text, CSS boxes and standard Unicode symbols (no image or SVG graphics).
 (function () {
   "use strict";
 
@@ -16,13 +17,10 @@
   const lsSet = (k, v) => { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } };
   const $ = id => document.getElementById(id);
 
-  // ─── Simple die faces (SVG) ────────────────────────────────────────────────
-  const PIPS = { 1: [[2, 2]], 2: [[1, 1], [3, 3]], 3: [[1, 1], [2, 2], [3, 3]],
-    4: [[1, 1], [3, 1], [1, 3], [3, 3]], 5: [[1, 1], [3, 1], [2, 2], [1, 3], [3, 3]],
-    6: [[1, 1], [3, 1], [1, 2], [3, 2], [1, 3], [3, 3]] };
-  function dieSVG(n, cls) {
-    const pips = (PIPS[n] || []).map(([x, y]) => `<circle cx="${x * 9}" cy="${y * 9}" r="3"/>`).join("");
-    return `<svg class="tdie${cls ? " " + cls : ""}" viewBox="0 0 36 36" width="36" height="36" aria-hidden="true" focusable="false"><rect x="1" y="1" width="34" height="34" rx="7"/>${pips}</svg>`;
+  // ─── Die faces: standard Unicode (U+2680–U+2685), coloured with CSS ───────────
+  const DIE_CHARS = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
+  function die(n, cls) {
+    return `<span class="tdie${cls ? " " + cls : ""}" aria-hidden="true">${DIE_CHARS[n - 1] || ""}</span>`;
   }
   const card = (label, cls) => `<span class="tcard${cls ? " " + cls : ""}" aria-hidden="true">${label}</span>`;
   const arrow = sym => `<span class="tarrow" aria-hidden="true">${sym}</span>`;
@@ -47,7 +45,7 @@
   const STEPS = [
     {
       title: "What you need",
-      art: () => `${dieSVG(3, "c1")}${dieSVG(5, "c2")}${dieSVG(2, "skill")}${dieSVG(6, "skill")}`,
+      art: () => `${die(3, "c1")}${die(5, "c2")}${die(2, "skill")}${die(6, "skill")}`,
       body: () => `
         <ul class="teach-list">
           <li><strong>One scenario card and two character cards.</strong> A mission is always one scenario and a pair of characters.</li>
@@ -70,7 +68,7 @@
     },
     {
       title: "Roll, then place one at a time",
-      art: () => `${dieSVG(3, "c1")}${dieSVG(5, "c2")}${arrow("→")}${card("Primary", "pri")}${card("Secondary", "sec")}`,
+      art: () => `${die(3, "c1")}${die(5, "c2")}${arrow("→")}${card("Primary", "pri")}${card("Secondary", "sec")}`,
       body: () => `
         <ul class="teach-list">
           <li>Roll both character dice. Then decide which die goes on which character: each character gets exactly one, on the spot matching its number.</li>
@@ -79,7 +77,7 @@
     },
     {
       title: "Check for a combo",
-      art: () => `${dieSVG(3, "c1")}<span class="tplus" aria-hidden="true">+</span>${dieSVG(5, "c2")}${arrow("=")}<span class="tbadge" aria-hidden="true">Combo!</span>`,
+      art: () => `${die(3, "c1")}<span class="tplus" aria-hidden="true">+</span>${die(5, "c2")}${arrow("=")}<span class="tbadge" aria-hidden="true">Combo!</span>`,
       body: () => `
         <ul class="teach-list">
           <li>With both dice placed, look at the icons they sit on. If they match a combo listed on the scenario card, you <strong>must</strong> take that action (if two are possible, you choose one).</li>
@@ -88,7 +86,7 @@
     },
     {
       title: "No combo? Reduce, then re-roll",
-      art: () => `${dieSVG(4, "c1")}${arrow("↓")}${dieSVG(3, "c1")}<span class="tgap" aria-hidden="true"></span>${dieSVG(5, "c2 faded")}${arrow("↻")}`,
+      art: () => `${die(4, "c1")}${arrow("↓")}${die(3, "c1")}<span class="tgap" aria-hidden="true"></span>${die(5, "c2 faded")}${arrow("↻")}`,
       body: () => `
         <ul class="teach-list">
           <li>Move one die <strong>down by one</strong> on its character. Landing there by reduction does not trigger instants or effects; instead a <strong>reaction</strong> (optional) or <strong>fatigue</strong> (required) on that spot happens.</li>
@@ -97,7 +95,7 @@
     },
     {
       title: "Easy to forget",
-      art: () => `${dieSVG(1, "c1")}${arrow("↓")}<span class="tbadge warn" aria-hidden="true">⚠⚠</span><span class="tgap" aria-hidden="true"></span>${dieSVG(2, "skill")}${dieSVG(6, "skill")}`,
+      art: () => `${die(1, "c1")}${arrow("↓")}<span class="tbadge warn" aria-hidden="true">⚠⚠</span><span class="tgap" aria-hidden="true"></span>${die(2, "skill")}${die(6, "skill")}`,
       body: () => `
         <ul class="teach-list">
           <li><strong>Below 1 means ⚠⚠.</strong> If anything would push a die below 1, you take the scenario's ⚠⚠ combo instead.</li>
@@ -123,6 +121,7 @@
         </ul>
         <h3 class="tips-section-heading">Rules</h3>
         <ul class="teach-links">
+          <li><button type="button" class="teach-linkbtn" id="teachOpenRules">Open the rulebooks in the app</button></li>
           <li><button type="button" class="teach-linkbtn" id="teachOpenFaq">Rules FAQ: common questions</button></li>
           <li><a class="link-inline link-teal" href="https://buttonshygames.com/pages/twin-stars" target="_blank" rel="noopener noreferrer">Official rules and game page (Button Shy)</a></li>
         </ul>`;
@@ -180,6 +179,8 @@
     $("teachNext").textContent = last ? "Finish" : "Next";
     const start = $("teachStartMission");
     if (start) start.addEventListener("click", startFirstMission);
+    const rules = $("teachOpenRules");
+    if (rules) rules.addEventListener("click", () => { closeModal("teachModal"); openRules(); });
     const faq = $("teachOpenFaq");
     if (faq) faq.addEventListener("click", () => { closeModal("teachModal"); openFaq("faq-sc-01"); });
     $("teachBody").scrollTop = 0;

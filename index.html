@@ -2624,15 +2624,11 @@
       min-height: 64px; padding: var(--space-3); margin-bottom: var(--space-3);
       background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md);
     }
-    .tdie { flex-shrink: 0; }
-    .tdie rect { fill: var(--die-face); stroke: var(--border-glow); stroke-width: 1.5; }
-    .tdie circle { fill: var(--die-pip); }
-    .tdie.c2 rect { fill: var(--tint-orange); stroke: var(--accent-orange); }
-    .tdie.c2 circle { fill: var(--accent-orange); }
-    .tdie.skill rect { fill: #f4f5fb; stroke: var(--border-control); }
-    .tdie.skill circle { fill: #10142e; }
+    .tdie { flex-shrink: 0; font-size: 44px; line-height: 1; color: var(--die-pip); font-family: "Segoe UI Symbol", "DejaVu Sans", "Noto Sans Symbols 2", "Apple Symbols", sans-serif; }
+    .tdie.c2 { color: var(--accent-orange); }
+    .tdie.skill { color: var(--text-primary); }
     .tdie.faded { opacity: 0.55; }
-    [data-theme="light"] .tdie.c1 rect { fill: #1b2366; }
+    [data-theme="light"] .tdie.c1 { color: #1b2366; }
     .tcard {
       display: inline-flex; align-items: center; justify-content: center; text-align: center;
       width: 64px; height: 50px; padding: 2px; border-radius: var(--radius-sm);
