@@ -2423,9 +2423,9 @@
     <h2 id="importConfirmModalTitle">Import Records</h2>
     <p id="importConfirmMsg"></p>
     <div class="modal-actions" style="flex-wrap:wrap;">
-      <button class="btn btn-secondary" id="importCancel"  style="flex-basis:100%;">Cancel</button>
-      <button class="btn btn-primary" id="importMerge">Merge</button>
+      <button class="btn btn-secondary" id="importCancel">Cancel</button>
       <button class="btn btn-danger"    id="importReplace">Replace All</button>
+      <button class="btn btn-primary"   id="importMerge">Merge</button>
     </div>
   </div>
 </div>
@@ -2501,7 +2501,7 @@
       <button class="btn btn-secondary btn-sm btn-compact" id="rulesClose">Close</button>
     </div>
     <div class="rules-tabs" id="rulesTabs"></div>
-    <div class="rules-img-wrap">
+    <div class="rules-img-wrap" tabindex="0" role="region" aria-label="Rulebook page (scroll with the arrow keys)">
       <p class="rules-status" id="rulesStatus" role="status"></p>
       <img id="rulesImage" alt="Rulebook" src="">
     </div>
@@ -3098,8 +3098,8 @@
       <div class="history-toolbar">
         <div class="history-actions">
           <button class="btn btn-secondary" id="exportBtn" disabled>Export</button>
-          <label class="import-label" for="importFile">Import</label>
-          <input type="file" id="importFile" accept=".json">
+          <button type="button" class="btn btn-secondary" id="importBtn">Import</button>
+          <input type="file" id="importFile" accept=".json,application/json" tabindex="-1" aria-hidden="true">
           <button class="btn btn-danger" id="clearDataBtn">Clear All</button>
         </div>
         <div class="history-filters">
@@ -3173,6 +3173,8 @@
   </footer>
 
 </div>
+
+<section id="toastRegion" class="toast-region" aria-label="Notifications"></section>
 
 <audio id="radioAudio" preload="none"></audio>
 <script src="app.js"></script>

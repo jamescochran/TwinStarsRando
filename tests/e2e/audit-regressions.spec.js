@@ -180,7 +180,12 @@ test.describe("keyboard and screen reader access", () => {
     await page.getByRole("tab", { name: "Mission Log" }).click();
     await page.locator("#exportBtn").focus();
     await page.keyboard.press("Tab");
-    await expect(page.locator("#importFile")).toBeFocused();
+    // A real button (the file input itself is hidden from Tab and screen readers, so
+    // Import is announced once and shows the normal focus ring).
+    await expect(page.locator("#importBtn")).toBeFocused();
+    const chooser = page.waitForEvent("filechooser");
+    await page.keyboard.press("Enter");
+    await chooser;
   });
 
   test("Shift+Tab from the first FAQ question stays inside the dialog", async ({ page }) => {
