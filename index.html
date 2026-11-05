@@ -2000,6 +2000,24 @@
       .combo-vs { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
     }
 
+    /* .die-adj sets display:flex, which overrode the hidden attribute: the Hebolt Rom
+       Flip button showed for every character */
+    .die-adj[hidden], .die-adj-row[hidden] { display: none; }
+
+    /* Mission Log filters: without appearance:none, iOS/WebKit draws native light-grey
+       selects with near-invisible text in the dark theme */
+    .history-select {
+      -webkit-appearance: none;
+      appearance: none;
+      padding-right: 26px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237a88b0' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 9px center;
+    }
+    [data-theme="light"] .history-select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%232a3868' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    }
+
     /* SYZYGY steppers: a label + stepper pair never splits across lines */
     .sz-step-group { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
     .syzygy-resource-controls { gap: 8px 14px; }
@@ -2107,7 +2125,6 @@
       .btn-sz-step,
       .syzygy-stepper-compact .btn-sz-step { width: 44px; height: 44px; }
       .syzygy-stepper { gap: 2px; }
-      .dice-box { max-width: 340px; }
       .die-adj-row { width: auto; gap: 4px; justify-content: center; flex-wrap: wrap; max-width: 92px; }
       .die-adj, .dice-swap-mid { width: 44px; height: 44px; }
       /* Flip (Hebolt Rom, locked die) drops to its own full-width row under −/+ */
@@ -2116,6 +2133,13 @@
       details.faq-item summary { padding-top: 13px; padding-bottom: 13px; }
       details.faq-item summary::after { top: 15px; }
       .btn-tip-dismiss { min-height: 44px; }
+    }
+    @media (pointer: coarse) and (min-width: 561px) {
+      .dice-box { max-width: 340px; }   /* room for 44px −/+ controls; phones use the full-width sheet */
+    }
+    /* Tablets (table layout + 44px edit/delete): tighter cell padding so the log fits */
+    @media (pointer: coarse) and (min-width: 720px) and (max-width: 1023px) {
+      #historyTableContainer thead th, #historyTableContainer tbody td { padding-left: 6px; padding-right: 6px; }
     }
 
     /* ── Short landscape phones: compact one-row header so content starts on screen one ── */

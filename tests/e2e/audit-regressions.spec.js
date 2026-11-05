@@ -277,7 +277,9 @@ test.describe("phone layout", () => {
         probe.style.cssText = `position:absolute;visibility:hidden;white-space:nowrap;font-family:${cs.fontFamily};font-size:${cs.fontSize};font-weight:${cs.fontWeight};letter-spacing:${cs.letterSpacing};text-transform:${cs.textTransform}`;
         probe.textContent = sel.options[sel.selectedIndex].text;
         document.body.appendChild(probe);
-        const avail = sel.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - 20; // native arrow
+        // A native arrow takes ~20px; with appearance:none the drawn chevron sits inside padding-right.
+        const arrow = cs.appearance === "none" || cs.webkitAppearance === "none" ? 0 : 20;
+        const avail = sel.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - arrow;
         if (probe.offsetWidth > avail) out.push(probe.textContent);
         probe.remove();
       });
