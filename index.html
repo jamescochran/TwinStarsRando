@@ -2779,6 +2779,73 @@
     }
     @keyframes bdBump  { 0% { transform: scale(1.12); color: var(--bd-c); } 100% { transform: none; } }
     @keyframes bdLimit { 0%, 100% { transform: none; } 30% { transform: translateX(-3px); } 70% { transform: translateX(3px); } }
+    /* ── Pairing Lab + Gauntlet (insights.js) ── */
+    .ins-lede { font-size: var(--fs-md); color: var(--text-muted); line-height: var(--lh-body); margin-bottom: var(--space-3); }
+    .ins-note { font-size: var(--fs-sm); color: var(--text-muted); line-height: var(--lh-body); margin: 0 0 var(--space-3); }
+    .ins-note-warn { color: var(--accent-yellow); }
+    .ins-dim { color: var(--text-dim); }
+    .ins-toggle { margin-bottom: var(--space-2); }
+    #labBody { margin-top: var(--space-4); }
+    #labBody .section-heading { margin-top: var(--space-5); }
+    .ins-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--space-2) var(--space-3); margin-bottom: var(--space-3); }
+    .ins-control { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
+    .ins-control-wide { margin-bottom: var(--space-3); }
+    .ins-control-label { font-family: var(--font-display); font-size: var(--fs-label); font-weight: 700; letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--text-muted); }
+    .ins-seg { display: flex; border: 1px solid var(--border-control); border-radius: var(--radius); overflow: hidden; }
+    .ins-seg-btn { flex: 1; min-height: 40px; padding: 6px 8px; background: transparent; border: 0; color: var(--text-muted); font-family: var(--font-body); font-size: var(--fs-sm); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    .ins-seg-btn + .ins-seg-btn { border-left: 1px solid var(--border-control); }
+    .ins-seg-btn[aria-pressed="true"] { background: var(--tint-teal); color: var(--accent-teal); font-weight: 700; }
+    .ins-seg-btn:focus-visible { outline-offset: -3px; }
+    .ins-few { display: inline-block; font-size: var(--fs-xs); font-weight: 400; color: var(--text-dim); border: 1px dashed var(--border-control); border-radius: var(--radius-pill); padding: 0 6px; white-space: nowrap; }
+    .ins-table-wrap { overflow-x: auto; margin-bottom: var(--space-2); }
+    .ins-table-wrap:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+    .ins-table { min-width: 0; }
+    .ins-table th[scope="row"] { font-weight: 600; text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+    .ins-table td, .ins-table th { vertical-align: middle; }
+    .ins-table tbody td { padding: 8px 10px; }
+    .ins-num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .ins-table thead th.ins-num { text-align: right; }
+    .ins-rate { display: inline-block; min-width: 44px; padding: 1px 6px; border-radius: var(--radius-sm); text-align: right; }
+    .ins-hi  { background: var(--tint-teal);   box-shadow: inset 0 0 0 1px var(--line-teal); }
+    .ins-mid { background: var(--tint-yellow); box-shadow: inset 0 0 0 1px var(--line-yellow); }
+    .ins-lo  { background: var(--tint-loss);   box-shadow: inset 0 0 0 1px var(--line-loss); }
+    .ins-key { display: inline-block; padding: 0 6px; border-radius: var(--radius-sm); color: var(--text-primary); }
+    .ins-heat { width: auto; }
+    .ins-heat th[scope="row"] { position: sticky; left: 0; background: var(--bg-panel); z-index: 1; min-width: 120px; max-width: 160px; white-space: normal; }
+    .ins-heat .ins-cell { text-align: center; min-width: 44px; padding: 8px 6px; }
+    .ins-heat thead th { text-align: center; }
+    .ins-heat thead th:first-child { text-align: left; position: sticky; left: 0; background: var(--bg-panel); z-index: 1; }
+    .ins-more { margin: 0 0 var(--space-2); }
+    .ins-list { list-style: none; margin: 0 0 var(--space-3); padding: 0; }
+    .ins-list li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-1) var(--space-3); padding: var(--space-2) 0; border-bottom: 1px solid var(--border); font-size: var(--fs-body); }
+    .ins-list li:last-child { border-bottom: 0; }
+    .ins-list li.ins-order { flex-direction: column; justify-content: flex-start; }
+    .ins-best-line { font-size: var(--fs-body); line-height: var(--lh-body); margin-bottom: var(--space-2); }
+    .ins-empty { padding: 24px 12px; }
+    .ins-fieldset { border: 0; padding: 0; margin: var(--space-2) 0 var(--space-3); display: flex; flex-direction: column; gap: var(--space-1); }
+    .ins-fieldset legend { margin-bottom: var(--space-1); }
+    .ins-radio { display: flex; align-items: center; gap: var(--space-2); min-height: 40px; font-size: var(--fs-body); cursor: pointer; }
+    .ins-radio input { width: 18px; height: 18px; accent-color: var(--accent-teal); flex-shrink: 0; }
+    .g-head { font-size: var(--fs-body); margin-bottom: var(--space-3); }
+    .g-summary-title { font-size: var(--fs-body); margin-bottom: var(--space-3); }
+    .g-strip { list-style: none; margin: 0 0 var(--space-3); padding: 0; display: flex; flex-direction: column; gap: var(--space-1); }
+    .g-step { display: flex; align-items: center; gap: var(--space-2); padding: 6px 10px; border: 1px solid var(--border); border-radius: var(--radius-md); font-size: var(--fs-md); }
+    .g-step .g-name { flex: 1; min-width: 0; }
+    .g-step .g-state { font-family: var(--font-display); font-size: var(--fs-label); letter-spacing: var(--tracking-tight); text-transform: uppercase; color: var(--text-muted); }
+    .g-mark { width: 1.2em; text-align: center; font-weight: 700; }
+    .g-win  { border-color: var(--line-teal); background: var(--tint-teal); }
+    .g-win .g-mark, .g-win .g-state { color: var(--accent-teal); }
+    .g-loss { border-color: var(--line-loss); background: var(--tint-loss); }
+    .g-loss .g-mark, .g-loss .g-state { color: var(--loss-color); }
+    .g-next { border-color: var(--accent-orange); border-style: dashed; }
+    .g-next .g-mark, .g-next .g-state { color: var(--accent-orange); }
+    .g-strip-compact { flex-direction: row; flex-wrap: wrap; }
+    .g-strip-compact .g-step { padding: 4px 8px; gap: 4px; font-variant-numeric: tabular-nums; }
+    .g-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+    .g-actions .btn { flex: 1 1 160px; margin-top: 0; }
+    .g-share { width: 100%; font-family: var(--font-body); margin: var(--space-1) 0 var(--space-3); resize: vertical; }
+    .g-bar .btn-load { margin-top: 0; }
+    .g-bar .g-strip { margin-bottom: var(--space-3); }
   </style>
 </head>
 <body>
@@ -4095,6 +4162,7 @@
   </div>
   <div class="rand-col rand-col-play">
 
+    <div id="gauntletBar" hidden></div>
     <div id="combinationDisplay"></div>
 
     <div id="annotationSection" class="panel hidden">
@@ -4145,6 +4213,8 @@
       <h2 class="panel-title">Statistics</h2>
       <div id="statsContent"></div>
     </div>
+    <!-- Pairing Lab + Gauntlet (rendered by insights.js) -->
+    <div id="insightsRoot"></div>
     <div class="panel">
       <h2 class="panel-title" id="missionLogHeading" tabindex="-1">Mission Log</h2>
       <div class="history-toolbar">
@@ -4233,6 +4303,7 @@
 <audio id="radioAudio" preload="none"></audio>
 <script src="app.js" defer></script>
 <script src="board.js" defer></script>
+<script src="insights.js" defer></script>
 <noscript><p style="font-family:sans-serif;text-align:center;padding:40px;">Twin Stars Randomizer requires JavaScript to run.</p></noscript>
 </body>
 </html>

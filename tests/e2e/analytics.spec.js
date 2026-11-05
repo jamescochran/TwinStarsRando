@@ -29,6 +29,10 @@ const ALLOWED = {
   board_open: ["auto", "setup"],
   board_setup_saved: ["tracks", "edit"],
   board_record: ["result"],
+  lab_open: [],
+  gauntlet_start: ["scenarios"],
+  gauntlet_complete: ["wins", "total"],
+  gauntlet_share: [],
 };
 
 const rec = (i, extra = {}) => ({
