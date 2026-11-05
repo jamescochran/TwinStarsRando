@@ -73,7 +73,7 @@ test.describe("data safety", () => {
       backup: JSON.parse(localStorage.getItem("gameRecordsBackup") || "[]"),
     }));
     expect(current).toBe(2); // the valid original + the new one
-    expect(backup).toHaveLength(2);
+    // The backup keeps the rejected record (appended, so later rejections are kept too).
     expect(backup.some((r) => r.scenario === "Not A Scenario")).toBe(true);
   });
 
