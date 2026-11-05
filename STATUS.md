@@ -65,3 +65,17 @@ Graphics added earlier tonight, before rule 3, are on `main` and awaiting the ow
 - Logic audit with reproductions and the SYZYGY specification: kept in the session; key findings are in the plan above.
 - FAQ generator: `tools/faq/` (edit `faq_data.py`, then run `python3 tools/faq/gen.py index.html`).
 - Release and deploy: README → "Release / deploy".
+
+## Handoff documents (in `docs/handoff/`)
+
+- `product-plan.html`: the full audit, feature concepts, roadmap and task-level plan (same as the published page).
+- `logic-audit.md`: logic findings with severities and the SYZYGY correct-logic specification. H1, H2, H3, H4, H5, M1, M2, M4, M5, M6 and M7 are fixed on `main`/`phase2`; remaining Low items are listed there.
+- `product-research.md`: evidence from 84 BoardGameGeek threads, BGG stats, the content inventory and competitor scan, all with citations.
+- `bgg-faq-merged.md`: the 95-entry researched FAQ that the in-app FAQ was built from (source for `tools/faq/faq_data.py`).
+
+## How to resume
+
+1. `git checkout phase2` and run the suite: `cd tests && npm ci && npx playwright install --with-deps chromium firefox webkit && npx playwright test`.
+2. Fix anything that fails, then open a PR from `phase2` to `main`.
+3. Bring in `wip/teach-and-daily` (`git merge phase2` on that branch first), test, review and merge.
+4. Then the remaining items under "Not started", in the order listed in the product plan's roadmap.

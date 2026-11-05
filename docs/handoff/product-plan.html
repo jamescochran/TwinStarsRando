@@ -1,0 +1,465 @@
+<title>Twin Stars Product Plan</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a single reading column (~72ch) with wide tables allowed to scroll; a compact sticky contents rail on wide screens. */
+:root {
+  --paper: #f3f5fa;
+  --sheet: #ffffff;
+  --ink: #141a2e;
+  --ink-2: #3f4866;
+  --rule: #d5dbea;
+  --tint: #e9edf7;
+  --accent: #b8460f;      /* the app's star-orange, darkened for text */
+  --accent-2: #00654f;    /* the app's teal, darkened for text */
+  --warn: #8a5a00;
+  --bad: #b4001b;
+  --chip-ver: #e3f1ec; --chip-ver-fg: #00513f;
+  --chip-evi: #fbeee2; --chip-evi-fg: #8f360b;
+  --chip-spe: #ecebf8; --chip-spe-fg: #45398f;
+  --font-display: "Chakra Petch", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --paper: #07091a; --sheet: #0e1330; --ink: #e8ebf7; --ink-2: #a0aacb; --rule: #26305a; --tint: #141b3d;
+  --accent: #ff8a4d; --accent-2: #2fe0b8; --warn: #f0b429; --bad: #ff6b78;
+  --chip-ver: #0d3329; --chip-ver-fg: #6ff0cd; --chip-evi: #3a1d0d; --chip-evi-fg: #ffb48a; --chip-spe: #23204a; --chip-spe-fg: #c4bcff;
+  color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --paper: #07091a; --sheet: #0e1330; --ink: #e8ebf7; --ink-2: #a0aacb; --rule: #26305a; --tint: #141b3d;
+  --accent: #ff8a4d; --accent-2: #2fe0b8; --warn: #f0b429; --bad: #ff6b78;
+  --chip-ver: #0d3329; --chip-ver-fg: #6ff0cd; --chip-evi: #3a1d0d; --chip-evi-fg: #ffb48a; --chip-spe: #23204a; --chip-spe-fg: #c4bcff;
+  color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body { background: var(--paper); color: var(--ink); font: 400 16px/1.6 var(--font-body); }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 32px 80px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; }
+@media (min-width: 1040px) { .wrap { grid-template-columns: 220px minmax(0, 1fr); } }
+nav.toc { font-size: 13px; }
+@media (min-width: 1040px) { nav.toc { position: sticky; top: calc(24px + env(safe-area-inset-top, 0px)); align-self: start; max-height: calc(100vh - 48px); overflow: auto; } }
+nav.toc p { font: 600 11px/1.2 var(--font-display); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-2); margin: 0 0 8px; }
+nav.toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+nav.toc a { color: var(--ink-2); text-decoration: none; display: block; padding: 4px 8px; border-left: 2px solid var(--rule); }
+nav.toc a:hover, nav.toc a:focus-visible { color: var(--ink); border-left-color: var(--accent); }
+main { min-width: 0; max-width: 860px; }
+header.title { border-bottom: 1px solid var(--rule); padding-bottom: 24px; margin-bottom: 8px; }
+.eyebrow { font: 600 12px/1 var(--font-display); letter-spacing: .16em; text-transform: uppercase; color: var(--accent); margin: 0 0 12px; }
+h1 { font: 700 clamp(30px, 5vw, 44px)/1.08 var(--font-display); margin: 0 0 14px; text-wrap: balance; letter-spacing: .01em; }
+.lede { font-size: 18px; color: var(--ink-2); max-width: 66ch; margin: 0; }
+.meta { font: 400 13px/1.5 var(--font-mono); color: var(--ink-2); margin-top: 16px; }
+h2 { font: 700 26px/1.2 var(--font-display); margin: 56px 0 14px; padding-top: 8px; text-wrap: balance; scroll-margin-top: 16px; }
+h2 .n { color: var(--accent); margin-right: 10px; font-variant-numeric: tabular-nums; }
+h3 { font: 600 19px/1.3 var(--font-display); margin: 32px 0 8px; letter-spacing: .01em; }
+h4 { font: 600 15px/1.4 var(--font-body); margin: 20px 0 6px; }
+p, li { max-width: 72ch; }
+p { margin: 0 0 12px; }
+ul, ol { margin: 0 0 14px; padding-left: 22px; }
+li { margin-bottom: 5px; }
+a { color: var(--accent-2); }
+strong { font-weight: 600; }
+code { font: 500 .88em var(--font-mono); background: var(--tint); padding: 1px 5px; border-radius: 4px; }
+.callout { background: var(--sheet); border: 1px solid var(--rule); border-radius: 10px; padding: 18px 20px; margin: 18px 0; }
+.callout > :last-child { margin-bottom: 0; }
+.scores { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin: 18px 0 8px; }
+.score { background: var(--sheet); border: 1px solid var(--rule); border-radius: 10px; padding: 14px 16px; }
+.score b { display: block; font: 700 30px/1 var(--font-display); font-variant-numeric: tabular-nums; }
+.score span { font-size: 13px; color: var(--ink-2); display: block; margin-top: 6px; }
+.score.now b { color: var(--accent-2); }
+.score.goal b { color: var(--accent); }
+.tbl { overflow-x: auto; margin: 14px 0 20px; border: 1px solid var(--rule); border-radius: 10px; background: var(--sheet); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; line-height: 1.5; }
+th, td { text-align: left; vertical-align: top; padding: 9px 12px; border-bottom: 1px solid var(--rule); }
+th { font: 600 12px/1.3 var(--font-display); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); background: var(--tint); white-space: nowrap; }
+tr:last-child td { border-bottom: none; }
+td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.wide table { min-width: 860px; }
+.chip { display: inline-block; font: 600 11px/1.6 var(--font-display); letter-spacing: .06em; text-transform: uppercase; padding: 0 8px; border-radius: 999px; white-space: nowrap; }
+.ver { background: var(--chip-ver); color: var(--chip-ver-fg); }
+.evi { background: var(--chip-evi); color: var(--chip-evi-fg); }
+.spe { background: var(--chip-spe); color: var(--chip-spe-fg); }
+.sev { font: 600 12px/1 var(--font-mono); }
+.sev.h { color: var(--bad); } .sev.m { color: var(--warn); } .sev.l { color: var(--ink-2); }
+.concept { background: var(--sheet); border: 1px solid var(--rule); border-radius: 12px; padding: 20px 22px; margin: 18px 0; }
+.concept h3 { margin-top: 0; }
+.concept dl { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px 18px; margin: 10px 0 0; }
+@media (min-width: 640px) { .concept dl { grid-template-columns: 150px minmax(0, 1fr); } }
+.concept dt { font: 600 12px/1.6 var(--font-display); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); }
+.concept dd { margin: 0 0 8px; }
+.phase { border-left: 3px solid var(--accent); padding: 2px 0 2px 18px; margin: 22px 0; }
+.phase h3 { margin-top: 0; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 13px; color: var(--ink-2); margin: 10px 0 16px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+details { background: var(--sheet); border: 1px solid var(--rule); border-radius: 10px; margin: 10px 0; }
+summary { cursor: pointer; padding: 12px 16px; font: 600 15px/1.4 var(--font-body); }
+summary:focus-visible, a:focus-visible { outline: 3px solid var(--accent-2); outline-offset: 2px; border-radius: 4px; }
+details > div { padding: 0 16px 14px; }
+.small { font-size: 13px; color: var(--ink-2); }
+hr { border: none; border-top: 1px solid var(--rule); margin: 40px 0; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+</style>
+
+<div class="wrap">
+<nav class="toc" aria-label="Contents">
+  <p>Contents</p>
+  <ol>
+    <li><a href="#assessment">1. Executive assessment</a></li>
+    <li><a href="#inventory">2. Current-state inventory</a></li>
+    <li><a href="#problems">3. Problems and opportunities</a></li>
+    <li><a href="#recs">4. Prioritized recommendations</a></li>
+    <li><a href="#concepts">5. Feature concepts</a></li>
+    <li><a href="#future">6. The future experience</a></li>
+    <li><a href="#roadmap">7. Roadmap</a></li>
+    <li><a href="#plan">8. Implementation plan</a></li>
+    <li><a href="#decisions">9. Decisions for the owner</a></li>
+    <li><a href="#tonight">A. Tonight's UX/UI work</a></li>
+    <li><a href="#sources">B. Evidence and sources</a></li>
+  </ol>
+</nav>
+
+<main>
+<header class="title">
+  <p class="eyebrow">Product audit and plan</p>
+  <h1>Twin Stars Adventure Randomizer: from randomizer to the companion every Twin Stars player keeps open</h1>
+  <p class="lede">A candid assessment of the app as it stands on the <code>ux-audit</code> branch, what the evidence says players need, and a phased, testable plan to build it. No code has been changed for this plan.</p>
+  <p class="meta">Prepared 2026-11-05 · Repo jamescochran/TwinStarsRando · Branch ux-audit (open as PR #111) · Live site serves main @ a1412cd</p>
+</header>
+
+<h2 id="assessment"><span class="n">1</span>Executive assessment</h2>
+
+<p><strong>What it is.</strong> An unofficial, free, offline-capable web app for Button Shy's solo wallet card game <em>Twin Stars: Adventure Series</em>. It draws a character pair and a scenario from the packs you own, times the game, logs the result, tracks coverage of all combinations, runs the SYZYGY campaign modes, rolls dice, plays ambient radio and carries an offline rules FAQ.</p>
+
+<p><strong>Who it serves.</strong> A small, loyal, long-tail audience. BoardGameGeek lists about 1,358 owners of Series I and 772 of Series II. Close to half of the collection comments that say anything mention print-and-play copies. Players describe 15-minute sessions on a lunch table, in a car, at school pickup and on a lap tray. The game is no longer sold on Button Shy's own store, so new users are existing owners, print-and-play builders and second-hand buyers.</p>
+
+<p><strong>The candid verdict.</strong> The app has unusually good bones for a fan project: a fair randomizer (verified over 13,200 draws), strong escaping, a strict content policy, offline support and, after tonight's work, a coherent and accessible interface. It is also, as far as an extensive search could find, <strong>the only Twin Stars-aware digital tool in existence</strong>. But it solves the job players have least trouble with. Choosing a pair and scenario takes ten seconds with real cards. The jobs players actually struggle with sit around and inside the game, and the app barely touches them:</p>
+<ul>
+  <li><strong>Understanding the rules at the table.</strong> 55 of 84 forum threads are rules questions. A reviewer wrote that having to look things up online undercuts a game whose whole point is portability.</li>
+  <li><strong>Tracking game state without fiddly tokens.</strong> Players use paperclips, coloured cubes and sticky notes, and complain about tokens being bumped or blown away. The app has no tracker for a normal mission.</li>
+  <li><strong>Studying character pairings.</strong> Engaged players call the pairing meta-game the real thrill of Twin Stars. The app already stores every result but offers no per-pair insight.</li>
+</ul>
+<p>It also carries correctness and trust problems that a best-in-class product cannot have: SYZYGY ranks that contradict the rulebooks, two ways to silently lose play history, a truncated rulebook image, 31 MB of rulebook PNGs and a release process that shipped a build which failed CI.</p>
+
+<div class="scores">
+  <div class="score"><b>5 / 10</b><span>UX/UI before tonight. Solid core, but failing contrast, unreachable dialogs on phones, keyboard gaps.</span></div>
+  <div class="score now"><b>7.5 / 10</b><span>UX/UI on the ux-audit branch (two independent QA passes scored it 7.5 and 8).</span></div>
+  <div class="score"><b>6 / 10</b><span>Product value today: useful, but misses the biggest at-the-table needs.</span></div>
+  <div class="score goal"><b>9+ / 10</b><span>Achievable with Phases 0–3 of this plan, all buildable offline with no backend.</span></div>
+</div>
+
+<h3>The biggest opportunities</h3>
+<ol>
+  <li><strong>Become the table, not the dice cup.</strong> A token-free Mission Board for health, energy and scenario tracks, built for one hand and an unstable surface. This addresses the second-strongest pain in the evidence and nothing else on the market does it.</li>
+  <li><strong>Answer rules questions in context, offline.</strong> Merge the 54 new rulings already compiled tonight, fix the three answers that conflict with designer rulings, and show only the rulings for the two characters and scenario on the table.</li>
+  <li><strong>Turn the log into insight.</strong> Per-pair win rates, a pair-by-scenario heat map and a "Gauntlet" mode that takes one team through every scenario you own.</li>
+  <li><strong>Earn trust.</strong> Fix data loss, SYZYGY correctness and the release pipeline before adding anything, because a logbook nobody trusts is worse than no logbook.</li>
+</ol>
+
+<h2 id="inventory"><span class="n">2</span>Current-state inventory</h2>
+
+<p>Everything below was examined in the code and exercised in Chromium, Firefox and WebKit by browser automation, except where marked.</p>
+
+<div class="tbl wide"><table>
+<thead><tr><th>Area</th><th>What exists</th><th>State after tonight</th></tr></thead>
+<tbody>
+<tr><td>Randomizer tab</td><td>Character 1 (Primary), Character 2 (Secondary) and scenario selectors, three locks, Randomize, difficulty, droid pick and Random, mission card with FAQ links, timer with pause/resume/restart, Record Outcome with notes, per-combination history, Roll Dice</td><td>Two-column on desktop, keyboard-complete, unsaved-game guard. Missing: any in-game state tracking.</td></tr>
+<tr><td>Mission Log tab</td><td>History table (cards on phones), six filters and sort, edit, delete with undo, import (merge or replace), export, clear with undo, stats summary, Unplayed Combinations list with Play</td><td>Accessible and responsive. Logic risks: no record ids, two-tab overwrite, false "Saved" on storage failure (§3).</td></tr>
+<tr><td>SYZYGY tab</td><td>Mode I and II setup (3 characters), stage display, resource allocation, carry-over, outcome recording, completion rank, abandon with undo</td><td>Keyboard-complete and responsive. <strong>Rules logic still diverges from both rulebooks.</strong></td></tr>
+<tr><td>Dialogs</td><td>Restart, Clear All, Import, Abandon, Delete, Edit, Start New Mission, My Collection, Rules FAQ, Rulebooks (5 images), Dice Roller and Skill Check, Tips, onboarding tip</td><td>One close convention, focus trapping, bottom sheets on phones.</td></tr>
+<tr><td>Content data</td><td>Packs: Series I and II (24 characters, 12 scenarios), Captain Crag, Scenarios 13 and 14, two droid packs; FAQ with 72 entries</td><td>Pack-level ownership only. Two character names unverified (“Striker” may be “Ztriker”; Scenario 13 names have no public source).</td></tr>
+<tr><td>Extras</td><td>SomaFM ambient radio with volume and media session, dark/light theme, tips</td><td>Radio correctly disabled offline.</td></tr>
+<tr><td>Platform</td><td>Static files, no build step: <code>index.html</code> (markup + 92 KB inline CSS), <code>app.js</code> (133 KB, one global script), <code>head.js</code>, <code>service-worker.js</code>, manifest, icons, five rulebook PNGs (30.9 MB)</td><td>Strict meta CSP, no inline scripts. Hosted on GitHub Pages; <code>netlify.toml</code> has no effect.</td></tr>
+<tr><td>Data</td><td>localStorage keys <code>gameRecords</code>, <code>syzygyCampaign</code>, <code>enabledPacks</code>, <code>theme</code> and six more, unprefixed, on the shared <code>jamescochran.github.io</code> origin</td><td>No ids, no schema version, no persistence request, manual JSON backup only.</td></tr>
+<tr><td>Quality</td><td>98 Playwright e2e tests per browser; CI on Chromium, Firefox, WebKit (ux-audit); CodeQL; Dependabot; SHA-pinned actions</td><td>No unit tests, no error reporting, Pages deploy not gated on tests.</td></tr>
+<tr><td>Analytics</td><td>Self-hosted Umami, pageviews only</td><td>Counts localhost and sends full URLs including hash; no privacy notice.</td></tr>
+</tbody></table></div>
+
+<h3>Measured baseline</h3>
+<div class="tbl"><table>
+<thead><tr><th>Measure</th><th>Value</th></tr></thead>
+<tbody>
+<tr><td>Lighthouse mobile performance (gzip, closest to production)</td><td class="num">92 · LCP 2.7 s · TBT 0 · CLS 0</td></tr>
+<tr><td>Lighthouse desktop performance</td><td class="num">100</td></tr>
+<tr><td>Slow 3G performance</td><td class="num">61 · LCP 6.5 s</td></tr>
+<tr><td>Lighthouse accessibility (ux-audit / live)</td><td class="num">100 / 98</td></tr>
+<tr><td>axe-core violations (8 states, phone width)</td><td class="num">0</td></tr>
+<tr><td>Lighthouse SEO</td><td class="num">92 (robots.txt missing)</td></tr>
+<tr><td>First-load transfer (gzip)</td><td class="num">123 KiB, 13 requests</td></tr>
+<tr><td>Opening one rulebook</td><td class="num">about 7 MB, about 35 s on a 1.6 Mbps phone connection</td></tr>
+<tr><td>Repeat load via service worker</td><td class="num">first paint 88 ms</td></tr>
+</tbody></table></div>
+
+<h2 id="problems"><span class="n">3</span>Problems and opportunities</h2>
+
+<div class="legend">
+  <span><span class="chip ver">Verified</span> reproduced or measured</span>
+  <span><span class="chip evi">Evidence</span> supported by player evidence</span>
+  <span><span class="chip spe">Speculative</span> plausible, needs validation</span>
+</div>
+
+<h3>3.1 Trust and correctness</h3>
+<div class="tbl wide"><table>
+<thead><tr><th>Issue</th><th>Example</th><th>Why it matters</th><th>Class</th></tr></thead>
+<tbody>
+<tr><td>SYZYGY I and II contradict the rulebooks</td><td>Mode I plays 3 stages, the rulebook has 4. Mode II is linear, the rulebook is a 6-card pyramid. In Mode II, L,L ends the game though the rules continue; W,W,L ranks “Back to Square One” though the rules say Lost; SAFE is unreachable. Nobody is ever eliminated.</td><td>Wrong outcomes in the one mode that exists purely because the app can do the bookkeeping. Players who notice stop trusting everything else.</td><td><span class="chip ver">Verified</span></td></tr>
+<tr><td>Two open tabs erase each other's records</td><td>Tab A saves two games; tab B, opened earlier, saves one. Storage holds one record.</td><td>Silent, permanent loss of play history, in all three browsers.</td><td><span class="chip ver">Verified</span></td></tr>
+<tr><td>“Saved” shown when the save failed</td><td>With storage full or blocked, the success toast replaces the error toast; in-memory data is not rolled back.</td><td>The user believes a game is logged when it is not.</td><td><span class="chip ver">Verified</span></td></tr>
+<tr><td>Undo while a dialog is open edits the wrong record</td><td>Delete R1, open Edit on R4, click Undo, Save: R3 is overwritten.</td><td>Corrupts history through an ordinary sequence.</td><td><span class="chip ver">Verified</span></td></tr>
+<tr><td>Records have no identity</td><td>Sorting is by array position; merge dedupes only on timestamp, pair and scenario; timestamps are locale strings.</td><td>Imports reorder history; edited copies from another device are silently skipped.</td><td><span class="chip ver">Verified</span></td></tr>
+<tr><td>Storage can be evicted or shared</td><td><code>navigator.storage.persist()</code> is never requested; keys are unprefixed on an origin shared with every other GitHub Pages project of the owner; Safari clears script storage after 7 days without a visit unless the app is installed.</td><td>Years of play history depend on browser housekeeping.</td><td><span class="chip ver">Verified</span></td></tr>
+<tr><td>Clock changes save negative playtime</td><td>Setting the clock back saves <code>-3599</code> seconds, shown as saved, then dropped on reload.</td><td>Edge case, but another silent loss path.</td><td><span class="chip ver">Verified</span></td></tr>
+<tr><td>Stats mix scopes</td><td>Games and win rate include disabled packs; Combos Played and droid figures do not. One combo of 792 shows as “0%”.</td><td>Numbers that disagree with each other look broken.</td><td><span class="chip ver">Verified</span></td></tr>
+<tr><td>Loading a combination with a lock swaps the selectors</td><td>The card shows Saaze &amp; Bood while the selectors show Bood &amp; Saaze.</td><td>Load Mission then loads a different game than the one shown.</td><td><span class="chip ver">Verified</span></td></tr>
+</tbody></table></div>
+
+<h3>3.2 Content and rules</h3>
+<div class="tbl wide"><table>
+<thead><tr><th>Issue</th><th>Example</th><th>Why it matters</th><th>Class</th></tr></thead>
+<tbody>
+<tr><td>The in-app FAQ is incomplete and partly wrong</td><td>54 new rulings from 84 BoardGameGeek threads are not in the app. The Hunt the Bounty answer contradicts a designer ruling. The Bood answer omits that health can pay for the re-roll. No Scenario 13 or 14 section.</td><td>Rules confusion is the top pain point in the evidence.</td><td><span class="chip ver">Verified</span></td></tr>
+<tr><td>Captain Crag rulebook image is truncated</td><td>The PNG is exactly 1,920,000 bytes with no end marker; the bottom 21% is black in every browser, and the app's error message never fires.</td><td>A whole character's rules are partly unreadable.</td><td><span class="chip ver">Verified</span></td></tr>
+<tr><td>Rulebooks are images of text</td><td>Alt text is “Series 1 rulebook”; content is invisible to screen readers and to search.</td><td>Accessibility gap and no way to search the rules.</td><td><span class="chip ver">Verified</span></td></tr>
+<tr><td>Collection is all-or-nothing per pack</td><td>Owners of the free print-and-play starters (Escape the Brig with Inzill Mey and Strezelsior; Master the Trials with Grulexon and Dain Taubo) or a single scenario wallet cannot describe what they own.</td><td>The app draws content they cannot play, breaking its own promise.</td><td><span class="chip evi">Evidence</span></td></tr>
+<tr><td>Unverified names</td><td>“Striker” appears as “Ztriker” in the only forum mention; “Feth Doriet” and “Pummtoggs” have no public source.</td><td>Renaming later requires a data migration, so verify first.</td><td><span class="chip evi">Evidence</span></td></tr>
+<tr><td>Combination count differs from the box</td><td>The app counts ordered pairs (11,368 with everything); the publisher counts unordered pairs (3,312 for Series I and II).</td><td>Confuses completionists comparing with the box.</td><td><span class="chip ver">Verified</span></td></tr>
+<tr><td>Repo rules transcription has errors</td><td><code>rules/README.md</code> misstates the component list and omits the skill-check ⊘ failure result.</td><td>Future work built on it would inherit the errors.</td><td><span class="chip ver">Verified</span></td></tr>
+</tbody></table></div>
+
+<h3>3.3 Experience gaps</h3>
+<div class="tbl wide"><table>
+<thead><tr><th>Gap</th><th>Evidence</th><th>Class</th></tr></thead>
+<tbody>
+<tr><td>No token-free tracking of health, energy and scenario tracks during a normal mission</td><td>Repeated complaints about tokens; paperclips, cubes and sticky notes; a player who could not tell base and current precision apart with identical markers; the 2022 Moonset reimplementation changed its tracking for the same reason.</td><td><span class="chip evi">Evidence</span></td></tr>
+<tr><td>No per-pair insight or fixed-team play</td><td>“The real thrill of this game … is the study of these characters, pairing them up”; a player running one team through every scenario.</td><td><span class="chip evi">Evidence</span></td></tr>
+<tr><td>Players forget steps</td><td>Forgotten skill checks and energy re-rolls; repeated sequencing questions about reactions, fatigue and reducing below 1.</td><td><span class="chip evi">Evidence</span></td></tr>
+<tr><td>Learning and setup are hard</td><td>“new player tips?”, requests for setup videos, “it looks very complicated to me right now”.</td><td><span class="chip evi">Evidence</span></td></tr>
+<tr><td>The phone layout is long; feedback relies on 4-second toasts</td><td>QA pass findings: the app auto-scrolls to the mission card; the header takes about 300 px before the tabs.</td><td><span class="chip ver">Verified</span></td></tr>
+<tr><td>No way to know whether anything works</td><td>Umami records pageviews only; there are no feature events and no error reporting.</td><td><span class="chip ver">Verified</span></td></tr>
+<tr><td>No reason to return between plays</td><td>Nothing changes unless you play; there is no prompt, challenge or shared moment.</td><td><span class="chip spe">Speculative</span></td></tr>
+</tbody></table></div>
+
+<h3>3.4 Technical</h3>
+<div class="tbl wide"><table>
+<thead><tr><th>Issue</th><th>Measurement</th><th>Class</th></tr></thead>
+<tbody>
+<tr><td>Rulebooks are 30.9 MB of PNG</td><td>AVIF at 1600 px wide is 0.86 MB for all five (−97%) with fully legible text.</td><td><span class="chip ver">Verified</span></td></tr>
+<tr><td>Every release deletes cached rulebooks</td><td>They live in the versioned cache that <code>activate</code> clears; offline rulebooks break after each update.</td><td><span class="chip ver">Verified</span></td></tr>
+<tr><td>Fragile releases</td><td>Cache-busting depends on an optional local hook that skips merges; the live build a1412cd failed CI on Firefox and deployed anyway; the footer build stamp is 20+ commits stale.</td><td><span class="chip ver">Verified</span></td></tr>
+<tr><td>Fonts are third-party and not offline on first visit</td><td>Google Fonts CSS blocks render for about 0.9 s on mobile and receives every visitor's IP address; fonts are only cached from the second online visit.</td><td><span class="chip ver">Verified</span></td></tr>
+<tr><td>Security headers don't exist in production</td><td>GitHub Pages sends no CSP, frame or nosniff headers; the app is not on Netlify, so <code>netlify.toml</code> is misleading.</td><td><span class="chip ver">Verified</span></td></tr>
+<tr><td>Analytics hygiene and privacy</td><td>No <code>data-domains</code>, so development and CI loads are counted; full URL including hash is sent; no privacy notice.</td><td><span class="chip ver">Verified</span></td></tr>
+<tr><td>Link previews are a tiny square</td><td>og:image is the 512 px icon with <code>summary</code> cards; no robots.txt, sitemap or structured data.</td><td><span class="chip ver">Verified</span></td></tr>
+<tr><td>One 2,700-line global script</td><td>99 top-level functions, 66 top-level variables, 61% of CSS unused after exercising the whole UI, 96 selectors defined more than once.</td><td><span class="chip ver">Verified</span></td></tr>
+</tbody></table></div>
+
+<h2 id="recs"><span class="n">4</span>Prioritized recommendations</h2>
+
+<p>Ranked by user impact, then by evidence strength. Complexity: S is under a day, M is a few days, L is a week or more, for one developer.</p>
+
+<div class="tbl wide"><table>
+<thead><tr><th>#</th><th>Recommendation</th><th>User benefit</th><th>Product benefit</th><th>Cx</th><th>Risks and dependencies</th><th>Success measure</th></tr></thead>
+<tbody>
+<tr><td class="num">R1</td><td><strong>Data safety.</strong> Record ids and ISO timestamps with migration; cross-tab sync via the storage event; saves that report failure and roll back; undo that cannot race a dialog; request persistent storage; namespaced keys.</td><td>Play history can no longer vanish or be corrupted.</td><td>Trust is the foundation for every later feature.</td><td>M</td><td>Migration must read every historical record shape; key rename needs a one-time copy.</td><td>Zero data-loss repros in the e2e suite; persisted() true after first save.</td></tr>
+<tr><td class="num">R2</td><td><strong>Reliable releases.</strong> Deploy Pages from a GitHub Actions workflow that runs the tests first and derives the cache name and footer stamp from the commit; delete the hook.</td><td>Users always get working, current code.</td><td>No more failed builds in production.</td><td>S</td><td>Requires switching Pages to the Actions source.</td><td>Every deploy has a green test run; stamp matches the deployed SHA.</td></tr>
+<tr><td class="num">R3</td><td><strong>Rulebooks that load.</strong> Re-export the Crag image; serve AVIF/WebP at 1600 px with PNG fallback; keep them in a persistent cache with a “Save all rulebooks for offline” option.</td><td>Rules open in about a second and work offline.</td><td>Removes the heaviest cost of the app.</td><td>S</td><td>Needs the original Crag artwork.</td><td>Rulebook bytes under 1 MB total; offline rulebook test passes after an update.</td></tr>
+<tr><td class="num">R4</td><td><strong>Complete, correct, in-context rules.</strong> Merge the compiled FAQ (54 new entries, fixes for the conflicts), add Scenario 13/14 sections, show authority badges, and open the FAQ filtered to the current pair and scenario.</td><td>Answers in seconds, offline, at the table.</td><td>The app becomes the reference players recommend.</td><td>M</td><td>Paraphrase forum rulings with links and credit.</td><td>Share of missions where the FAQ is opened; fewer abandoned missions after a FAQ view.</td></tr>
+<tr><td class="num">R5</td><td><strong>SYZYGY to the rulebook.</strong> Implement the state graphs already specified (Mode I 1-2-2-1 with retry, Mode II pyramid), player-chosen bench, elimination, correct ranks; v2 campaign schema.</td><td>Campaigns resolve correctly with no bookkeeping.</td><td>Removes the most visible correctness failure.</td><td>M</td><td>Needs the owner's sign-off as a rules change; v1 campaigns can't be converted.</td><td>All 29 terminal sequences in the spec pass as tests.</td></tr>
+<tr><td class="num">R6</td><td><strong>Mission Board.</strong> Token-free health, energy and named scenario tracks, with undo, wake lock and reload survival (Concept 1).</td><td>Play anywhere without tokens.</td><td>The defining feature; nothing else offers it.</td><td>L</td><td>Starting values per scenario need permission or user entry.</td><td>Share of loaded missions that open the board; records saved from the board.</td></tr>
+<tr><td class="num">R7</td><td><strong>Collection by item.</strong> Toggle individual scenarios and characters; presets for the free print-and-play starters and standalone wallets.</td><td>Draws only what you can play.</td><td>Serves the large print-and-play segment.</td><td>M</td><td>Stats scope must follow the new model.</td><td>Re-roll-after-randomize rate falls.</td></tr>
+<tr><td class="num">R8</td><td><strong>Pairing Lab and Gauntlet.</strong> Insights from your own log and a fixed-team run (Concept 3).</td><td>Feeds the hobby engaged players love most.</td><td>Reason to log every play and come back.</td><td>M</td><td>Needs R1 ids; meaningful only past about 20 records.</td><td>Return visits per week among users with 20+ records.</td></tr>
+<tr><td class="num">R9</td><td><strong>Measure what matters, privately.</strong> A dozen anonymous Umami events, a domain filter, an error handler that reports through events, and a short privacy notice.</td><td>Transparency about what is collected.</td><td>Every later decision can be validated.</td><td>S</td><td>Keep the promise: no free text, no record contents.</td><td>Event coverage for every roadmap metric.</td></tr>
+<tr><td class="num">R10</td><td><strong>Faster, private first load.</strong> Self-hosted, precached font subsets; <code>defer</code> on app.js; a minimal build for minification and hashed filenames.</td><td>Faster start, fonts offline from the first visit.</td><td>Removes a third-party IP leak.</td><td>S–M</td><td>A build step changes the contribution workflow.</td><td>Mobile Lighthouse 97+; no Google requests.</td></tr>
+<tr><td class="num">R11</td><td><strong>Install and share properly.</strong> Complete manifest (id, screenshots, shortcuts), an install prompt and iOS hint, a 1200×630 preview image, robots.txt, JSON-LD for the app and FAQ.</td><td>Installs like a native app; links look good.</td><td>Better discovery in a word-of-mouth community.</td><td>S</td><td>robots.txt needs a domain root (see R12).</td><td>Installs (standalone sessions) and referral visits.</td></tr>
+<tr><td class="num">R12</td><td><strong>Own the origin.</strong> A custom domain on a host with real headers, or delete <code>netlify.toml</code>.</td><td>Data isolated from other projects.</td><td>Real CSP and frame headers; removes the hide-until-script workaround.</td><td>S–M</td><td>Moving origins strands localStorage: needs an export/import handoff.</td><td>Security headers present; migration completion rate.</td></tr>
+<tr><td class="num">R13</td><td><strong>Teach mode and setup checklists</strong> (Concept 5).</td><td>New and returning players get going quickly.</td><td>Converts curious visitors into players.</td><td>M</td><td>Setup details per scenario need permission or paraphrase.</td><td>First-session save-record rate.</td></tr>
+<tr><td class="num">R14</td><td><strong>Daily Mission</strong> (Concept 4).</td><td>A shared reason to play today.</td><td>Habit and sharing without any server.</td><td>S–M</td><td>Unvalidated appetite; test as a fake door first.</td><td>Daily active users; share clicks.</td></tr>
+<tr><td class="num">R15</td><td><strong>Modularize the code.</strong> Split app.js into ES modules and unit-test the pure logic; move CSS to a file and dedupe.</td><td>Indirect: fewer regressions.</td><td>Makes Phases 2–3 safe to build.</td><td>M–L</td><td>Do incrementally, behind the e2e suite.</td><td>Unit coverage of randomizer, stats, validation, campaign.</td></tr>
+</tbody></table></div>
+
+<h2 id="concepts"><span class="n">5</span>Feature concepts</h2>
+
+<p>Seven concepts tailored to how Twin Stars is actually played: roll two character dice, place them one at a time, check the scenario's combo icons, reduce one die and re-roll the other when there's no combo, spend energy on re-rolls, pass skill checks, and track health, energy and one to three scenario-specific tracks.</p>
+
+<div class="concept">
+  <h3>1. Mission Board: the table in your hand <span class="chip evi">Evidence</span></h3>
+  <dl>
+    <dt>What it does</dt><dd>When a mission starts, the mission card becomes a board. Large counters for each character's health (labelled Primary and Secondary), a shared energy pool preset from the chosen difficulty, and up to four named scenario tracks (for example “Base precision” and “Precision” drawn as visibly different markers). Every change is undoable. The screen stays awake. It survives a reload. Reaching zero health offers “Record Loss”; the win condition offers “Record Win” with the time pre-filled.</dd>
+    <dt>Why players want it</dt><dd>It replaces the paperclips, cubes and sticky notes players complain about, on exactly the cramped, wobbly surfaces they describe.</dd>
+    <dt>Why it's distinctive</dt><dd>No other tool does this; generic counter apps don't know Twin Stars' tracks or difficulty values.</dd>
+    <dt>Design notes</dt><dd>One-handed bottom zone for the most frequent controls. It must never automate decisions: players value choosing which die goes where. Safest data approach until Button Shy agrees: users enter starting values once per scenario and the app remembers them.</dd>
+  </dl>
+</div>
+
+<div class="concept">
+  <h3>2. Rules Oracle: answers for the cards on your table <span class="chip evi">Evidence</span></h3>
+  <dl>
+    <dt>What it does</dt><dd>One offline search box over the FAQ and (with permission) the rulebook text. When a mission is loaded it opens pre-filtered to these two characters, this scenario and general rules. Each answer carries an authority badge (Designer ruling, Designer-approved, Community, Disputed) and a link to its source thread. A short “commonly missed” list per scenario surfaces the rulings players most often get wrong.</dd>
+    <dt>Why players want it</dt><dd>Rules confusion is the strongest pain in the evidence, and the review that named it said the online lookup is the problem.</dd>
+    <dt>Why it's distinctive</dt><dd>The official FAQ page covers three scenarios and one character; fan FAQs are scattered across forum threads and a wiki. This would be the single, offline, contextual reference.</dd>
+  </dl>
+</div>
+
+<div class="concept">
+  <h3>3. Pairing Lab and the Gauntlet <span class="chip evi">Evidence</span></h3>
+  <dl>
+    <dt>What it does</dt><dd>From your own log: win rate per pair, a pair-by-scenario heat map, “pairs you've never beaten”, “your best team for this scenario”, and how Primary/Secondary order changes results. Gauntlet mode locks one pair and serves every owned scenario in turn with a progress strip, ending in a summary you can share as text.</dd>
+    <dt>Why players want it</dt><dd>Engaged players describe pairing as the game's “astonishingly deep meta-game”, and one already plays fixed teams through every scenario by hand.</dd>
+    <dt>Why it's distinctive</dt><dd>Generic loggers can't model pair, order, scenario, difficulty and droid together. The app already holds the data.</dd>
+    <dt>Lower-risk alternative to a combo calculator</dt><dd>Computing combo odds from card icon layouts would need a transcription of every card, which is core game data. Learning from the player's own results needs nothing from the cards.</dd>
+  </dl>
+</div>
+
+<div class="concept">
+  <h3>4. Daily Mission <span class="chip spe">Speculative</span></h3>
+  <dl>
+    <dt>What it does</dt><dd>Every day, every player gets the same pair, scenario and difficulty, chosen deterministically from the date and limited to content in the core series. Players log the result and share a spoiler-free text card (“Twin Stars Daily · Nov 5 · Win · 14:02 · Hard”) to a Discord, a BGG thread or a group chat. A streak counter rewards consistency.</dd>
+    <dt>Why players want it</dt><dd>A shared moment in a solo game, and a reason to play today. Speculative: no player has asked for it.</dd>
+    <dt>Why it's distinctive</dt><dd>Works with no backend and no accounts, because the seed is the date.</dd>
+    <dt>Validate</dt><dd>Ship as a fake door (“Daily Mission, coming soon”) and measure taps before building.</dd>
+  </dl>
+</div>
+
+<div class="concept">
+  <h3>5. Teach Mode and scenario setup cards <span class="chip evi">Evidence</span></h3>
+  <dl>
+    <dt>What it does</dt><dd>A first-run path: start with Escape the Brig, a 60-second turn walkthrough, links to the free official print-and-play starters and rule PDFs. Before any scenario, a setup checklist (dice needed, markers and where they start, whether Primary/Secondary matters here). An optional turn-step rail beside the dice roller reminds players to check combos, reduce before re-rolling, and that reducing below 1 forces the ⚠⚠ action.</dd>
+    <dt>Why players want it</dt><dd>“New player tips?”, setup-video requests and forgotten skill checks are all in the forums.</dd>
+    <dt>Design notes</dt><dd>Dismissible, never blocking. Some players dislike being managed, so it ships behind a toggle.</dd>
+  </dl>
+</div>
+
+<div class="concept">
+  <h3>6. Campaign Map for SYZYGY <span class="chip ver">Verified need</span></h3>
+  <dl>
+    <dt>What it does</dt><dd>The rulebook layouts drawn as an interactive map: Mode I's 1-2-2-1 sections and Mode II's pyramid with win (black) and loss (red) paths. Your three characters' health, the bench choice, carry-over and eliminations are tracked automatically; the rank is computed exactly as the rulebook says.</dd>
+    <dt>Why players want it</dt><dd>SYZYGY needs heavy bookkeeping. Demand is uncertain (five logged plays on BGG), so correctness comes first and the map follows only if usage justifies it.</dd>
+  </dl>
+</div>
+
+<div class="concept">
+  <h3>7. Collection Shelf <span class="chip evi">Evidence</span></h3>
+  <dl>
+    <dt>What it does</dt><dd>A visual inventory of everything published in the series, with how each item was released (wallet, Kickstarter stretch goal, ShyCon exclusive, free print-and-play), what you own down to the single card, and what you are missing. Ownership drives the randomizer, stats and coverage.</dd>
+    <dt>Why players want it</dt><dd>Collectors hunt for droid cards and the ShyCon-only Scenario 13; print-and-play owners have unusual subsets.</dd>
+    <dt>Note</dt><dd>Link only to official sources. A wishlist signal could even help Button Shy judge reprint demand, if they want it.</dd>
+  </dl>
+</div>
+
+<h2 id="future"><span class="n">6</span>The future experience</h2>
+
+<h3>Design direction</h3>
+<p>Keep the identity players already know: the deep-space palette, Orbitron headings and the star-orange and teal accents. Push it toward a <strong>cockpit instrument</strong>: dense, glanceable, tactile. Big numerals for health and energy, physical-feeling counters with a short tick on change (respecting reduced motion), and a quiet chrome that disappears during play. Phone-first and one-handed, because the evidence says play happens in cars and on lap trays.</p>
+
+<h3>Information architecture</h3>
+<div class="tbl"><table>
+<thead><tr><th>Section</th><th>Purpose</th><th>Replaces</th></tr></thead>
+<tbody>
+<tr><td><strong>Play</strong></td><td>Draw a mission, set up, run the Mission Board, record the result. One continuous flow.</td><td>Randomizer tab, dice dialog, timer</td></tr>
+<tr><td><strong>Logbook</strong></td><td>History, Pairing Lab, Gauntlet progress, coverage.</td><td>Mission Log tab, stats, unplayed list</td></tr>
+<tr><td><strong>Campaigns</strong></td><td>SYZYGY maps, and Daily Mission if validated.</td><td>SYZYGY tab</td></tr>
+<tr><td><strong>Rules</strong></td><td>Rules Oracle search, scenario setup cards, rulebooks.</td><td>FAQ and Rulebooks dialogs, Tips</td></tr>
+<tr><td><strong>Shelf</strong></td><td>What you own, backup and restore, settings.</td><td>My Collection dialog, export/import, theme</td></tr>
+</tbody></table></div>
+<p>On phones these become a bottom tab bar, reachable by thumb; the 300 px stacked title collapses to a slim header.</p>
+
+<h3>Core journeys</h3>
+<ol>
+  <li><strong>Returning player, 15 minutes at lunch.</strong> Open the installed app offline, tap Draw, see setup notes, tap Start. Play with the board. On a rules doubt, tap the scenario name and read the filtered ruling. Win; the result and time are pre-filled; one tap saves.</li>
+  <li><strong>New print-and-play owner.</strong> Choose “I have the free starter” on the Shelf, follow Teach Mode through Escape the Brig, and finish a first mission without opening a PDF.</li>
+  <li><strong>Pairing enthusiast.</strong> Open the Pairing Lab, see that a favourite pair has never beaten Confine the Quarks, start a Gauntlet with that pair, and share the summary in the community.</li>
+</ol>
+
+<h2 id="roadmap"><span class="n">7</span>Roadmap</h2>
+
+<div class="phase">
+  <h3>Phase 0: Ship and stabilize (now, about a week)</h3>
+  <p>Merge PR #111 after its CI is green. Then, in parallel: release pipeline (R2), rulebook images (R3), data safety (R1), privacy-safe analytics events and notice (R9). These unblock everything else.</p>
+</div>
+<div class="phase">
+  <h3>Phase 1: Correct and complete (one to two weeks)</h3>
+  <p>FAQ merge and Rules Oracle v1 (R4), SYZYGY to the rulebook once approved (R5), collection by item (R7), fonts and loading (R10), install and share (R11). R4, R7, R10 and R11 can run in parallel; R5 waits for the owner's decision.</p>
+</div>
+<div class="phase">
+  <h3>Phase 2: The defining features (two to four weeks)</h3>
+  <p>Modularize the code first (R15), then Mission Board (R6) and Pairing Lab with Gauntlet (R8) in parallel. The new five-section navigation lands with the Mission Board.</p>
+</div>
+<div class="phase">
+  <h3>Phase 3: Habit and onboarding (validated first)</h3>
+  <p>Teach Mode and setup cards (R13), Campaign Map, Daily Mission (R14) and Collection Shelf, each gated on the fake-door or usage data from Phase 0's events.</p>
+</div>
+<div class="phase">
+  <h3>Phase 4: Research-gated</h3>
+  <p>Custom domain (R12), optional cross-device sync, export to BG Stats or BGG play logging, rules as accessible HTML text, and any card-data features. Each needs either permission from Button Shy or evidence of demand.</p>
+</div>
+
+<h2 id="plan"><span class="n">8</span>Implementation plan</h2>
+
+<p>Discrete tasks that can each be built, tested and verified on their own. All file paths are in the repo root unless noted. “E2E” means a Playwright test running in Chromium, Firefox and WebKit.</p>
+
+<div class="tbl wide"><table>
+<thead><tr><th>ID</th><th>Task</th><th>Files</th><th>Acceptance criteria</th><th>Tests</th><th>Regression risk</th><th>Depends on</th></tr></thead>
+<tbody>
+<tr><td>T0.1</td><td>Merge PR #111</td><td>–</td><td>All CI checks green, including WebKit</td><td>CI</td><td>Low; 294 tests pass locally</td><td>–</td></tr>
+<tr><td>T0.2</td><td>Gated Pages deploy with derived cache name and stamp; remove the hook</td><td><code>.github/workflows/deploy.yml</code> (new), <code>service-worker.js</code>, <code>index.html</code>, <code>.githooks/</code></td><td>Deploy runs only after tests pass; CACHE and footer show the deployed SHA</td><td>Dry-run on a branch; verify the live stamp</td><td>Pages source switch</td><td>T0.1</td></tr>
+<tr><td>T0.3</td><td>Re-export Crag rulebook; AVIF/WebP/PNG <code>&lt;picture&gt;</code> at 1600 px; persistent <code>rules-v1</code> cache; “Save all for offline”</td><td><code>rules/</code>, <code>index.html</code>, <code>app.js</code>, <code>service-worker.js</code></td><td>Every image fully decodes; total under 1 MB; rulebooks work offline after an update</td><td>E2E: decode check, offline after SW update (kill server)</td><td>Zoom legibility</td><td>Original Crag art</td></tr>
+<tr><td>T0.4</td><td>Record ids and ISO timestamps with migration; schema version</td><td><code>app.js</code> (store, validation, sort, merge)</td><td>All historical shapes load; sort by time; merge dedupes by id</td><td>Unit + E2E with fixtures of every past shape</td><td>High: touches every record path</td><td>T0.1</td></tr>
+<tr><td>T0.5</td><td>Cross-tab sync and read-modify-write saves</td><td><code>app.js</code></td><td>Two-tab repro keeps all records and campaign progress</td><td>E2E with two pages</td><td>Medium</td><td>T0.4</td></tr>
+<tr><td>T0.6</td><td>Failing saves report and roll back; error toasts can't be replaced; persistent banner with Export</td><td><code>app.js</code>, <code>index.html</code></td><td>Quota-exceeded repro shows the error and leaves data unchanged</td><td>E2E with a stubbed setItem that throws</td><td>Low</td><td>T0.4</td></tr>
+<tr><td>T0.7</td><td>Undo can't race dialogs (ids, hide toast while modal open)</td><td><code>app.js</code></td><td>Delete-then-edit-then-undo repro edits the right record</td><td>E2E</td><td>Low</td><td>T0.4</td></tr>
+<tr><td>T0.8</td><td>Request persistent storage; namespace keys with one-time copy; clamp timer segments; validate before save</td><td><code>app.js</code>, <code>head.js</code></td><td>persisted() requested after first save; old keys migrated once; no negative playtime</td><td>E2E incl. clock-change fake</td><td>Medium: key migration</td><td>T0.4</td></tr>
+<tr><td>T0.9</td><td>Umami events, domain filter, error reporting, privacy notice</td><td><code>index.html</code>, <code>app.js</code>, <code>README.md</code></td><td>Events fire for each roadmap metric with no free text; no localhost hits</td><td>E2E with Umami stub</td><td>Low</td><td>–</td></tr>
+<tr><td>T1.1</td><td>Merge compiled FAQ: 54 entries, fix conflicts, Scenario 13/14, authority badges, source links</td><td><code>index.html</code> (#faqModal) or a new <code>faq.json</code></td><td>Every entry from the merged FAQ present; conflicts resolved per designer rulings</td><td>E2E: anchors exist for every character and scenario</td><td>Low</td><td>Owner review</td></tr>
+<tr><td>T1.2</td><td>Rules Oracle v1: offline search and mission-filtered view</td><td><code>app.js</code>, <code>index.html</code></td><td>Loading a mission opens rulings for its pair and scenario first; search finds terms offline</td><td>E2E</td><td>Low</td><td>T1.1</td></tr>
+<tr><td>T1.3</td><td>SYZYGY v2 per the specification</td><td><code>app.js</code> (campaign), <code>index.html</code></td><td>All 29 terminal sequences produce the specified ranks; elimination and chosen bench work</td><td>Unit (state graph) + E2E</td><td>Medium; v1 campaigns offered abandon or read-only</td><td>Owner approval</td></tr>
+<tr><td>T1.4</td><td>Collection by item with starter presets; stats follow ownership with a labelled scope</td><td><code>app.js</code> (packs, randomizer, stats), <code>index.html</code></td><td>Randomizer never draws unowned items; stats state their scope</td><td>Unit (draws) + E2E</td><td>Medium: stats and coverage</td><td>T0.4</td></tr>
+<tr><td>T1.5</td><td>Self-host and precache font subsets; defer app.js</td><td><code>fonts/</code> (new), <code>index.html</code>, <code>service-worker.js</code></td><td>No Google requests; fonts offline on first visit; mobile Lighthouse 95+</td><td>Lighthouse in CI; offline E2E</td><td>Low</td><td>–</td></tr>
+<tr><td>T1.6</td><td>Manifest completion, install prompt, iOS hint, preview image, JSON-LD</td><td><code>manifest.json</code>, <code>index.html</code>, new images</td><td>Installability with no warnings; large link preview</td><td>Lighthouse; manual preview check</td><td>Low</td><td>–</td></tr>
+<tr><td>T2.1</td><td>Split app.js into ES modules; unit-test pure logic; CSS to a file, deduped</td><td><code>app.js</code> → <code>src/*.js</code>, <code>styles.css</code></td><td>E2E suite unchanged and green; unit tests cover randomizer, stats, validation, campaign</td><td>Unit + full E2E</td><td>High, mitigated by tests and small steps</td><td>Phase 1</td></tr>
+<tr><td>T2.2</td><td>Mission Board with undo, wake lock, reload survival, record-from-board; five-section navigation</td><td>New module, <code>index.html</code>, CSS</td><td>A full mission can be played and recorded one-handed at 360 px without tokens</td><td>E2E + usability test with 3–5 players</td><td>Medium: navigation change</td><td>T2.1</td></tr>
+<tr><td>T2.3</td><td>Pairing Lab and Gauntlet</td><td>New module, Logbook UI</td><td>Figures match hand-computed fixtures; Gauntlet progresses through owned scenarios</td><td>Unit + E2E</td><td>Low</td><td>T0.4, T2.1</td></tr>
+<tr><td>T3.x</td><td>Teach Mode, Campaign Map, Daily Mission, Collection Shelf</td><td>New modules</td><td>Each launched only after its validation threshold is met</td><td>Per feature</td><td>Low</td><td>T0.9 data</td></tr>
+</tbody></table></div>
+
+<h2 id="decisions"><span class="n">9</span>Decisions for the owner</h2>
+<ul>
+  <li><strong>SYZYGY rules.</strong> Approve implementing the rulebook logic. Unfinished campaigns from the old logic can't be converted.</li>
+  <li><strong>Permission from Button Shy.</strong> Ask Jason Tagmire about the bundled rulebooks, storing per-card numbers (starting health, energy by difficulty, skill ranges), rules as HTML text, and any card-icon data. No fan-content policy exists publicly. Until then, the plan uses user-entered values and links.</li>
+  <li><strong>Names to verify against the physical cards.</strong> “Striker” or “Ztriker”, and the Scenario 13 characters “Feth Doriet” and “Pummtoggs”.</li>
+  <li><strong>Combination count.</strong> Show ordered (current), unordered (as on the box), or both.</li>
+  <li><strong>Hosting.</strong> Move to a custom domain with real headers, or remove <code>netlify.toml</code>.</li>
+  <li><strong>Moonset.</strong> It reimplements the rules; support it separately, or state that it isn't supported.</li>
+</ul>
+
+<hr>
+
+<h2 id="tonight"><span class="n">A</span>Tonight's UX/UI work</h2>
+
+<p>The audit and remediation requested earlier tonight is complete and open as PR #111. Three specialists worked in parallel (visual design system, responsive layout, interaction and accessibility), then two QA passes re-inspected everything and fixed what remained.</p>
+
+<div class="tbl wide"><table>
+<thead><tr><th>Area</th><th>Problem</th><th>What changed</th></tr></thead>
+<tbody>
+<tr><td>Contrast</td><td>Dim text, the primary button and light-theme accents failed WCAG AA; about 70 control borders were under 3:1</td><td>Every token re-tuned and measured in both themes; zero real failures remain</td></tr>
+<tr><td>Theme</td><td>Light-theme users saw the dark theme flash on load</td><td>Saved theme applied before first paint</td></tr>
+<tr><td>Design system</td><td>Ad-hoc sizes, colours and inline styles; inconsistent buttons, inputs, dialogs and toasts</td><td>Shared tokens for colour, type, spacing, radius and shadow; one focus ring; consistent components; controls no longer fall back to Arial</td></tr>
+<tr><td>Phones</td><td>Dialogs cut off and unreachable on short screens; tables scrolled sideways; about 280 targets per width under 44 px; iOS zoomed into inputs</td><td>Bottom-sheet dialogs, cards for every table, 44 px touch targets, 16 px inputs on touch</td></tr>
+<tr><td>Desktop</td><td>A 760 px phone column on a wide screen</td><td>Two-column Randomizer and SYZYGY layouts up to 1120 px</td></tr>
+<tr><td>Keyboard</td><td>Tabs without arrow keys; focus leaking from dialogs; SYZYGY impossible by keyboard; Import unreachable; Unplayed list trapped Tab</td><td>WAI-ARIA tabs, focus-trapped dialogs that restore focus, keyboard-complete SYZYGY and Unplayed list, real Import button</td></tr>
+<tr><td>Screen readers</td><td>No main landmark, headings as paragraphs, 35 identical “Edit record” buttons</td><td>Landmarks, heading hierarchy, distinct names, polite announcements</td></tr>
+<tr><td>Mistakes</td><td>Destructive actions had no undo; Randomize could discard a running game</td><td>Undo for delete, clear, replace, SYZYGY outcomes and abandon; unsaved-game guard</td></tr>
+<tr><td>Bugs</td><td>Timer showed the paused time for up to 2 s after Resume; Flip and ± buttons ignored hidden; iOS drew unreadable filter selects</td><td>Fixed, each with a regression test</td></tr>
+<tr><td>Testing</td><td>Chromium and Firefox only</td><td>WebKit added locally and in CI; about 40 new tests; 294 of 294 pass across three browsers</td></tr>
+</tbody></table></div>
+<p class="small">Scores: 5 / 10 before, 7.5 / 10 after. What still holds it back is in §3.3 and the roadmap.</p>
+
+<h2 id="sources"><span class="n">B</span>Evidence and sources</h2>
+<ul>
+  <li><strong>Product research:</strong> all 84 BoardGameGeek threads (325 posts) for Series I, its scenario wallets, Series II and Series III; BGG ownership, ratings and play counts; 247 collection comments; Button Shy's site and store; web search for competing tools.</li>
+  <li><strong>Merged FAQ:</strong> 95 entries, 54 new to the app, with authority labels and thread links.</li>
+  <li><strong>Logic audit:</strong> 0 critical, 5 high, 7 medium and 12 low findings with reproduction scripts, plus a full SYZYGY specification.</li>
+  <li><strong>Technical audit:</strong> Lighthouse 13.6 (mobile, desktop, slow 3G, live), axe-core, Chrome coverage, offline tests, image re-encoding trials, live header checks.</li>
+  <li><strong>UX audits:</strong> five worker reports with before and after screenshots at seven widths in both themes.</li>
+</ul>
+<p class="small">Limits: no device, usage or retention data exists yet (analytics are pageviews only); the Button Shy Discord and the fan wiki could not be read; real iOS standalone mode and Android install were not tested on devices.</p>
+</main>
+</div>
