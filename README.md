@@ -127,7 +127,9 @@ CI runs on every push and pull request via `.github/workflows/tests.yml`, Chromi
 
 ```
 TwinStarsRando/
-  index.html          ← the entire app (HTML + CSS + JS in one file, ~4800 lines)
+  index.html          ← app markup + CSS (~2700 lines)
+  app.js              ← the app's JavaScript (external so the CSP needs no 'unsafe-inline' for scripts)
+  head.js             ← tiny blocking <head> script: anti-clickjacking frame check
   service-worker.js   ← PWA offline caching
   manifest.json       ← PWA install metadata
   netlify.toml        ← security headers + service worker no-cache config

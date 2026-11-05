@@ -4,6 +4,8 @@ const BASE = self.registration.scope;
 const ASSETS = [
   BASE,
   BASE + "index.html",
+  BASE + "head.js",
+  BASE + "app.js",
   BASE + "manifest.json",
   BASE + "icon-192.png",
   BASE + "icon-512.png"
@@ -37,7 +39,12 @@ self.addEventListener("activate", e => {
 // Fetch — cache-first for app assets; cache-first with network fallback for fonts and rules images
 self.addEventListener("fetch", e => {
   const url = e.request.url;
-  if (url.includes("/rules/")) {
+  const parsed = new URL(url);
+  // Only same-origin requests under this SW's scope + "rules/" — a bare includes("/rules/")
+  // would also match (and cache) cross-origin URLs.
+  const scopePath = new URL(BASE).pathname;
+  if (e.request.method === "GET" && parsed.origin === self.location.origin &&
+      parsed.pathname.startsWith(scopePath + "rules/")) {
     e.respondWith(
       caches.open(CACHE).then(cache =>
         cache.match(e.request).then(cached => {
@@ -65,6 +72,8 @@ self.addEventListener("fetch", e => {
     );
     return;
   }
+  // Non-GET requests (e.g. analytics POSTs) go straight to the network, never the cache.
+  if (e.request.method !== "GET") return;
   e.respondWith(
     caches.match(e.request).then(cached => cached || fetch(e.request))
   );
