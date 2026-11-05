@@ -133,7 +133,7 @@
   function scenarioHTML(name) {
     const num = SCENARIO_NUMBER[name];
     if (!num) return esc(name);
-    return `<span style="color:var(--text-dim)">Scenario ${num}:</span> ${esc(name)}`;
+    return `<span class="text-dim">Scenario ${num}:</span> ${esc(name)}`;
   }
 
   function scenarioText(name) {
@@ -181,9 +181,16 @@
   }
 
   function toggleTheme() {
-    const current = document.documentElement.getAttribute("data-theme") || "dark";
+    const root = document.documentElement;
+    const current = root.getAttribute("data-theme") || "dark";
+    // Switch every surface at once: suppress hover-feedback transitions for this frame so
+    // buttons don't fade between themes while the page background snaps.
+    root.classList.add("theme-switching");
     applyTheme(current === "dark" ? "light" : "dark");
+    void root.offsetHeight;
+    requestAnimationFrame(() => requestAnimationFrame(() => root.classList.remove("theme-switching")));
   }
+
 
   applyTheme(getInitialTheme());
 
@@ -643,7 +650,7 @@ function getCurrentElapsed() {
 
     container.innerHTML = `
       <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">
-        <span style="color:var(--accent-teal);font-weight:700;">${played}</span> of <span style="font-weight:700;">${total}</span> combinations played
+        <strong class="text-teal">${played}</strong> of <strong>${total}</strong> combinations played
       </p>
       <div class="unplayed-grid" id="unplayedGrid"></div>`;
 
@@ -859,15 +866,15 @@ function getCurrentElapsed() {
       html += `<p class="section-heading">Playtime</p>
       <div class="stats-playtime">
         <div class="stats-summary-card">
-          <div class="stats-summary-value" style="font-size:14px;">${formatTime(avg)}</div>
+          <div class="stats-summary-value is-small">${formatTime(avg)}</div>
           <div class="stats-summary-label">Average</div>
         </div>
         <div class="stats-summary-card">
-          <div class="stats-summary-value" style="font-size:14px;">${formatTime(longest)}</div>
+          <div class="stats-summary-value is-small">${formatTime(longest)}</div>
           <div class="stats-summary-label">Longest</div>
         </div>
         <div class="stats-summary-card">
-          <div class="stats-summary-value" style="font-size:14px;">${formatTime(shortest)}</div>
+          <div class="stats-summary-value is-small">${formatTime(shortest)}</div>
           <div class="stats-summary-label">Shortest</div>
         </div>
       </div>`;
@@ -882,15 +889,15 @@ function getCurrentElapsed() {
       html += `<p class="section-heading">Droid Coverage</p>
       <div class="stats-summary">
         <div class="stats-summary-card">
-          <div class="stats-summary-value" style="color:var(--accent-teal);">${combosWithDroid.size}</div>
+          <div class="stats-summary-value">${combosWithDroid.size}</div>
           <div class="stats-summary-label">Combos w/ Droid</div>
         </div>
         <div class="stats-summary-card">
-          <div class="stats-summary-value" style="color:var(--accent-teal);">${totalPlayed > 0 ? coveragePct + "%" : "&#x2014;"}</div>
+          <div class="stats-summary-value">${totalPlayed > 0 ? coveragePct + "%" : "&#x2014;"}</div>
           <div class="stats-summary-label">of Played Combos</div>
         </div>
         <div class="stats-summary-card">
-          <div class="stats-summary-value" style="color:var(--accent-yellow);">${droidRecs.length}</div>
+          <div class="stats-summary-value is-yellow">${droidRecs.length}</div>
           <div class="stats-summary-label">Droid Games</div>
         </div>
       </div>`;
@@ -1824,7 +1831,7 @@ function getCurrentElapsed() {
           ${allChars.map(c => {
             const si = _szChars.indexOf(c);
             const cls = si >= 0 ? " " + selClasses[si + 1] : "";
-            const num = si >= 0 ? `<span style="display:block;font-size:9px;color:var(--accent-orange);margin-top:2px;">${si + 1}</span>` : "";
+            const num = si >= 0 ? `<span class="sz-sel-num">${si + 1}</span>` : "";
             return `<button class="syzygy-char-btn${cls}" data-char="${esc(c)}" aria-pressed="${si >= 0}">${esc(c)}${num}</button>`;
           }).join("")}
         </div>
@@ -1838,7 +1845,7 @@ function getCurrentElapsed() {
         <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;line-height:1.6;">A multi-scenario cooperative campaign. Three characters work together across linked missions with health and resources carrying over between scenarios.</p>
         ${modeHTML}
         ${charHTML}
-        <button class="btn btn-primary" id="szStartBtn"${canStart ? "" : " disabled"} style="${canStart ? "" : "opacity:0.4;"}">Begin Campaign</button>
+        <button class="btn btn-primary" id="szStartBtn"${canStart ? "" : " disabled"}>Begin Campaign</button>
       </div>`;
 
     const sel1 = document.getElementById("szSel1");
@@ -1881,7 +1888,7 @@ function getCurrentElapsed() {
           <div class="syzygy-campaign-title">${modeLabel}</div>
           <div class="syzygy-campaign-meta">Started ${esc(c.started)} · ${c.losses} loss${c.losses !== 1 ? "es" : ""}</div>
         </div>
-        <button class="btn btn-danger" id="szAbandonBtn" style="min-height:36px;padding:8px 14px;font-size:9px;">Abandon</button>
+        <button class="btn btn-danger btn-sm" id="szAbandonBtn">Abandon</button>
       </div>`;
 
     // Path
@@ -1955,7 +1962,7 @@ function getCurrentElapsed() {
           <div class="syzygy-stage-label">${esc(stageLabel)}</div>
           <div class="syzygy-stage-scenario">${scenarioHTML(sc)}</div>
           <div style="font-size:12px;color:var(--text-muted);">Playing: <strong>${playingNames.map(esc).join(" &amp; ")}</strong>${benchedName ? ` · Benched: ${esc(benchedName)} (heals)` : ""}</div>
-          ${c.retrying ? `<div class="notice" style="margin-top:10px;color:var(--loss-color);border-color:rgba(255,68,85,0.3);">Retry — only 3 resource points this attempt</div>` : ""}
+          ${c.retrying ? `<div class="notice notice-danger" style="margin-top:10px;">Retry — only 3 resource points this attempt</div>` : ""}
         </div>`;
 
       // Pre-scenario resources
@@ -2002,16 +2009,16 @@ function getCurrentElapsed() {
           <div class="syzygy-carryover-row">
             <span class="syzygy-carryover-name">${esc(name)}</span>
             <span>❤️</span>
-            <div class="syzygy-stepper" style="gap:3px;">
-              <button class="btn-sz-step" data-ci="${ci}" data-ct="health" data-cd="-1" style="width:24px;height:24px;font-size:13px;"${co.health <= 0 ? " disabled" : ""}>−</button>
-              <span class="sz-step-val" style="font-size:13px;min-width:18px;">${co.health}</span>
-              <button class="btn-sz-step" data-ci="${ci}" data-ct="health" data-cd="1" style="width:24px;height:24px;font-size:13px;">+</button>
+            <div class="syzygy-stepper is-compact">
+              <button class="btn-sz-step" data-ci="${ci}" data-ct="health" data-cd="-1"${co.health <= 0 ? " disabled" : ""}>−</button>
+              <span class="sz-step-val">${co.health}</span>
+              <button class="btn-sz-step" data-ci="${ci}" data-ct="health" data-cd="1">+</button>
             </div>
             <span>⚡</span>
-            <div class="syzygy-stepper" style="gap:3px;">
-              <button class="btn-sz-step" data-ci="${ci}" data-ct="energy" data-cd="-1" style="width:24px;height:24px;font-size:13px;"${co.energy <= 0 ? " disabled" : ""}>−</button>
-              <span class="sz-step-val" style="font-size:13px;min-width:18px;">${co.energy}</span>
-              <button class="btn-sz-step" data-ci="${ci}" data-ct="energy" data-cd="1" style="width:24px;height:24px;font-size:13px;">+</button>
+            <div class="syzygy-stepper is-compact">
+              <button class="btn-sz-step" data-ci="${ci}" data-ct="energy" data-cd="-1"${co.energy <= 0 ? " disabled" : ""}>−</button>
+              <span class="sz-step-val">${co.energy}</span>
+              <button class="btn-sz-step" data-ci="${ci}" data-ct="energy" data-cd="1">+</button>
             </div>
           </div>`;
       }).join("");
