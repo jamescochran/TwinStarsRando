@@ -101,14 +101,6 @@ Any character can be paired with any scenario regardless of pack. Character 1 is
 
 This thing is aggressively simple. One HTML file. No framework. No build step. The only `node_modules` is in `tests/` and it's gitignored.
 
-### First-time setup
-
-After cloning, activate the pre-commit hook that auto-bumps the service worker cache name on every commit:
-
-```sh
-git config core.hooksPath .githooks
-```
-
 ### Testing
 
 Tests live in `tests/` and use [Playwright](https://playwright.dev/). To run locally:
@@ -121,7 +113,18 @@ npm test                                # runs both browsers
 npx playwright test --project=chromium  # or just one
 ```
 
-CI runs on every push and pull request via `.github/workflows/tests.yml`, Chromium, Firefox and WebKit (Safari's engine) each in their own job — running them in one job on a shared runner caused CPU contention that showed up as flaky Firefox failures, so they're isolated.
+CI runs on pull requests and `feature/**` pushes via `.github/workflows/tests.yml`, Chromium, Firefox and WebKit (Safari's engine) each in their own job — running them in one job on a shared runner caused CPU contention that showed up as flaky Firefox failures, so they're isolated. A cheap `build-check` job runs `.github/scripts/check-build-site.sh` to make sure the deploy stamping (below) still matches the current markup.
+
+### Release / deploy
+
+Every push to `main` runs `.github/workflows/deploy.yml`: it calls the full test workflow (all three browsers) and **only if it passes** builds and deploys the site to GitHub Pages. The build step (`.github/scripts/build-site.sh`) copies the static files into `_site/` and injects, for that exact commit:
+
+- the service worker cache name, `twin-stars-<shortsha>-<run number>`, so installed PWAs pick up every deploy;
+- the footer build stamp: UTC build time plus the deployed short SHA, linking to that commit.
+
+Nothing needs bumping by hand and there is no git hook. The repo copies keep human-readable defaults (`twin-stars-dev`, "Development build") so local serving works as-is. For local service-worker testing, use DevTools → Application → "Update on reload", or edit the `CACHE` value locally.
+
+**One-time setup (repository owner):** Settings → Pages → Build and deployment → Source: **GitHub Actions**. Until that is switched, Pages keeps deploying straight from the branch, skipping the tests and the stamping. A manual redeploy is available from the Actions tab (Deploy → Run workflow).
 
 ### Stack
 
@@ -132,14 +135,13 @@ TwinStarsRando/
   head.js             ← tiny blocking <head> script: anti-clickjacking frame check
   service-worker.js   ← PWA offline caching
   manifest.json       ← PWA install metadata
-  netlify.toml        ← security headers + service worker no-cache config
   icon-192.png        ← app icon (192×192)
   icon-512.png        ← app icon (512×512)
   rules/              ← bundled rulebook images (served as static assets)
   tests/              ← Playwright e2e test suite
 ```
 
-**Fonts:** Orbitron (headings) and Exo 2 (body) from Google Fonts. Both are cached by the service worker on first visit — offline looks correct from the second load onward. Falls back to system sans-serif on the first offline load.
+**Fonts:** Orbitron (headings) and Exo 2 (body), self-hosted in `fonts/` as latin (and Exo 2 latin-ext) variable woff2 subsets from Google Fonts, under the SIL Open Font License (`fonts/OFL.txt`). The service worker precaches the latin files, so they render offline from the first visit; nothing is requested from Google.
 
 **Storage:** `localStorage` only. Nothing is ever sent to a server. There is no server.
 
@@ -197,7 +199,11 @@ All user-visible data passes through `esc()` before insertion via `innerHTML`. T
 
 ### Service Worker Cache
 
-The cache name in `service-worker.js` (`twin-stars-YYYY-MM-DD-HHMM`) **must be bumped on every deployment** or installed PWA users will receive stale content indefinitely. The fonts live in a separate persistent `FONTS_CACHE` that survives app cache rotations.
+The cache name in `service-worker.js` must change on every deployment or installed PWA users will receive stale content indefinitely. The deploy workflow does this automatically (`twin-stars-<shortsha>-<run>`, see Release / deploy); don't hand-edit the `const CACHE = "...";` line's format, because the build's `sed` relies on it. Fonts are precached with the app files. (The legacy `FONTS_CACHE` for Google Fonts is no longer written to; it is kept out of the activate cleanup only for older installs and can be removed.)
+
+### Analytics and privacy
+
+Anonymous usage counts go to a self-hosted [Umami](https://umami.is/) instance via the tag in `index.html`, restricted to `jamescochran.github.io` (`data-domains`, so local and CI runs aren't counted), with query strings and hashes stripped and Do Not Track respected. Custom events go through `track(name, data)` in `app.js`, which no-ops when Umami isn't loaded and only passes numbers, booleans and short strings: send fixed labels and counts, never notes, names or other record contents. Uncaught errors are reported as `js_error` (message truncated to 120 characters, file basename, line; at most 3 per page load). The footer's Privacy link explains this to users; keep it accurate when adding events or third parties.
 
 ---
 

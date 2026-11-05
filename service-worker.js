@@ -1,4 +1,4 @@
-const CACHE = "twin-stars-2026-11-05-0129";
+const CACHE = "twin-stars-dev";
 const FONTS_CACHE = "twin-stars-fonts-v1";
 const BASE = self.registration.scope;
 const ASSETS = [
