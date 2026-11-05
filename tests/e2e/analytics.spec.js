@@ -160,11 +160,14 @@ test("rules, radio and SYZYGY start/complete fire clean events", async ({ page }
   await page.locator("#szStartBtn").click();
   expect(await lastEvent(page, "sz_start")).toEqual({ mode: "syzygy1" });
 
-  // Two defeats end the campaign.
-  for (let i = 0; i < 2; i++) await page.locator("#szLossBtn").click();
+  // Two defeats end the campaign (SYZYGY v2: choose who plays, then confirm each defeat).
+  for (let i = 0; i < 2; i++) {
+    await page.locator('[data-player="0"]').click(); await page.locator('[data-player="1"]').click();
+    await page.locator("#szLossBtn").click();
+    await page.locator("#szLossConfirm").click();
+  }
   const done = await lastEvent(page, "sz_complete");
-  expect(done.mode).toBe("syzygy1");
-  expect(typeof done.rank).toBe("string");
+  expect(done).toEqual({ mode: "syzygy1", rank: "GROSKSH'D" });
 
   assertClean(await events(page));
 });

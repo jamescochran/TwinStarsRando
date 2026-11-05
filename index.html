@@ -1997,48 +1997,62 @@
     }
     .syzygy-campaign-meta { font-size: var(--fs-sm); color: var(--text-muted); margin-top: 2px; }
 
-    .syzygy-path {
-      display: flex;
-      align-items: flex-start;
-      gap: 4px;
-      overflow-x: auto;
-      padding-bottom: 4px;
+    /* SYZYGY campaign map: Mode I sections A-D, Mode II Waypoint pyramid.
+       State is carried by text + ✓/✗ marks; colour and border style only reinforce it. */
+    .sz-map { list-style: none; margin: 0; padding: 0; }
+    .sz-map ul { list-style: none; margin: 0; padding: 0; }
+    .sz-map-1 { display: grid; gap: var(--space-2); }
+    .sz-map-row { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: var(--space-2); align-items: stretch; }
+    .sz-map-sec {
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-display); font-size: var(--fs-md); font-weight: 700; color: var(--text-dim);
+      border-right: 1px solid var(--border); padding-right: var(--space-1);
     }
-    .syzygy-path-node {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 4px;
-      min-width: 60px;
+    .sz-map-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: var(--space-2); }
+    .sz-node {
+      position: relative; display: flex; flex-direction: column; gap: 2px; min-width: 0;
+      padding: var(--space-2); border: 1px solid var(--border-glow); border-radius: var(--radius-md);
+      background: var(--bg-card); line-height: var(--lh-tight);
     }
-    .syzygy-path-stage {
-      width: 38px; height: 38px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: 'Orbitron', sans-serif;
-      font-size: var(--fs-label);
-      font-weight: 700;
-      border: 2px solid var(--border);
-      color: var(--text-dim);
-      background: var(--bg-card);
-      flex-shrink: 0;
+    .sz-node-title {
+      font-family: var(--font-display); font-size: var(--fs-label); font-weight: 700;
+      letter-spacing: var(--tracking-tight); text-transform: uppercase; color: var(--text-dim);
     }
-    .syzygy-path-stage { border-color: var(--border-glow); }
-    .syzygy-path-stage.current { border-color: var(--accent-orange); color: var(--accent-orange); background: var(--tint-orange); }
-    .syzygy-path-stage.win     { border-color: var(--accent-teal);   color: var(--accent-teal);   background: var(--tint-teal); }
-    .syzygy-path-stage.loss    { border-color: var(--loss-color);    color: var(--loss-color);    background: var(--tint-loss); }
-    .syzygy-path-label {
-      font-size: var(--fs-label);
-      color: var(--text-muted);
-      letter-spacing: 0.5px;
-      text-align: center;
-      max-width: 62px;
-      line-height: 1.3;
-      word-break: break-word;
-    }
-    .syzygy-path-arrow { color: var(--text-dim); font-size: 16px; flex-shrink: 0; padding-top: 10px; }
+    .sz-node-title { padding-right: 18px; } /* room for the ✓/✗ mark */
+    .sz-node-name  { font-size: var(--fs-sm); color: var(--text-primary); overflow-wrap: anywhere; }
+    .sz-node-state { font-size: var(--fs-xs); color: var(--text-muted); }
+    .sz-node-mark  { position: absolute; top: var(--space-1); right: var(--space-2); font-weight: 700; font-size: var(--fs-md); letter-spacing: 1px; }
+    .sz-node.is-current { border: 2px solid var(--accent-orange); background: var(--tint-orange); }
+    .sz-node.is-current .sz-node-state { color: var(--accent-orange); font-weight: 700; }
+    .sz-node.is-win  { border-color: var(--line-teal); background: var(--tint-teal); }
+    .sz-node.is-win .sz-node-state, .sz-node.is-win .sz-node-mark { color: var(--accent-teal); }
+    .sz-node.is-loss { border-color: var(--line-loss); background: var(--tint-loss); }
+    .sz-node.is-loss .sz-node-state, .sz-node.is-loss .sz-node-mark { color: var(--loss-color); }
+    .sz-node.is-next { border-style: dashed; border-color: var(--accent-teal); }
+    .sz-node.is-next .sz-node-state { color: var(--accent-teal); }
+    .sz-node.is-next-loss { border-color: var(--loss-color); }
+    .sz-node.is-next-loss .sz-node-state { color: var(--loss-color); }
+    .sz-node.is-skipped { background: transparent; border-style: dotted; }
+    .sz-node.is-skipped .sz-node-name { color: var(--text-dim); }
+    .sz-map-2 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); }
+    .sz-pos-S { grid-column: 3; grid-row: 1; }
+    .sz-pos-a { grid-column: 2; grid-row: 2; }
+    .sz-pos-b { grid-column: 3; grid-row: 2; }
+    .sz-pos-x { grid-column: 1; grid-row: 3; }
+    .sz-pos-y { grid-column: 2; grid-row: 3; }
+    .sz-pos-z { grid-column: 3; grid-row: 3; }
+    .sz-end   { grid-row: 4; text-align: center; align-items: center; border-style: dashed; background: transparent; }
+    .sz-end-1 { grid-column: 1; } .sz-end-2 { grid-column: 2; } .sz-end-3 { grid-column: 3; }
+    .sz-end .sz-node-title { font-size: var(--fs-sm); }
+    .sz-mode-req { margin-top: var(--space-2); font-size: var(--fs-xs); color: var(--text-dim); line-height: var(--lh-body); }
+    .sz-set-choice, .sz-player-choice { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: var(--space-2); margin-bottom: var(--space-3); }
+    .sz-next-text { margin-top: var(--space-2); }
+    .sz-switch-btn { margin-top: var(--space-3); width: 100%; white-space: normal; }
+    .sz-elim { border: 0; margin: 0 0 var(--space-2); padding: 0; min-width: 0; }
+    .sz-elim legend { padding: 0; }
+    .sz-elim-option { display: flex; align-items: center; gap: var(--space-2); min-height: 44px; font-size: var(--fs-body); color: var(--text-primary); cursor: pointer; }
+    .sz-elim-option input { width: 20px; height: 20px; accent-color: var(--accent-orange); }
+    .sz-legacy-actions { margin-top: var(--space-3); }
 
     .syzygy-roster {
       display: grid;
@@ -2327,7 +2341,6 @@
     .rules-status:empty { display: none; }
     .rules-status a { color: var(--accent-teal); }
     .diff-mark { font-weight: 700; }
-    .syzygy-path-mark { font-weight: 700; margin-right: 2px; }
     .syzygy-mode-card-check {
       display: block; margin-top: var(--space-2);
       font-family: var(--font-display); font-size: var(--fs-label); font-weight: 700;

@@ -5,12 +5,14 @@ import { test, expect } from "@playwright/test";
 // non-destructive dialog has the same header close control, rulebook tabs stay on one
 // row, and SYZYGY steppers are full touch size on phones.
 
+// A v2 campaign (see syzygy.spec.js) with two players chosen, so all steppers show.
 const SZ_ACTIVE = {
-  mode: "syzygy1", characters: ["Grant Rockgardner", "Roux Jaezmina", "Brenimov-X"], removed: [false, false, false],
-  stage: 0, branchChosen: null, scenarios: ["Confine The Quarks!", "Escape The Brig!", "Steal The Plans!", "Hunt The Bounty!"],
-  carryover: [{ energy: 1, health: 2 }, { energy: 0, health: 0 }, { energy: 2, health: 1 }],
-  alloc: { chars: [{ energy: 1, health: 1 }, { energy: 0, health: 2 }] }, stageResults: [], losses: 0,
-  retrying: false, started: "x", completed: false, finalRank: null,
+  v: 2, mode: "syzygy1", set: "series1", characters: ["Grant Rockgardner", "Roux Jaezmina", "Brenimov-X"], eliminated: [false, false, false],
+  cards: ["Confine The Quarks!", "Escape The Brig!", "Steal The Plans!", "Hunt The Bounty!", "Rule The World!", "Stop The Virus!"],
+  node: 0, card: 0, wins: 0, losses: 0, retry: false, playing: [0, 2],
+  alloc: [{ energy: 1, health: 1 }, { energy: 0, health: 0 }, { energy: 0, health: 2 }],
+  carry: [{ energy: 1, health: 2 }, { energy: 0, health: 0 }, { energy: 2, health: 1 }],
+  results: [], started: "x", completed: false, rank: null,
 };
 
 async function seed(page, extra = {}) {
