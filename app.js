@@ -757,7 +757,7 @@ function getCurrentElapsed() {
     const played = total - unplayed.length;
 
     container.innerHTML = `
-      <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">
+      <p class="panel-intro">
         <strong class="text-teal">${played}</strong> of <strong>${total}</strong> combinations played
       </p>
       <p class="sr-only" id="unplayedHint">Up and down arrow keys move between combinations; Tab leaves the list.</p>
@@ -896,7 +896,7 @@ function getCurrentElapsed() {
       : `${records.length} record${records.length !== 1 ? "s" : ""}`;
 
     if (!displayed.length) {
-      container.innerHTML = `<div class="empty-state"><p>No records match these filters.</p><button type="button" class="btn-clear-filters" id="clearFiltersBtn">Clear Filters</button></div>`;
+      container.innerHTML = `<div class="empty-state"><p>No records match these filters.</p><button type="button" class="btn btn-secondary" id="clearFiltersBtn">Clear Filters</button></div>`;
       document.getElementById("clearFiltersBtn").addEventListener("click", () => {
         ["historyFilterResult", "historyFilterDifficulty", "historyFilterChar", "historyFilterScenario", "historyFilterDroid"]
           .forEach(id => { document.getElementById(id).value = ""; });
@@ -1336,9 +1336,9 @@ function getCurrentElapsed() {
   // ─── Actions ────────────────────────────────────────────────────────────────
   function showEmptyComboState() {
     document.getElementById("combinationDisplay").innerHTML = `
-      <div class="empty-state" style="padding:28px 20px;">
-        <p style="font-size:14px;margin-bottom:8px;">No mission loaded</p>
-        <p>Tap <strong>Randomize Combination</strong> for a random mission,<br>
+      <div class="empty-state combo-empty">
+        <p class="empty-state-title">No mission loaded</p>
+        <p>Tap <strong>Randomize Combination</strong> for a random mission,
            or pick characters and a scenario under <strong>Manual Selection</strong> and tap <strong>Load Mission</strong>.</p>
       </div>`;
   }
@@ -1726,6 +1726,7 @@ function getCurrentElapsed() {
   function _diceApplyMode() {
     const isSkill = _diceMode === "skill";
     document.getElementById("diceModalTitle").textContent = isSkill ? "Skill Check" : "Dice Roller";
+    document.getElementById("diceModalClose").setAttribute("aria-label", isSkill ? "Close Skill Check" : "Close Dice Roller");
     document.getElementById("normalDiceRow").classList.toggle("hidden", isSkill);
     document.getElementById("skillDoneRow").classList.toggle("hidden", !isSkill);
     document.getElementById("diceHint").hidden      = isSkill;
@@ -2190,7 +2191,7 @@ function getCurrentElapsed() {
             return `<button class="syzygy-char-btn${cls}" data-char="${esc(c)}" aria-pressed="${si >= 0}">${esc(c)}${num}</button>`;
           }).join("")}
         </div>
-        <p style="font-size:12px;color:var(--text-muted);text-align:center;margin-bottom:16px;">${_szChars.length} of 3 selected</p>`;
+        <p class="sz-hint">${_szChars.length} of 3 selected</p>`;
     }
 
     const canStart = _szMode && _szChars.length === 3;
@@ -2198,7 +2199,7 @@ function getCurrentElapsed() {
     el.innerHTML = `
       <div class="panel">
         <h2 class="panel-title">SYZYGY Mode</h2>
-        <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;line-height:1.6;">A multi-scenario cooperative campaign. Three characters work together across linked missions with health and resources carrying over between scenarios.</p>
+        <p class="panel-intro">A multi-scenario cooperative campaign. Three characters work together across linked missions with health and resources carrying over between scenarios.</p>
         ${modeHTML}
         ${charHTML}
         ${startHint ? `<p class="sz-hint" id="szStartHint">${startHint}</p>` : ""}
@@ -2303,7 +2304,7 @@ function getCurrentElapsed() {
       html += `
         <div class="panel">
           <h3 class="panel-title syzygy-heading-focus" id="szStageHeading" tabindex="-1">Choose Your Path</h3>
-          <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">Stage A won. Pick the scenario to play next: B or C. You play only the one you choose.</p>
+          <p class="panel-intro">Stage A won. Pick the scenario to play next: B or C. You play only the one you choose.</p>
           <div class="syzygy-branch-cards">
             <button type="button" class="syzygy-branch-card" id="szBranchL">
               <span class="syzygy-branch-tag" style="display:block;">Option B</span>
@@ -2331,8 +2332,8 @@ function getCurrentElapsed() {
             <span class="syzygy-stage-label" style="display:block;">${esc(stageLabel)}</span>
             <span class="syzygy-stage-scenario" style="display:block;">${scenarioHTML(sc)}</span>
           </h3>
-          <div style="font-size:12px;color:var(--text-muted);">Playing: <strong>${playingNames.map(esc).join(" &amp; ")}</strong>${benchedName ? ` · Sitting out: ${esc(benchedName)} (heals)` : ""}</div>
-          ${c.retrying ? `<div class="notice notice-danger" style="margin-top:10px;">Retry after a defeat: only 3 resource points this attempt.</div>` : ""}
+          <div class="syzygy-playing">Playing: <strong>${playingNames.map(esc).join(" &amp; ")}</strong>${benchedName ? ` · Sitting out: ${esc(benchedName)} (heals)` : ""}</div>
+          ${c.retrying ? `<div class="notice notice-danger syzygy-retry-notice">Retry after a defeat: only 3 resource points this attempt.</div>` : ""}
         </div>`;
 
       // Pre-scenario resources
@@ -2343,8 +2344,8 @@ function getCurrentElapsed() {
         return `
           <div class="syzygy-resource-row">
             <div class="syzygy-resource-char">
-              <div style="font-weight:600;">${esc(name)}</div>
-              ${co.energy > 0 || co.health > 0 ? `<div style="font-size:11px;color:var(--text-dim);">Carryover: <span aria-hidden="true">❤️</span><span class="sr-only">health</span> ${co.health} <span aria-hidden="true">⚡</span><span class="sr-only">energy</span> ${co.energy}</div>` : ""}
+              <div class="syzygy-resource-name">${esc(name)}</div>
+              ${co.energy > 0 || co.health > 0 ? `<div class="syzygy-carryover-note">Carryover: <span aria-hidden="true">❤️</span><span class="sr-only">health</span> ${co.health} <span aria-hidden="true">⚡</span><span class="sr-only">energy</span> ${co.energy}</div>` : ""}
             </div>
             <div class="syzygy-resource-controls">
               <span class="sz-step-group"><span class="syzygy-resource-label" aria-hidden="true">❤️</span>
@@ -2366,7 +2367,7 @@ function getCurrentElapsed() {
       html += `
         <div class="panel">
           <h3 class="panel-title">Before the Scenario: Resources</h3>
-          <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">Share <strong>${pool}</strong> bonus points between the playing characters as <span aria-hidden="true">❤️</span> Health or <span aria-hidden="true">⚡</span> Energy. Energy can't go above the maximum shown on the scenario card.</p>
+          <p class="panel-intro">Share <strong>${pool}</strong> bonus points between the playing characters as <span aria-hidden="true">❤️</span> Health or <span aria-hidden="true">⚡</span> Energy. Energy can't go above the maximum shown on the scenario card.</p>
           ${resRows}
           <div class="syzygy-pool-bar">${remaining} point${remaining !== 1 ? "s" : ""} left to share</div>
         </div>`;
@@ -2379,13 +2380,13 @@ function getCurrentElapsed() {
           <div class="syzygy-carryover-row">
             <span class="syzygy-carryover-name">${esc(name)}</span>
             <span class="sz-step-group"><span aria-hidden="true">❤️</span>
-            <div class="syzygy-stepper is-compact syzygy-stepper-compact" role="group" aria-label="${esc(name)} health left over">
+            <div class="syzygy-stepper is-compact" role="group" aria-label="${esc(name)} health left over">
               <button class="btn-sz-step" data-ci="${ci}" data-ct="health" data-cd="-1" aria-label="Remove 1 left-over health from ${esc(name)}"${co.health <= 0 ? " disabled" : ""}>−</button>
               <span class="sz-step-val"><span class="sr-only">Health </span>${co.health}</span>
               <button class="btn-sz-step" data-ci="${ci}" data-ct="health" data-cd="1" aria-label="Add 1 left-over health to ${esc(name)}">+</button>
             </div></span>
             <span class="sz-step-group"><span aria-hidden="true">⚡</span>
-            <div class="syzygy-stepper is-compact syzygy-stepper-compact" role="group" aria-label="${esc(name)} energy left over">
+            <div class="syzygy-stepper is-compact" role="group" aria-label="${esc(name)} energy left over">
               <button class="btn-sz-step" data-ci="${ci}" data-ct="energy" data-cd="-1" aria-label="Remove 1 left-over energy from ${esc(name)}"${co.energy <= 0 ? " disabled" : ""}>−</button>
               <span class="sz-step-val"><span class="sr-only">Energy </span>${co.energy}</span>
               <button class="btn-sz-step" data-ci="${ci}" data-ct="energy" data-cd="1" aria-label="Add 1 left-over energy to ${esc(name)}">+</button>
@@ -2396,7 +2397,7 @@ function getCurrentElapsed() {
       html += `
         <div class="panel">
           <h3 class="panel-title">After the Scenario: Outcome</h3>
-          <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">When the scenario ends, enter each character's left-over <span aria-hidden="true">❤️</span> health and <span aria-hidden="true">⚡</span> energy (they carry over), then record the result.</p>
+          <p class="panel-intro">When the scenario ends, enter each character's left-over <span aria-hidden="true">❤️</span> health and <span aria-hidden="true">⚡</span> energy (they carry over), then record the result.</p>
           ${coRows}
           <div class="syzygy-outcome-btns">
             <button class="btn-sz-win"  id="szWinBtn"><span aria-hidden="true">✓</span> Victory</button>
@@ -2463,8 +2464,8 @@ function getCurrentElapsed() {
 
     const histRows = c.stageResults.map(r =>
       `<tr>
-        <td style="font-size:12px;color:var(--text-muted);">${esc(r.scenario)}</td>
-        <td style="font-size:12px;color:var(--text-muted);">${r.chars.map(i => c.characters[i]).map(esc).join(" &amp; ")}</td>
+        <td class="cell-meta">${esc(r.scenario)}</td>
+        <td class="cell-meta">${r.chars.map(i => c.characters[i]).map(esc).join(" &amp; ")}</td>
         <td><span class="result-pill ${r.result === "Win" ? "win" : "loss"}">${esc(r.result)}</span></td>
       </tr>`
     ).join("");
@@ -2483,7 +2484,7 @@ function getCurrentElapsed() {
           </div>
         </div>
         <h3 class="panel-title" style="margin-bottom:10px;">Characters</h3>
-        <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">${esc(c.characters.join(" · "))}</p>
+        <p class="panel-intro">${esc(c.characters.join(" · "))}</p>
         ${histRows ? `
         <h3 class="section-heading" id="szLogHeading">Campaign Log</h3>
         <div class="history-table-wrap" tabindex="0" role="region" aria-labelledby="szLogHeading">
@@ -2550,6 +2551,7 @@ function getCurrentElapsed() {
   document.getElementById("rulesModal")     .addEventListener("click", e => { if (e.target === e.currentTarget) closeRules(); });
   document.getElementById("settingsBtn")    .addEventListener("click", openSettings);
   document.getElementById("settingsClose")  .addEventListener("click", closeSettings);
+  document.getElementById("settingsDismiss").addEventListener("click", closeSettings);
   document.getElementById("settingsModal")      .addEventListener("click", e => { if (e.target === e.currentTarget) closeSettings(); });
   document.getElementById("restartModal")      .addEventListener("click", e => { if (e.target === e.currentTarget) closeRestartModal(); });
   document.getElementById("confirmModal")      .addEventListener("click", e => { if (e.target === e.currentTarget) closeConfirmModal(); });

@@ -137,3 +137,20 @@ test("Escape on the discard-game dialog keeps the game", async ({ page }) => {
   await expect(page.locator("#discardGameModal")).not.toHaveClass(/open/);
   await expect(page.locator("#manualChar1")).toHaveValue(before);
 });
+
+test("dialog close buttons say which dialog they close", async ({ page }) => {
+  await seed({})(page);
+  await page.goto("/");
+  await page.locator("#tipsTriggerBtn").click();
+  await expect(page.getByRole("button", { name: "Close Tips" })).toBeFocused();
+  await page.keyboard.press("Escape");
+  await page.locator("#rulesBtn").click();
+  await expect(page.getByRole("button", { name: "Close Rulebooks" })).toBeFocused();
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: /Randomize Combination/i }).click();
+  await page.locator("#combinationDisplay .btn-faq-inline").first().click();
+  await expect(page.getByRole("button", { name: "Close Rules FAQ" })).toBeFocused();
+  await page.keyboard.press("Escape");
+  await page.locator("#settingsBtn").click();
+  await expect(page.getByRole("button", { name: "Close My Collection" })).toBeVisible();
+});
