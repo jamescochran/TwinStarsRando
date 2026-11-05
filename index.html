@@ -1233,7 +1233,7 @@
     .die.locked[data-val="6"] .d1, .die.locked[data-val="6"] .d3, .die.locked[data-val="6"] .d4, .die.locked[data-val="6"] .d6, .die.locked[data-val="6"] .d7, .die.locked[data-val="6"] .d9
     { background: var(--die-locked); }
     /* Skill check dice — white with black pips */
-    .dice-modal-skill .die { background: #f5f5f5; border-color: #bbb; cursor: default; }
+    .dice-modal-skill .die { background: #f5f5f5; border-color: var(--border-control); cursor: default; }
     .dice-modal-skill .die[data-val="1"] .d5,
     .dice-modal-skill .die[data-val="2"] .d3, .dice-modal-skill .die[data-val="2"] .d7,
     .dice-modal-skill .die[data-val="3"] .d3, .dice-modal-skill .die[data-val="3"] .d5, .dice-modal-skill .die[data-val="3"] .d7,
@@ -1242,7 +1242,7 @@
     .dice-modal-skill .die[data-val="6"] .d1, .dice-modal-skill .die[data-val="6"] .d3, .dice-modal-skill .die[data-val="6"] .d4, .dice-modal-skill .die[data-val="6"] .d6, .dice-modal-skill .die[data-val="6"] .d7, .dice-modal-skill .die[data-val="6"] .d9
     { background: #1a1a1a; }
     /* Override teal-locked dots when in skill mode (shouldn't happen, but safety) */
-    .dice-modal-skill .die.locked { border-color: #bbb; box-shadow: none; }
+    .dice-modal-skill .die.locked { border-color: var(--border-control); box-shadow: none; }
     @keyframes diceShake {
       0%   { transform: rotate(0deg) scale(1); }
       20%  { transform: rotate(-14deg) scale(0.93); }
@@ -2349,6 +2349,7 @@
       details.faq-item summary { padding-top: 13px; padding-bottom: 13px; }
       details.faq-item summary::after { top: 15px; }
       .btn-tip-dismiss { min-height: 44px; }
+      .toast-action { min-height: 44px; }
     }
     /* Tablets (table layout + 44px edit/delete): tighter cell padding so the log fits */
     @media (pointer: coarse) and (min-width: 720px) and (max-width: 1023px) {
