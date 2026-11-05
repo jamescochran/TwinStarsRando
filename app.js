@@ -602,6 +602,7 @@ function getCurrentElapsed() {
           </table>
         </div>
       </div>`;
+    restoreTableRoles(div);
 
     // Property assignment (not addEventListener): this runs on every render.
     div.onclick = e => {
@@ -1881,10 +1882,11 @@ function getCurrentElapsed() {
           <div class="syzygy-campaign-title">${modeLabel}</div>
           <div class="syzygy-campaign-meta">Started ${esc(c.started)} · ${c.losses} loss${c.losses !== 1 ? "es" : ""}</div>
         </div>
-        <button class="btn btn-danger" id="szAbandonBtn" style="min-height:36px;padding:8px 14px;font-size:9px;">Abandon</button>
+        <button class="btn btn-danger btn-compact" id="szAbandonBtn">Abandon</button>
       </div>`;
 
     // Path
+    html += `<div class="sz-layout"><div class="sz-layout-status">`;
     html += `<div class="panel"><p class="panel-title">Campaign Path</p><div class="syzygy-path">`;
     if (c.mode === "syzygy1") {
       const stageDefs = [
@@ -1922,6 +1924,7 @@ function getCurrentElapsed() {
       html += `<div class="syzygy-char-card ${cardClass}"><div class="syzygy-char-name">${esc(name)}</div><div class="syzygy-char-role ${roleClass}">${esc(roleText)}</div>${coText ? `<div class="syzygy-char-carryover">${esc(coText)}</div>` : ""}</div>`;
     });
     html += `</div></div>`;
+    html += `</div><div class="sz-layout-stage">`;
 
     // Branch choice (SYZYGY I stage 1 only, before branch is picked)
     if (c.mode === "syzygy1" && c.stage === 1 && c.branchChosen === null) {
@@ -1970,18 +1973,18 @@ function getCurrentElapsed() {
               ${co.energy > 0 || co.health > 0 ? `<div style="font-size:11px;color:var(--text-dim);">Carryover: ❤️ ${co.health} ⚡ ${co.energy}</div>` : ""}
             </div>
             <div class="syzygy-resource-controls">
-              <span class="syzygy-resource-label">❤️</span>
+              <span class="sz-step-group"><span class="syzygy-resource-label">❤️</span>
               <div class="syzygy-stepper">
                 <button class="btn-sz-step" data-ai="${i}" data-t="health" data-d="-1"${a.health <= 0 ? " disabled" : ""}>−</button>
                 <span class="sz-step-val">${a.health}</span>
                 <button class="btn-sz-step" data-ai="${i}" data-t="health" data-d="1"${remaining <= 0 ? " disabled" : ""}>+</button>
-              </div>
-              <span class="syzygy-resource-label">⚡</span>
+              </div></span>
+              <span class="sz-step-group"><span class="syzygy-resource-label">⚡</span>
               <div class="syzygy-stepper">
                 <button class="btn-sz-step" data-ai="${i}" data-t="energy" data-d="-1"${a.energy <= 0 ? " disabled" : ""}>−</button>
                 <span class="sz-step-val">${a.energy}</span>
                 <button class="btn-sz-step" data-ai="${i}" data-t="energy" data-d="1"${remaining <= 0 ? " disabled" : ""}>+</button>
-              </div>
+              </div></span>
             </div>
           </div>`;
       }).join("");
@@ -2001,18 +2004,18 @@ function getCurrentElapsed() {
         return `
           <div class="syzygy-carryover-row">
             <span class="syzygy-carryover-name">${esc(name)}</span>
-            <span>❤️</span>
-            <div class="syzygy-stepper" style="gap:3px;">
-              <button class="btn-sz-step" data-ci="${ci}" data-ct="health" data-cd="-1" style="width:24px;height:24px;font-size:13px;"${co.health <= 0 ? " disabled" : ""}>−</button>
-              <span class="sz-step-val" style="font-size:13px;min-width:18px;">${co.health}</span>
-              <button class="btn-sz-step" data-ci="${ci}" data-ct="health" data-cd="1" style="width:24px;height:24px;font-size:13px;">+</button>
-            </div>
-            <span>⚡</span>
-            <div class="syzygy-stepper" style="gap:3px;">
-              <button class="btn-sz-step" data-ci="${ci}" data-ct="energy" data-cd="-1" style="width:24px;height:24px;font-size:13px;"${co.energy <= 0 ? " disabled" : ""}>−</button>
-              <span class="sz-step-val" style="font-size:13px;min-width:18px;">${co.energy}</span>
-              <button class="btn-sz-step" data-ci="${ci}" data-ct="energy" data-cd="1" style="width:24px;height:24px;font-size:13px;">+</button>
-            </div>
+            <span class="sz-step-group"><span>❤️</span>
+            <div class="syzygy-stepper syzygy-stepper-compact">
+              <button class="btn-sz-step" data-ci="${ci}" data-ct="health" data-cd="-1"${co.health <= 0 ? " disabled" : ""}>−</button>
+              <span class="sz-step-val">${co.health}</span>
+              <button class="btn-sz-step" data-ci="${ci}" data-ct="health" data-cd="1">+</button>
+            </div></span>
+            <span class="sz-step-group"><span>⚡</span>
+            <div class="syzygy-stepper syzygy-stepper-compact">
+              <button class="btn-sz-step" data-ci="${ci}" data-ct="energy" data-cd="-1"${co.energy <= 0 ? " disabled" : ""}>−</button>
+              <span class="sz-step-val">${co.energy}</span>
+              <button class="btn-sz-step" data-ci="${ci}" data-ct="energy" data-cd="1">+</button>
+            </div></span>
           </div>`;
       }).join("");
 
@@ -2028,6 +2031,7 @@ function getCurrentElapsed() {
         </div>`;
     }
 
+    html += `</div></div>`;
     el.innerHTML = html;
 
     // Events
@@ -2113,6 +2117,7 @@ function getCurrentElapsed() {
         </div>` : ""}
         <button class="btn btn-primary" id="szNewCampaignBtn" style="margin-top:16px;">Start New Campaign</button>
       </div>`;
+    restoreTableRoles(el);
 
     document.getElementById("szNewCampaignBtn").addEventListener("click", () => {
       _sz = null; _szMode = null; _szChars = [];

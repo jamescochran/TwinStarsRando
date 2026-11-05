@@ -549,11 +549,11 @@
     .td-scenario { color: var(--accent-teal); font-size: 12px; }
     .td-time     { color: var(--text-muted); font-size: 12px; white-space: nowrap; }
 
-    /* Phones: the 7-column Mission Log would be ~740px wide, hiding Result and the
-       edit/delete buttons off-screen. Below 560px each record becomes a stacked card.
+    /* Phones and landscape phones: the 7-column Mission Log needs ~680px, hiding Result and
+       the edit/delete buttons off-screen. Below 720px each record becomes a stacked card.
        (Table roles are restored from JS — see restoreTableRoles — because display
        overrides remove native table semantics.) */
-    @media (max-width: 560px) {
+    @media (max-width: 719px) {
       #historyTableContainer table,
       #historyTableContainer tbody { display: block; min-width: 0; }
       #historyTableContainer thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
@@ -582,11 +582,53 @@
       #historyTableContainer tbody tr:not(.notes-row) td:nth-child(7) { grid-area: act; justify-self: end; }
       #historyTableContainer tbody tr.notes-row { display: block; padding: 0 2px 12px; margin-top: -6px; }
       #historyTableContainer tbody tr.notes-row td { padding: 0; }
-      /* Per-combination history (5 columns) just needs to fit */
-      #comboHistory table { min-width: 0; }
-      #comboHistory td, #comboHistory th { padding-left: 4px; padding-right: 4px; }
-      #comboHistory .td-nowrap { white-space: normal; }
-      #comboHistory .result-pill, #comboHistory .diff-pill { padding: 3px 7px; letter-spacing: 0; }
+      #historyTableContainer tbody tr:not(.notes-row) td:nth-child(6)::before { content: "Time "; color: var(--text-dim); }
+      #historyTableContainer tbody tr:not(.notes-row) td:nth-child(7) { margin: -8px 0; }
+
+      /* Per-combination history (5 columns): same card treatment */
+      #comboHistory table,
+      #comboHistory tbody { display: block; min-width: 0; }
+      #comboHistory thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+      #comboHistory tbody tr {
+        display: grid;
+        grid-template-columns: auto auto 1fr auto;
+        grid-template-areas:
+          "date date date act"
+          "res  diff time time";
+        gap: 6px 8px;
+        align-items: center;
+        padding: 10px 2px;
+        border-top: 1px solid var(--border);
+      }
+      #comboHistory tbody tr:first-child { border-top: none; }
+      #comboHistory tbody tr:hover td { background: none; }
+      #comboHistory tbody td { display: block; padding: 0; border: 0; }
+      #comboHistory tbody td:nth-child(1) { grid-area: date; }
+      #comboHistory tbody td:nth-child(2) { grid-area: res; }
+      #comboHistory tbody td:nth-child(3) { grid-area: diff; }
+      #comboHistory tbody td:nth-child(4) { grid-area: time; justify-self: end; }
+      #comboHistory tbody td:nth-child(4)::before { content: "Time "; color: var(--text-dim); }
+      #comboHistory tbody td:nth-child(5) { grid-area: act; justify-self: end; margin: -8px 0; }
+
+      /* SYZYGY campaign log (3 columns): scenario + result on top, characters below */
+      #syzygyCampaignContent table,
+      #syzygyCampaignContent tbody { display: block; min-width: 0; }
+      #syzygyCampaignContent thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+      #syzygyCampaignContent tbody tr {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        grid-template-areas: "scen res" "chars chars";
+        gap: 4px 10px;
+        align-items: center;
+        padding: 10px 2px;
+        border-top: 1px solid var(--border);
+      }
+      #syzygyCampaignContent tbody tr:first-child { border-top: none; }
+      #syzygyCampaignContent tbody tr:hover td { background: none; }
+      #syzygyCampaignContent tbody td { display: block; padding: 0; border: 0; }
+      #syzygyCampaignContent tbody td:nth-child(1) { grid-area: scen; }
+      #syzygyCampaignContent tbody td:nth-child(2) { grid-area: chars; }
+      #syzygyCampaignContent tbody td:nth-child(3) { grid-area: res; justify-self: end; }
     }
 
     /* Section heading */
@@ -1099,6 +1141,7 @@
     .tips-content {
       max-height: 65vh;
       overflow-y: auto;
+      text-align: left;
     }
     .tips-section-heading {
       font-size: 11px;
@@ -1538,8 +1581,9 @@
       gap: 10px;
       margin-bottom: 18px;
     }
+    /* Narrow phones keep three columns (a 2-column grid left an orphan third card) */
     @media (max-width: 380px) {
-      .stats-summary { grid-template-columns: 1fr 1fr; }
+      .stats-summary { gap: 6px; }
     }
     .stats-summary-card {
       background: var(--bg-card);
@@ -1569,7 +1613,9 @@
       margin-bottom: 18px;
     }
     @media (max-width: 380px) {
-      .stats-playtime { grid-template-columns: 1fr 1fr; }
+      .stats-playtime { gap: 6px; }
+      .stats-summary-card { padding: 10px 4px; }
+      .stats-summary-label { letter-spacing: 0.5px; }
     }
 
     /* ─── SYZYGY Campaign ────────────────────────────────────────────────── */
@@ -1930,6 +1976,200 @@
       flex-wrap: wrap;
     }
     .syzygy-carryover-name { min-width: 90px; font-weight: 600; color: var(--text-primary); }
+    /* ─── Responsive layout ──────────────────────────────────────────────────
+       Consolidated layout rules for phones, landscape phones, touch devices and
+       wide desktops. Component looks live above; this block only sizes and
+       arranges them. */
+
+    /* Notched phones in landscape (viewport-fit=cover): keep content out of the cut-outs */
+    .app-shell {
+      padding-left:  max(16px, env(safe-area-inset-left, 0px));
+      padding-right: max(16px, env(safe-area-inset-right, 0px));
+    }
+
+    /* Compact button variant (replaces inline sizing on Rulebooks Close / SYZYGY Abandon) */
+    .btn-compact { min-height: 36px; padding: 8px 14px; font-size: 9px; }
+
+    /* Combo card: keep each role label with its character name, wrap as whole units */
+    .combo-characters { display: flex; flex-wrap: wrap; align-items: flex-end; row-gap: 8px; }
+    .combo-char-wrap  { display: inline-block; }
+    .combo-vs         { line-height: 1.6; }
+    @media (max-width: 480px) {
+      .combo-characters { flex-direction: column; align-items: flex-start; }
+      /* Stacked: the role labels already pair them; keep "&" for screen readers only */
+      .combo-vs { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+    }
+
+    /* SYZYGY steppers: a label + stepper pair never splits across lines */
+    .sz-step-group { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+    .syzygy-resource-controls { gap: 8px 14px; }
+    .syzygy-stepper-compact { gap: 3px; }
+    .syzygy-stepper-compact .btn-sz-step { width: 28px; height: 28px; font-size: 13px; }
+    .syzygy-stepper-compact .sz-step-val { font-size: 13px; min-width: 18px; }
+    .syzygy-carryover-row { gap: 6px 14px; }
+    @media (max-width: 480px) {
+      .syzygy-resource-row { flex-direction: column; align-items: stretch; gap: 8px; }
+      .syzygy-resource-controls { justify-content: space-between; }
+      .syzygy-carryover-row { justify-content: space-between; }
+      .syzygy-carryover-name { flex-basis: 100%; }
+    }
+
+    /* Narrow phones: tabs and toolbar labels on one line */
+    @media (max-width: 420px) {
+      .tab-btn { letter-spacing: 1px; padding: 8px 4px; }
+      .history-actions .btn, .history-actions .import-label { letter-spacing: 0.5px; padding: 12px 4px; white-space: nowrap; }
+    }
+
+    /* History filters: sort on its own row, filters in pairs, a lone last filter spans the row */
+    @media (max-width: 767px) {
+      #historyFilterDroid { grid-column: 1 / -1; }
+    }
+    @media (min-width: 768px) {
+      .history-filters { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      #historySortBy { grid-column: auto; }
+      .unplayed-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); align-content: start; }
+      .syzygy-char-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+    }
+
+    /* ── Modals ── every dialog scrolls instead of being cut off on short screens;
+       the action row stays reachable at the bottom of long dialogs. */
+    .modal-overlay { overflow-y: auto; overscroll-behavior: contain; }
+    .modal-box, .settings-box {
+      max-height: calc(100vh - 40px);
+      max-height: calc(100dvh - 40px);
+      overflow-y: auto;
+      overscroll-behavior: contain;
+    }
+    .faq-box, .rules-box {
+      max-height: calc(100vh - 40px);
+      max-height: min(90dvh, calc(100dvh - 40px));
+    }
+    .modal-box > .modal-actions:last-child,
+    .settings-box > .modal-actions:last-child {
+      position: sticky;
+      bottom: -28px;
+      margin: 0 -24px -28px;
+      padding: 14px 24px 28px;
+      background: var(--bg-panel);
+    }
+    #packList .pack-item input[type="checkbox"] { width: 20px; height: 20px; margin-top: 1px; }
+
+    /* Phones: dialogs become bottom sheets — full width, thumb-reachable actions */
+    @media (max-width: 560px) {
+      .modal-overlay { padding: 12px 0 0; align-items: flex-end; }
+      .modal-box, .settings-box, .faq-box, .rules-box {
+        max-width: none;
+        width: 100%;
+        border-radius: 16px 16px 0 0;
+        border-bottom: none;
+        max-height: calc(100vh - 12px);
+        max-height: calc(100dvh - 12px);
+        padding-left: max(20px, env(safe-area-inset-left, 0px));
+        padding-right: max(20px, env(safe-area-inset-right, 0px));
+        padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+      }
+      .rules-box { height: calc(100vh - 12px); height: calc(100dvh - 12px); padding: 0 0 env(safe-area-inset-bottom, 0px); }
+      .rules-header { padding: 16px 16px 10px; }
+      .rules-tabs   { padding: 0 16px 10px; }
+      .rules-img-wrap { padding: 0 12px 12px; min-height: 0; }
+      /* Fit the rulebook sheet to the sheet's height and pan sideways: ~3x larger than
+         squeezing a landscape page into 330px of width */
+      #rulesImage { height: 100%; width: auto; max-width: none; }
+      .modal-box > .modal-actions:last-child,
+      .settings-box > .modal-actions:last-child {
+        bottom: calc(-20px - env(safe-area-inset-bottom, 0px));
+        margin: 0 -20px calc(-20px - env(safe-area-inset-bottom, 0px));
+        padding: 14px 20px calc(20px + env(safe-area-inset-bottom, 0px));
+      }
+      .tips-content { max-height: none; }
+      .dice-tray { gap: 12px; }
+    }
+
+    /* ── Touch layouts: ~44px targets for frequent actions ── */
+    @media (pointer: coarse), (max-width: 560px) {
+      .app-header { padding-top: 0; }
+      .header-actions { position: static; margin-bottom: 14px; }
+      .header-btn-row { flex-wrap: wrap; justify-content: flex-end; }
+      .onboarding-tip { top: 56px; }
+      .btn-tips-trigger, .btn-radio, .btn-volume, .btn-theme { min-width: 44px; min-height: 44px; }
+      .btn-settings { min-height: 44px; }
+      .btn-lock { min-width: 44px; min-height: 44px; }
+      .form-row-label { margin-bottom: 4px; }
+      .btn-faq-inline::after { inset: -13px; }
+      .droid-select, .btn-droid-rand { min-height: 44px; }
+      .btn-pause { min-height: 44px; }
+      .btn-edit-record, .btn-delete-record { min-width: 44px; min-height: 44px; }
+      .btn-load-unplayed { min-height: 44px; padding: 8px 14px; }
+      .history-select { min-height: 44px; }
+      .footer-link { display: inline-flex; align-items: center; min-height: 44px; }
+      .btn-compact { min-height: 44px; }
+      .rules-tab { min-height: 44px; }
+      .btn-sz-step,
+      .syzygy-stepper-compact .btn-sz-step { width: 44px; height: 44px; }
+      .syzygy-stepper { gap: 2px; }
+      .dice-box { max-width: 340px; }
+      .die-adj-row { width: auto; gap: 4px; justify-content: center; flex-wrap: wrap; max-width: 92px; }
+      .die-adj, .dice-swap-mid { width: 44px; height: 44px; }
+      /* Flip (Hebolt Rom, locked die) drops to its own full-width row under −/+ */
+      .die-adj.adj-flip { order: 3; width: 100%; }
+      .dice-close, .tips-modal-close { min-width: 44px; min-height: 44px; }
+      details.faq-item summary { padding-top: 13px; padding-bottom: 13px; }
+      details.faq-item summary::after { top: 15px; }
+      .btn-tip-dismiss { min-height: 44px; }
+    }
+
+    /* ── Short landscape phones: compact one-row header so content starts on screen one ── */
+    @media (max-height: 500px) and (orientation: landscape) {
+      .app-shell { padding-top: 12px; }
+      .app-header {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        column-gap: 12px;
+        text-align: left;
+        padding-top: 0;
+        margin-bottom: 14px;
+      }
+      .app-header h1 { grid-row: 1; grid-column: 1; font-size: 22px; letter-spacing: 3px; }
+      .app-header h1 br:not(:nth-of-type(3)) { display: none; }
+      .app-header h1 .sub { font-size: 11px; }
+      .header-actions { position: static; grid-row: 1; grid-column: 2; margin: 0; }
+      .header-rule, .app-header .author-label { display: none; }
+      .active-packs-label { grid-column: 1 / -1; margin-top: 4px; }
+      .tab-nav { margin-bottom: 16px; }
+    }
+
+    /* ── Wide screens: use the space instead of a phone column in a huge page ── */
+    @media (min-width: 1024px) {
+      .app-shell { max-width: 1120px; padding-left: 24px; padding-right: 24px; }
+      #randomizerPage {
+        display: grid;
+        grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+        gap: 0 20px;
+        align-items: start;
+      }
+      .sz-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+        gap: 0 20px;
+        align-items: start;
+      }
+      .history-toolbar { flex-direction: row; flex-wrap: wrap; align-items: center; }
+      .history-actions { margin-left: auto; }
+      .history-actions > * { flex: 0 0 auto; min-width: 120px; }
+      .history-filters { flex: 1 1 100%; grid-template-columns: repeat(6, minmax(0, 1fr)); }
+      .unplayed-grid { max-height: 560px; }
+    }
+    /* Desktop: setup column stays in view while the mission card / log scroll */
+    @media (min-width: 1024px) and (min-height: 640px) {
+      .rand-col-setup { position: sticky; top: 16px; }
+      .syzygy-mode-cards { max-width: 760px; }
+      /* Comfortable measure for running text in wide panels */
+      .panel > p:not(.panel-title):not(.section-heading),
+      .syzygy-rank-desc { max-width: 72ch; }
+      .syzygy-rank-desc { margin-left: auto; margin-right: auto; }
+      .footer-text { max-width: 72ch; margin-left: auto; margin-right: auto; }
+    }
   </style>
 </head>
 <body>
@@ -2026,7 +2266,7 @@
   <div class="rules-box" role="dialog" aria-modal="true" aria-labelledby="rulesModalTitle">
     <div class="rules-header">
       <h2 id="rulesModalTitle">Rulebooks</h2>
-      <button class="btn btn-secondary" id="rulesClose" style="min-height:36px;padding:8px 16px;">Close</button>
+      <button class="btn btn-secondary btn-compact" id="rulesClose">Close</button>
     </div>
     <div class="rules-tabs" id="rulesTabs"></div>
     <div class="rules-img-wrap">
@@ -2517,7 +2757,7 @@
       <p>Tap <strong>?</strong> anytime to see all features.</p>
       <button class="btn-tip-dismiss" id="tipDismiss">Got it</button>
     </div>
-    <h1>Twin<br>Stars<br><span>Adventure</span><br><span class="sub">Randomizer</span></h1>
+    <h1>Twin<br> Stars<br> <span>Adventure</span><br><span class="sub">Randomizer</span></h1>
     <div class="header-rule"></div>
     <p class="author-label" style="margin-top:10px;">A game by Jason Tagmire &amp; Mike Mullins</p>
     <p class="active-packs-label" id="activePacksLabel"></p>
@@ -2531,6 +2771,7 @@
 
   <!-- RANDOMIZER PAGE -->
   <div id="randomizerPage" role="tabpanel" aria-labelledby="randomizerTab" tabindex="0">
+  <div class="rand-col rand-col-setup">
 
     <div class="panel">
       <p class="panel-title">Random Mission</p>
@@ -2561,6 +2802,9 @@
       <button class="btn btn-load" id="loadManualCombo">Load Mission</button>
     </div>
 
+  </div>
+  <div class="rand-col rand-col-play">
+
     <div id="combinationDisplay"></div>
 
     <div id="annotationSection" class="panel hidden">
@@ -2589,6 +2833,7 @@
 
     <div id="comboHistory"></div>
 
+  </div>
   </div>
 
   <!-- SYZYGY CAMPAIGN PAGE -->
