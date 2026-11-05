@@ -43,6 +43,16 @@ async function loadMission(page, a, b, sc) {
   await expect(page.locator("#timerDisplay")).toBeVisible();
 }
 
+// The app smooth-scrolls a newly loaded card into view, which can make a click land
+// mid-scroll; open the board idempotently and retry until it is showing.
+async function openBoardUI(page) {
+  const toggle = page.locator("#boardToggleBtn");
+  await expect(async () => {
+    if (await toggle.getAttribute("aria-expanded") !== "true") await toggle.click();
+    await expect(page.locator("#missionBoard")).toBeVisible({ timeout: 1000 });
+  }).toPass({ timeout: 10000 });
+}
+
 // Characters and scenario already set up, so the board opens straight to its counters.
 const KNOWN = {
   [`tsr:board:char:${A}`]: { health: 5 },
@@ -61,14 +71,14 @@ const val = (page, label) => page.getByRole("spinbutton", { name: label, exact: 
 async function openKnownBoard(page) {
   await setup(page, KNOWN);
   await loadMission(page, A, B, SC);
-  await page.locator("#boardToggleBtn").click();
+  await openBoardUI(page);
   await expect(page.locator("#missionBoard")).toBeVisible();
 }
 
 test("first use asks for starting values, remembers them, and prefills new ones", async ({ page }) => {
   await setup(page);
   await loadMission(page, A, B, SC);
-  await page.locator("#boardToggleBtn").click();
+  await openBoardUI(page);
   await expect(page.getByRole("heading", { name: "Set Up the Mission Board" })).toBeVisible();
 
   // Empty required fields are refused with a message.
@@ -110,13 +120,13 @@ test("first use asks for starting values, remembers them, and prefills new ones"
 
   // Same mission again: no prompt, fresh counters.
   await loadMission(page, A, B, SC);
-  await page.locator("#boardToggleBtn").click();
+  await openBoardUI(page);
   await expect(val(page, `${A} health`)).toHaveText("5");
   await expect(page.locator("#bdSetup")).toHaveCount(0);
 
   // A new character: prompt again, prefilled from what was entered before.
   await loadMission(page, A, C, SC);
-  await page.locator("#boardToggleBtn").click();
+  await openBoardUI(page);
   await expect(page.locator("#bdSetup")).toBeVisible();
   await expect(page.locator("#bdSetH0")).toHaveValue("5");
   await expect(page.locator("#bdSetH1")).toHaveValue("6");
@@ -258,7 +268,7 @@ test("reload restores the mission, the board and its history, with the timer pau
   await page.reload();
   await expect(page.locator("#missionBoard")).toBeHidden();
   await expect(page.locator("#boardToggleBtn")).toHaveText(/Mission Board/);
-  await page.locator("#boardToggleBtn").click();
+  await openBoardUI(page);
   await expect(val(page, `${A} health`)).toHaveText("4");
 });
 
@@ -323,7 +333,7 @@ for (const theme of ["dark", "light"]) {
     await page.setViewportSize({ width: 360, height: 740 });
     await setup(page, { ...KNOWN, theme });
     await loadMission(page, A, B, SC);
-    await page.locator("#boardToggleBtn").click();
+    await openBoardUI(page);
     await page.locator("#bdLog summary").click();
     const check = () => page.evaluate(() => {
       const vw = document.documentElement.clientWidth;
