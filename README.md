@@ -116,12 +116,12 @@ Tests live in `tests/` and use [Playwright](https://playwright.dev/). To run loc
 ```sh
 cd tests
 npm ci
-npx playwright install --with-deps chromium firefox
+npx playwright install --with-deps chromium firefox webkit
 npm test                                # runs both browsers
 npx playwright test --project=chromium  # or just one
 ```
 
-CI runs on every push and pull request via `.github/workflows/tests.yml`, Chromium and Firefox each in their own job — running both in one job on a shared runner caused CPU contention that showed up as flaky Firefox failures, so they're isolated.
+CI runs on every push and pull request via `.github/workflows/tests.yml`, Chromium, Firefox and WebKit (Safari's engine) each in their own job — running them in one job on a shared runner caused CPU contention that showed up as flaky Firefox failures, so they're isolated.
 
 ### Stack
 
