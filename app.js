@@ -2828,7 +2828,12 @@ function getCurrentElapsed() {
       else     localStorage.removeItem("syzygyCampaign");
       if (_szKept) localStorage.setItem("syzygyCampaignV1", JSON.stringify(_szKept));
       else         localStorage.removeItem("syzygyCampaignV1");
-    } catch(e) {}
+      return true;
+    } catch(e) {
+      // Never fail silently: the campaign stays in memory, but tell the player it isn't stored.
+      showStorageError("Couldn't save your SYZYGY campaign progress: browser storage is full or blocked.", []);
+      return false;
+    }
   }
 
   function szStart(mode, chars, set) {
@@ -3738,6 +3743,12 @@ function getCurrentElapsed() {
     if (e.storageArea && e.storageArea !== localStorage) return;
     if (e.key === null || e.key === "gameRecords")  reloadRecordsFromStorage();
     if (e.key === null || e.key === "enabledPacks") reloadPacksFromStorage();
+    // Another tab changed the SYZYGY campaign: reload it so this tab can't overwrite it with stale state.
+    if (e.key === null || e.key === "syzygyCampaign" || e.key === "syzygyCampaignV1") {
+      loadSzCampaign(false);
+      _szLossPending = false;
+      renderSz();
+    }
   });
 
   buildActiveContent();

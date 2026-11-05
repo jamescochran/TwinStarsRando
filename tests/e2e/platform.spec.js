@@ -163,7 +163,7 @@ test.describe("sharing metadata", () => {
     const dim = await page.evaluate((src) => new Promise((res) => { const i = new Image(); i.onload = () => res([i.naturalWidth, i.naturalHeight]); i.onerror = () => res(null); i.src = src; }), file);
     expect(dim).toEqual([1200, 630]);
 
-    const ld = JSON.parse(await page.locator('script[type="application/ld+json"]').textContent());
+    const ld = JSON.parse(await page.locator('script[type="application/ld+json"]:not(#faqJsonLd)').textContent());
     expect(ld["@type"]).toBe("WebApplication");
     expect(ld.applicationCategory).toBe("GameApplication");
     expect(ld.operatingSystem).toBe("Web");

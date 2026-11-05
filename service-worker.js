@@ -1,5 +1,4 @@
 const CACHE = "twin-stars-dev";
-const FONTS_CACHE = "twin-stars-fonts-v1";
 // Rulebook images live in their own cache that survives releases: they are large and rarely
 // change, and players rely on them offline. Bump this only when the rulebook files change.
 const RULES_CACHE = "twin-stars-rules-v1";
@@ -36,32 +35,18 @@ self.addEventListener("activate", e => {
   e.waitUntil(
     caches.keys().then(keys =>
       Promise.all(
-        keys.filter(k => k !== CACHE && k !== FONTS_CACHE && k !== RULES_CACHE).map(k => caches.delete(k))
+        keys.filter(k => k !== CACHE && k !== RULES_CACHE).map(k => caches.delete(k))
       )
     )
   );
   self.clients.claim();
 });
 
-// Fetch — cache-first for app assets; cache-first with network fallback for fonts and rules images
+// Fetch — cache-first for app assets; persistent cache for rules images; fonts are self-hosted and precached
 self.addEventListener("fetch", e => {
   const url = e.request.url;
   if (e.request.method === "GET" && isRulesUrl(url)) {
     e.respondWith(rulesResponse(e));
-    return;
-  }
-  if (url.startsWith("https://fonts.googleapis.com") || url.startsWith("https://fonts.gstatic.com")) {
-    e.respondWith(
-      caches.open(FONTS_CACHE).then(cache =>
-        cache.match(e.request).then(cached => {
-          if (cached) return cached;
-          return fetch(e.request).then(response => {
-            if (response.ok) cache.put(e.request, response.clone());
-            return response;
-          });
-        })
-      )
-    );
     return;
   }
   // Non-GET requests (e.g. analytics POSTs) go straight to the network, never the cache.
