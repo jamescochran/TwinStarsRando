@@ -29,6 +29,7 @@ const ALLOWED = {
   collection_change: ["items"],
   shelf_open: [],
   board_open: ["auto", "setup"],
+  board_setting: ["on"],
   board_setup_saved: ["tracks", "edit"],
   board_record: ["result"],
   teach_start: ["source"],

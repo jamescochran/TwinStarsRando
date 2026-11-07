@@ -50,7 +50,7 @@
         <ul class="teach-list">
           <li><strong>One scenario card and two character cards.</strong> A mission is always one scenario and a pair of characters.</li>
           <li><strong>Four six-sided dice</strong> (not in the wallet): two <em>character dice</em> in colour and two <em>skill dice</em>, ideally white.</li>
-          <li><strong>Something to track health and energy</strong>, plus a few markers the scenario asks for: coins, tokens or paper clips. You can also count them in the app's Mission Board.</li>
+          <li><strong>Something to track health and energy</strong>, plus a few markers the scenario asks for: coins, tokens or paper clips. You can also count them on screen: turn on the Mission Board in Tips &amp; Features.</li>
           <li>About 15 minutes and a small table space.</li>
         </ul>`
     },
