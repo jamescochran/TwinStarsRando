@@ -14,12 +14,17 @@
 //   tsr:board:last             {health, energy} — prefill for characters/scenarios not seen yet
 //   tsr:board:auto             "1" = open the board whenever a mission starts
 //   tsr:board:session          the running mission's board (survives reload; restored paused)
+//   tsr:board:enabled          "1" = show the board (opt-in, set in Tips & Features); "0" = hidden.
+//                              Unset: on only for players who already used the board.
 (function () {
   "use strict";
 
   const K_SESSION = "tsr:board:session";
   const K_AUTO    = "tsr:board:auto";
   const K_LAST    = "tsr:board:last";
+  const K_ENABLED = "tsr:board:enabled";
+  // What the board is, shown as the button's tooltip (and in Tips & Features).
+  const ABOUT = "Tracks the game on screen instead of with tokens or paperclips: tap counters for each character's health, the shared energy pool, and up to 4 scenario tracks you name. You type each card's starting numbers once and the app remembers them.";
   const kChar = n => "tsr:board:char:" + n;
   const kScn  = n => "tsr:board:scenario:" + n;
   const DIFFS = ["Easy", "Medium", "Hard"];
@@ -45,6 +50,16 @@
   }
   const isInt = v => Number.isInteger(v) && Math.abs(v) <= LIM;
 
+  // The board is opt-in. Before the setting existed it was shown to everyone, so a player
+  // who already saved board values, chose auto-open or has a board running keeps it.
+  function isEnabled() {
+    try {
+      const v = localStorage.getItem(K_ENABLED);
+      if (v === "1") return true;
+      if (v === "0") return false;
+      return localStorage.getItem(K_AUTO) === "1" || localStorage.getItem(K_SESSION) != null || localStorage.getItem(K_LAST) != null;
+    } catch (e) { return false; }
+  }
   function getAuto() { try { return localStorage.getItem(K_AUTO) === "1"; } catch (e) { return false; } }
   function setAuto(on) { try { localStorage.setItem(K_AUTO, on ? "1" : "0"); } catch (e) {} }
 
@@ -164,10 +179,12 @@
   function injectToggle() {
     const card = cardHost.querySelector(".combo-display");
     cardHost.classList.toggle("board-on", !!(S && S.open));
+    if (!isEnabled()) { const old = cardHost.querySelector(".board-row"); if (old) old.remove(); return; }
     if (!card || card.querySelector("#boardToggleBtn") || savedAlready()) return;
     const row = document.createElement("div");
     row.className = "board-row";
     row.innerHTML = `<button type="button" class="btn btn-secondary btn-board" id="boardToggleBtn" aria-controls="missionBoard"></button>`;
+    row.firstChild.title = ABOUT;
     const anchor = card.querySelector(".timer-row");
     if (anchor) anchor.after(row); else card.appendChild(row);
     row.firstChild.addEventListener("click", () => { if (S && S.open) closeBoard(true); else openBoard({ focus: true }); });
@@ -193,7 +210,7 @@
       closeBoard(false);
       clearSession();
       _comb = currentCombination;
-      if (getAuto()) openBoard({ auto: true });
+      if (isEnabled() && getAuto()) openBoard({ auto: true });
     }
     injectToggle();
   }).observe(cardHost, { childList: true });
@@ -210,7 +227,7 @@
 
   function openBoard(opts) {
     opts = opts || {};
-    if (!currentCombination || savedAlready()) return;
+    if (!currentCombination || savedAlready() || !isEnabled()) return;
     if (!S) S = newSession();
     S.open = true;
     _comb = currentCombination;
@@ -822,9 +839,25 @@
     return keys.every(k => isInt(s.c[k]));
   }
 
+  // ── Setting (Tips & Features) ─────────────────────────────────────────────────
+  const setting = document.getElementById("boardSetting");
+  function syncSetting() { if (setting) setting.checked = isEnabled(); }
+  function applyEnabled() {
+    syncSetting();
+    if (!isEnabled()) { closeBoard(false); clearSession(); S = null; }
+    injectToggle();
+  }
+  if (setting) setting.addEventListener("change", () => {
+    try { localStorage.setItem(K_ENABLED, setting.checked ? "1" : "0"); } catch (e) {}
+    track("board_setting", { on: setting.checked });
+    applyEnabled();
+  });
+  window.addEventListener("storage", e => { if (e.key === K_ENABLED || e.key === null) applyEnabled(); });
+  syncSetting();
+
   (function restore() {
     const s = readJSON(K_SESSION);
-    if (!s) return;
+    if (!s || !isEnabled()) return;
     if (!validSession(s)) { clearSession(); return; }
     loadCombination({ characters: [...s.characters], scenario: s.scenario });
     _comb = currentCombination;
