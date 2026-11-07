@@ -934,6 +934,8 @@ function getCurrentElapsed() {
     } else {
       timerEl.setAttribute("aria-label", "Timer running");
     }
+    // Hook for feature scripts (teach.js setup checklist) that add to the mission card.
+    document.dispatchEvent(new CustomEvent("tsr:combo-rendered", { detail: comb }));
   }
 
   function displayComboHistory(comb) {
@@ -2066,6 +2068,7 @@ function getCurrentElapsed() {
     document.getElementById("saveRecordBtn").textContent = "Save Record";
     document.getElementById("saveStatus").classList.add("hidden");
     announce(`Mission loaded: ${comb.characters[0]} and ${comb.characters[1]}, ${scenarioText(comb.scenario)}. Timer started.`);
+    document.dispatchEvent(new CustomEvent("tsr:mission-loaded", { detail: comb }));
     if (opts && opts.focusCard) document.getElementById("comboHeading").focus({ preventScroll: true });
 
     // Selectors show exactly the loaded mission (Character 1 = Primary). A lock the
@@ -2190,6 +2193,7 @@ function getCurrentElapsed() {
     statusText.focus();
     toast("Record saved to Mission Log.");
     track("save_record", { result, difficulty });
+    document.dispatchEvent(new CustomEvent("tsr:record-saved", { detail: rec }));
   }
 
   // `list` overrides what is exported (the storage-error banner exports unsaved changes too).

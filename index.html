@@ -2840,6 +2840,137 @@
     }
     @keyframes bdBump  { 0% { transform: scale(1.12); color: var(--bd-c); } 100% { transform: none; } }
     @keyframes bdLimit { 0%, 100% { transform: none; } 30% { transform: translateX(-3px); } 70% { transform: translateX(3px); } }
+    /* ── Teach Mode, setup checklist, turn-step rail, Daily Mission (teach.js, daily.js) ── */
+    .btn-tip-learn {
+      display: block; width: 100%; margin-top: 12px; padding: 7px; min-height: 36px;
+      background: transparent; color: var(--accent-teal);
+      border: 1px solid var(--line-teal); border-radius: var(--radius);
+      font-family: var(--font-body); font-size: var(--fs-sm); font-weight: 700; cursor: pointer;
+    }
+    .btn-tip-learn:hover { background: var(--tint-teal); }
+    .tips-teach-btn { width: 100%; margin-bottom: var(--space-2); }
+    .tips-toggle { display: flex; align-items: center; gap: var(--space-2); font-size: var(--fs-md); color: var(--text-muted); min-height: 44px; cursor: pointer; }
+    .tips-toggle input { width: 20px; height: 20px; accent-color: var(--accent-teal); flex-shrink: 0; }
+    .teach-box { max-width: 440px; }
+    .teach-progress-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-2); }
+    .modal-box p.teach-progress { margin: 0; font-family: var(--font-display); font-size: var(--fs-label); letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--text-dim); }
+    .teach-skip, .teach-linkbtn {
+      background: none; border: none; padding: 0; cursor: pointer; font: inherit; font-size: var(--fs-md);
+      color: var(--accent-teal); text-decoration: underline; text-underline-offset: 3px; min-height: 44px; text-align: left;
+    }
+    .teach-skip { color: var(--text-muted); }
+    .teach-dots { display: flex; gap: 6px; margin-bottom: var(--space-4); }
+    .teach-dots span { flex: 1; height: 4px; border-radius: var(--radius-pill); background: var(--border); }
+    .teach-dots span.done { background: var(--line-teal); }
+    .teach-dots span.on { background: var(--accent-teal); }
+    .teach-step-title { font-family: var(--font-display); font-size: var(--fs-md); letter-spacing: var(--tracking-tight); color: var(--text-primary); margin: 0 0 var(--space-3); }
+    .teach-step-title:focus { outline: none; }
+    .teach-step-title:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+    .teach-art {
+      display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: var(--space-2);
+      min-height: 64px; padding: var(--space-3); margin-bottom: var(--space-3);
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md);
+    }
+    .tdie { flex-shrink: 0; font-size: 44px; line-height: 1; color: var(--die-pip); font-family: "Segoe UI Symbol", "DejaVu Sans", "Noto Sans Symbols 2", "Apple Symbols", sans-serif; }
+    .tdie.c2 { color: var(--accent-orange); }
+    .tdie.skill { color: var(--text-primary); }
+    .tdie.faded { opacity: 0.55; }
+    [data-theme="light"] .tdie.c1 { color: #1b2366; }
+    .tcard {
+      display: inline-flex; align-items: center; justify-content: center; text-align: center;
+      width: 64px; height: 50px; padding: 2px; border-radius: var(--radius-sm);
+      border: 1px solid var(--border-control); background: var(--bg-panel);
+      font-family: var(--font-display); font-size: var(--fs-label); letter-spacing: 0.5px; color: var(--text-muted);
+    }
+    .tcard.pri { border-color: var(--accent-orange); color: var(--accent-orange); }
+    .tcard.sec { border-color: var(--accent-teal); color: var(--accent-teal); }
+    .tcard.sc { border-color: var(--accent-yellow); color: var(--accent-yellow); }
+    .tcard.wide { width: auto; padding: 0 var(--space-4); }
+    .tarrow, .tplus { font-size: var(--fs-stat); color: var(--text-dim); line-height: 1; }
+    .tgap { width: var(--space-3); }
+    .tbadge { padding: 4px 10px; border-radius: var(--radius-pill); border: 1px solid var(--line-teal); background: var(--tint-teal); color: var(--accent-teal); font-weight: 700; font-size: var(--fs-md); }
+    .tbadge.warn { border-color: var(--line-yellow); background: var(--tint-yellow); color: var(--accent-yellow); }
+    .teach-list { margin: 0 0 var(--space-3); padding-left: 1.1em; font-size: var(--fs-body); color: var(--text-muted); line-height: var(--lh-body); }
+    .teach-list li { margin-bottom: var(--space-2); }
+    .teach-list strong, .teach-lead strong { color: var(--text-primary); }
+    .modal-box p.teach-tip, .modal-box p.teach-note { font-size: var(--fs-md); margin-bottom: var(--space-3); padding: var(--space-2) var(--space-3); border-left: 3px solid var(--line-teal); background: var(--tint-teal); border-radius: var(--radius-sm); }
+    .modal-box p.teach-note { border-left-color: var(--line-yellow); background: var(--tint-yellow); }
+    .modal-box p.teach-lead { margin-bottom: var(--space-3); }
+    .teach-body #teachStartMission { margin-bottom: var(--space-4); }
+    .teach-links { list-style: none; margin: 0 0 var(--space-2); padding: 0; font-size: var(--fs-md); }
+    .teach-links li { min-height: 44px; display: flex; align-items: center; }
+    .teach-resume {
+      display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap;
+      padding: var(--space-2) var(--space-3); margin-bottom: var(--space-4);
+      border: 1px solid var(--line-teal); background: var(--tint-teal); border-radius: var(--radius-md);
+    }
+    .teach-resume p { flex: 1 1 160px; margin: 0; font-size: var(--fs-md); color: var(--text-primary); }
+    .teach-resume-x { min-width: 44px; min-height: 44px; background: none; border: none; color: var(--text-muted); font-size: var(--fs-input); cursor: pointer; }
+    .teach-resume-x:hover { color: var(--accent-teal); }
+
+    .setup-checklist { margin-top: var(--space-3); border-top: 1px solid var(--border); padding-top: var(--space-2); text-align: left; }
+    .setup-checklist summary {
+      cursor: pointer; min-height: 44px; display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap;
+      font-family: var(--font-display); font-size: var(--fs-label); letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--accent-teal);
+    }
+    .setup-summary-note {
+      flex: 1 1 100%; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      font-family: var(--font-body); font-size: var(--fs-md); letter-spacing: 0; text-transform: none; color: var(--text-muted);
+    }
+    .setup-steps { margin: var(--space-2) 0 var(--space-3); padding-left: 1.3em; font-size: var(--fs-md); color: var(--text-muted); line-height: var(--lh-body); }
+    .setup-steps strong { color: var(--text-primary); }
+    .setup-note-label { display: block; font-size: var(--fs-sm); color: var(--text-muted); margin-bottom: var(--space-1); }
+    .setup-checklist textarea { width: 100%; }
+    .setup-note-status { min-height: 1.2em; margin: var(--space-1) 0 0; font-size: var(--fs-sm); color: var(--text-dim); }
+
+    .turn-rail { margin-top: var(--space-4); padding-top: var(--space-3); border-top: 1px solid var(--border); text-align: left; }
+    .turn-rail[hidden], .turn-rail-show[hidden] { display: none; }
+    .turn-rail-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); margin-bottom: var(--space-2); }
+    .turn-rail-head h3 { margin: 0; font-family: var(--font-display); font-size: var(--fs-label); letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--accent-teal); }
+    .turn-rail-toggle, .turn-rail-show {
+      background: none; border: 1px solid var(--border-control); border-radius: var(--radius); color: var(--text-muted);
+      font-family: var(--font-body); font-size: var(--fs-sm); min-height: 36px; padding: 0 var(--space-3); cursor: pointer;
+    }
+    .turn-rail-show { display: block; margin: var(--space-3) auto 0; }
+    .turn-rail-toggle:hover, .turn-rail-show:hover { color: var(--accent-teal); border-color: var(--accent-teal); }
+    .turn-rail-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-1); }
+    .turn-rail-step {
+      width: 100%; min-height: 40px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+      background: var(--bg-card); border: 1px solid var(--border-control); border-radius: var(--radius);
+      color: var(--text-muted); font-family: var(--font-body); font-size: var(--fs-sm); font-weight: 700; cursor: pointer; padding: 2px;
+    }
+    .turn-rail-num { font-family: var(--font-display); font-size: var(--fs-label); color: var(--text-dim); }
+    .turn-rail-step.current { border-color: var(--accent-teal); background: var(--tint-teal); color: var(--accent-teal); }
+    .turn-rail-step.current .turn-rail-num { color: var(--accent-teal); }
+    .modal-box p.turn-rail-detail { margin: var(--space-2) 0; min-height: 3.2em; font-size: var(--fs-md); line-height: 1.45; color: var(--text-primary); }
+    .turn-rail-chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-1); }
+    .turn-rail-chip { padding: 3px 8px; border-radius: var(--radius-pill); border: 1px solid var(--border-control); background: var(--tint-neutral); color: var(--text-muted); font-size: var(--fs-xs); }
+    .turn-rail-chip.warn { border-color: var(--line-yellow); background: var(--tint-yellow); color: var(--accent-yellow); }
+
+    .daily-panel { padding-top: var(--space-4); padding-bottom: var(--space-4); }
+    .daily-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-2); flex-wrap: wrap; }
+    .daily-head .panel-title { margin-bottom: var(--space-2); }
+    .daily-streak { font-size: var(--fs-sm); color: var(--accent-yellow); font-weight: 700; }
+    .daily-date { font-size: var(--fs-sm); color: var(--text-dim); margin: 0 0 var(--space-1); }
+    .daily-mission { font-size: var(--fs-body); color: var(--text-muted); line-height: var(--lh-body); margin: 0; }
+    .daily-mission strong { color: var(--text-primary); }
+    .daily-diff { font-weight: 700; color: var(--accent-orange); }
+    .daily-own { margin: var(--space-2) 0 0; font-size: var(--fs-sm); color: var(--text-muted); padding-left: var(--space-2); border-left: 3px solid var(--line-yellow); }
+    .daily-done-label { margin: var(--space-3) 0 var(--space-1); font-family: var(--font-display); font-size: var(--fs-label); letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--text-dim); }
+    .daily-result { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-2); align-items: center; }
+    .daily-result-line { grid-column: 1 / -1; margin: 0; font-size: var(--fs-body); color: var(--text-primary); }
+    .daily-result-badge { display: inline-block; padding: 1px 8px; border-radius: var(--radius-pill); font-weight: 700; font-size: var(--fs-sm); border: 1px solid var(--line-teal); color: var(--accent-teal); background: var(--tint-teal); }
+    .daily-result-badge.loss { border-color: var(--line-loss); color: var(--loss-color); background: var(--tint-loss); }
+    .daily-share-text {
+      min-width: 0; margin: 0; padding: var(--space-2) var(--space-3);
+      background: var(--bg-card); color: var(--text-primary); border: 1px dashed var(--border-control); border-radius: var(--radius);
+      font-size: var(--fs-md); line-height: 1.45; user-select: all; -webkit-user-select: all; overflow-wrap: anywhere;
+    }
+    .daily-copy { white-space: nowrap; }
+    .daily-inline { margin-top: var(--space-3); padding-top: var(--space-2); border-top: 1px solid var(--border); }
+    .daily-inline-streak { margin: var(--space-1) 0 0; font-size: var(--fs-sm); color: var(--accent-yellow); font-weight: 700; }
+    .daily-inline-streak:empty { display: none; }
+    @media (max-width: 400px) { .daily-result { grid-template-columns: 1fr; } }
     /* ── Pairing Lab + Gauntlet (insights.js) ── */
     .ins-lede { font-size: var(--fs-md); color: var(--text-muted); line-height: var(--lh-body); margin-bottom: var(--space-3); }
     .ins-note { font-size: var(--fs-sm); color: var(--text-muted); line-height: var(--lh-body); margin: 0 0 var(--space-3); }
@@ -4086,6 +4217,9 @@
       <button type="button" class="tips-modal-close dialog-close" id="tipsModalClose" aria-label="Close Tips">✕</button>
     </div>
     <div class="tips-content" tabindex="0" role="region" aria-labelledby="tipsModalTitle">
+      <h3 class="tips-section-heading">New to Twin Stars?</h3>
+      <button type="button" class="btn btn-secondary tips-teach-btn" id="teachTipsBtn">Learn to play (about 2 minutes)</button>
+      <label class="tips-toggle"><input type="checkbox" id="railSetting"> Show turn steps in the Dice Roller</label>
       <h3 class="tips-section-heading">Randomizing</h3>
       <ul class="tips-list">
         <li>Lock <span aria-hidden="true">🔒</span> any character or scenario to keep it when you randomize</li>
@@ -4172,6 +4306,7 @@
       <p><strong aria-hidden="true">&#9790; / &#9728;</strong><span class="sr-only">Theme button</span> — switch between dark and light mode.</p>
       <p><strong aria-hidden="true">🔒</strong><span class="sr-only">Lock button</span> — lock a character or scenario to keep it when you randomize.</p>
       <p>Tap <strong>?</strong> anytime to see all features.</p>
+      <button type="button" class="btn-tip-learn" id="teachOfferBtn">New to Twin Stars? Learn to play</button>
       <button class="btn-tip-dismiss" id="tipDismiss">Got It</button>
     </div>
     <div class="onboarding-tip hidden" id="iosInstallHint" role="note" aria-labelledby="iosInstallHintTitle">
@@ -4205,6 +4340,8 @@
       </button>
       <p class="all-locked-hint hidden" id="allLockedHint">All three are locked. Unlock one to randomize, or tap Load Mission.</p>
     </div>
+
+    <div id="dailyMission"></div>
 
     <div class="panel" id="manualPanel">
       <h2 class="panel-title">Manual Selection</h2>
@@ -4370,6 +4507,8 @@
 <script src="app.js" defer></script>
 <script src="collection.js" defer></script>
 <script src="board.js" defer></script>
+<script src="teach.js" defer></script>
+<script src="daily.js" defer></script>
 <script src="insights.js" defer></script>
 <noscript><p style="font-family:sans-serif;text-align:center;padding:40px;">Twin Stars Randomizer requires JavaScript to run.</p></noscript>
 </body>
