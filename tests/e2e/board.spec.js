@@ -30,7 +30,11 @@ async function setup(page, storage = {}) {
     localStorage.setItem("seenPrimarySecondaryNotice", "1");
     localStorage.setItem("enabledPacks", JSON.stringify(["series1"]));
     localStorage.setItem("lastDifficulty", "Medium");
-    for (const [k, val] of Object.entries(v)) localStorage.setItem(k, typeof val === "string" ? val : JSON.stringify(val));
+    localStorage.setItem("tsr:board:enabled", "1"); // opt-in; tests that check the default override it
+    for (const [k, val] of Object.entries(v)) {
+      if (val === null) localStorage.removeItem(k);
+      else localStorage.setItem(k, typeof val === "string" ? val : JSON.stringify(val));
+    }
   }, storage);
   await page.goto("/");
 }
@@ -365,4 +369,55 @@ test("every board control has an accessible name", async ({ page }) => {
     .filter(el => !(el.getAttribute("aria-label") || el.textContent.trim() || el.closest("label")))
     .map(el => el.outerHTML.slice(0, 80)));
   expect(unnamed).toEqual([]);
+});
+
+test.describe("opt-in setting", () => {
+  async function openTips(page) {
+    await page.locator("#tipsTriggerBtn").click();
+    await expect(page.locator("#tipsModal")).toBeVisible();
+  }
+
+  test("is off for a new player: no board button, no auto-open, and the Tips setting is unticked", async ({ page }) => {
+    await setup(page, { "tsr:board:enabled": null });
+    await loadMission(page, A, B, SC);
+    await expect(page.locator("#boardToggleBtn")).toHaveCount(0);
+    await expect(page.locator("#missionBoard")).toBeHidden();
+    await openTips(page);
+    await expect(page.getByRole("checkbox", { name: /Show the Mission Board/ })).not.toBeChecked();
+  });
+
+  test("switched off, it never opens; turning it on in Tips shows the button on the running mission; turning it off closes the board", async ({ page }) => {
+    await setup(page, { ...KNOWN, "tsr:board:enabled": "0", "tsr:board:auto": "1" });
+    await loadMission(page, A, B, SC);
+    await expect(page.locator("#boardToggleBtn")).toHaveCount(0);
+    await expect(page.locator("#missionBoard")).toBeHidden(); // switched off beats auto-open
+
+    await openTips(page);
+    await page.getByRole("checkbox", { name: /Show the Mission Board/ }).check();
+    await page.locator("#tipsModalClose").click();
+    await openBoardUI(page);
+    await expect(val(page, `${A} health`)).toHaveText("5");
+    expect(await page.evaluate(() => localStorage.getItem("tsr:board:enabled"))).toBe("1");
+    expect(await page.evaluate(() => window.__events.filter(e => e[0] === "board_setting"))).toEqual([["board_setting", { on: true }]]);
+
+    await openTips(page);
+    await page.getByRole("checkbox", { name: /Show the Mission Board/ }).uncheck();
+    await page.locator("#tipsModalClose").click();
+    await expect(page.locator("#missionBoard")).toBeHidden();
+    await expect(page.locator("#boardToggleBtn")).toHaveCount(0);
+    expect(await page.evaluate(() => localStorage.getItem("tsr:board:session"))).toBeNull();
+
+    // Off stays off after a reload.
+    await page.reload();
+    await loadMission(page, A, B, SC);
+    await expect(page.locator("#boardToggleBtn")).toHaveCount(0);
+  });
+
+  test("a player who already used the board keeps it without touching the setting", async ({ page }) => {
+    await setup(page, { ...KNOWN, "tsr:board:enabled": null, "tsr:board:last": { health: 4, energy: { Easy: 4, Medium: 3, Hard: 2 } } });
+    await loadMission(page, A, B, SC);
+    await expect(page.locator("#boardToggleBtn")).toBeVisible();
+    await openTips(page);
+    await expect(page.getByRole("checkbox", { name: /Show the Mission Board/ })).toBeChecked();
+  });
 });
