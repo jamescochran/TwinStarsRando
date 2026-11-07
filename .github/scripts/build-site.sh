@@ -24,7 +24,7 @@ if ! [[ "$run" =~ ^[0-9]+$ ]]; then echo "bad run number: $run" >&2; exit 1; fi
 
 root=$(cd "$(dirname "$0")/../.." && pwd)
 mkdir -p "$out"
-cp "$root"/index.html "$root"/app.js "$root"/head.js "$root"/service-worker.js \
+cp "$root"/index.html "$root"/app.js "$root"/collection.js "$root"/insights.js "$root"/board.js "$root"/head.js "$root"/service-worker.js \
    "$root"/manifest.json "$root"/icon-*.png "$root"/apple-touch-icon.png "$root"/og-image.jpg "$out"/
 cp -R "$root"/rules "$out"/rules
 cp -R "$root"/fonts "$out"/fonts

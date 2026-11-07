@@ -26,6 +26,15 @@ const ALLOWED = {
   theme_toggle: ["theme"],
   undo: [],
   js_error: ["message", "file", "line"],
+  collection_change: ["items"],
+  shelf_open: [],
+  board_open: ["auto", "setup"],
+  board_setup_saved: ["tracks", "edit"],
+  board_record: ["result"],
+  lab_open: [],
+  gauntlet_start: ["scenarios"],
+  gauntlet_complete: ["wins", "total"],
+  gauntlet_share: [],
 };
 
 const rec = (i, extra = {}) => ({
