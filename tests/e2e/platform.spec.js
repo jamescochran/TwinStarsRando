@@ -289,3 +289,38 @@ test.describe("service worker update", () => {
     }
   });
 });
+
+test.describe("ambient radio", () => {
+  // SomaFM's stream servers answer 403 to requests referred by this site, which silenced the
+  // radio. The page sends no Referer to other origins, and the service worker leaves the
+  // stream to the browser. (The live stream itself is not fetched in tests.)
+  test("the page sets a same-origin referrer policy", async ({ page }) => {
+    await seed()(page);
+    await page.goto("/");
+    await expect(page.locator('meta[name="referrer"]')).toHaveAttribute("content", "same-origin");
+  });
+
+  test("the stream request carries no Referer, also from a page the service worker controls", async ({ page, browserName }) => {
+    // Linux WebKit loads media through GStreamer, outside the network layer Playwright can see.
+    test.skip(browserName === "webkit", "media requests are not observable in Playwright WebKit on Linux");
+    const seen = [];
+    await page.route(/somafm\.com/, async r => {
+      seen.push({ url: r.request().url(), referer: (await r.request().allHeaders())["referer"] || null });
+      await r.abort();
+    });
+    await seed()(page);
+    await page.goto("/");
+    await page.evaluate(() => navigator.serviceWorker.ready);
+    await page.reload(); // controlled by the service worker from the start, like a returning visitor
+    await page.evaluate(() => navigator.serviceWorker.ready);
+    await page.locator("#radioBtn").click();
+    await expect.poll(() => seen.length, { timeout: 10000 }).toBeGreaterThan(0);
+    expect(seen[0].url).toMatch(/missioncontrol/);
+    expect(seen.every(s => s.referer === null), JSON.stringify(seen)).toBe(true);
+  });
+
+  test("the service worker passes other origins straight through", async () => {
+    const sw = fs.readFileSync(path.resolve(__dirname, "../../service-worker.js"), "utf8");
+    expect(sw).toMatch(/new URL\(url\)\.origin !== self\.location\.origin\) return;/);
+  });
+});

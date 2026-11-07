@@ -56,6 +56,8 @@ self.addEventListener("fetch", e => {
   }
   // Non-GET requests (e.g. analytics POSTs) go straight to the network, never the cache.
   if (e.request.method !== "GET") return;
+  // Other sites (the radio stream, analytics) are left to the browser: never proxied or cached.
+  if (new URL(url).origin !== self.location.origin) return;
   e.respondWith(
     caches.match(e.request).then(cached => cached || fetch(e.request))
   );
