@@ -234,7 +234,7 @@
     const check = () => { if (todayUTC() !== shown) { shown = todayUTC(); render(); } };
     document.addEventListener("visibilitychange", () => { if (!document.hidden) check(); });
     setInterval(check, 60000);
-    window.addEventListener("storage", e => { if (e.key === DAILY_KEY || e.key === "enabledPacks" || e.key === null) render(); });
+    window.addEventListener("storage", e => { if (e.key === DAILY_KEY || e.key === "enabledPacks" || e.key === "ownedItems" || e.key === null) render(); });
   }
 
   window.tsrDaily = { missionFor, todayUTC, streakFor, shareText, shiftDay, render };
