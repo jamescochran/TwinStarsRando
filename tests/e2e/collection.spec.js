@@ -47,7 +47,7 @@ test.describe("ownership by item", () => {
     await expect(page.locator("#packItems-series1")).toBeVisible();
     // Keep 2 scenarios and 3 characters of Series 1.
     for (const s of ["Rule The World!", "Stop The Virus!", "Hunt The Bounty!", "Steal The Plans!"]) {
-      await page.getByRole("checkbox", { name: new RegExp(s.replace(/[!]/g, "\\$&")) }).uncheck();
+      await page.getByRole("checkbox", { name: s }).uncheck();
     }
     for (const c of ["Fanoobia", "Inpon Gol", "Grant Rockgardner", "Roux Jaezmina", "Yanfred Jima", "Saaze", "Inzill Mey", "Strezelsior", "Kinglan"]) {
       await page.getByRole("checkbox", { name: c, exact: true }).uncheck();
