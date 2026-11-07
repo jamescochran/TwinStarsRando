@@ -675,6 +675,8 @@
     }
     _lastPlayed = p ? p.played : 0;
   });
+  // My Collection changed (this tab or another): the Gauntlet's pair pickers use the owned pools.
+  document.addEventListener("tsr:collection-changed", () => { labDirty = true; if (logVisible()) renderLab(); renderGauntlet(); });
   // The loaded mission changes what the bar says ("Play next" vs "now playing").
   ["generateBtn", "loadManualCombo"].forEach(id => { const el = $(id); if (el) el.addEventListener("click", () => setTimeout(() => renderBar(), 0)); });
   document.addEventListener("click", e => { if (e.target.closest && e.target.closest("#discardGameConfirm, #unplayedContainer")) setTimeout(() => renderBar(), 0); });
