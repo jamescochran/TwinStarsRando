@@ -934,6 +934,8 @@ function getCurrentElapsed() {
     } else {
       timerEl.setAttribute("aria-label", "Timer running");
     }
+    // Hook for feature scripts (teach.js setup checklist) that add to the mission card.
+    document.dispatchEvent(new CustomEvent("tsr:combo-rendered", { detail: comb }));
   }
 
   function displayComboHistory(comb) {
@@ -1020,10 +1022,14 @@ function getCurrentElapsed() {
     const total  = characters.length * (characters.length - 1) * scenarios.length;
     const played = total - unplayed.length;
 
+    const totals = comboTotals(characters.length, scenarios.length);
+    const ownedChars = new Set(characters), ownedScens = new Set(scenarios);
+    const playedPairs = new Set(records.filter(r => r.characters.every(c => ownedChars.has(c)) && ownedScens.has(r.scenario)).map(r => pairKey(r)));
     container.innerHTML = `
       <p class="panel-intro">
         <strong class="text-teal">${played}</strong> of <strong>${total}</strong> combinations played
       </p>
+      <p class="stats-combo-note">Your collection, counting Primary/Secondary order as the app plays. As printed on the box (either order): ${playedPairs.size} of ${totals.unordered}.</p>
       <p class="sr-only" id="unplayedHint">Up and down arrow keys move between combinations; Tab leaves the list.</p>
       <div class="unplayed-grid" id="unplayedGrid" role="list" aria-label="Unplayed combinations" aria-describedby="unplayedHint"></div>`;
 
@@ -1223,6 +1229,34 @@ function getCurrentElapsed() {
     root.querySelectorAll("table, thead, tbody, tr, th, td").forEach(el => el.setAttribute("role", roles[el.tagName]));
   }
 
+  // Stats scope (logic audit M6): every figure uses ONE scope, named above the figures.
+  //  "collection" (default): records whose characters, scenario and droid are all owned,
+  //                          measured against the combinations the collection can make.
+  //  "all": every logged game, measured against everything published.
+  let statsScope = "collection";
+  try { if (localStorage.getItem("statsScope") === "all") statsScope = "all"; } catch(e) {}
+  function setStatsScope(scope) {
+    statsScope = scope === "all" ? "all" : "collection";
+    try { localStorage.setItem("statsScope", statsScope); } catch(e) {}
+    displayStats();
+    const btn = document.getElementById(statsScope === "all" ? "statsScopeAll" : "statsScopeCollection");
+    if (btn) btn.focus();
+  }
+  // A percentage that never hides progress: 1 of 792 is "<1%", not "0%".
+  function pctText(n, total) {
+    if (!total) return "&#x2014;";
+    const p = n / total * 100;
+    if (n > 0 && p < 1) return "&lt;1%";
+    if (n < total && p > 99) return "&gt;99%";
+    return Math.round(p) + "%";
+  }
+  function pairKey(comb) { return [...comb.characters].sort().join("\x1F") + "\x1E" + comb.scenario; }
+  // Combination totals both ways: ordered (Primary/Secondary, as the app plays) and
+  // unordered (as printed on the box).
+  function comboTotals(nChars, nScen) {
+    return { ordered: nChars * (nChars - 1) * nScen, unordered: nChars * (nChars - 1) / 2 * nScen };
+  }
+
   function displayStats() {
     statsDirty = false;
     const el = document.getElementById("statsContent");
@@ -1233,43 +1267,57 @@ function getCurrentElapsed() {
       return;
     }
 
-    const total  = records.length;
-    const wins   = records.filter(r => r.result === "Win").length;
-    const winPct = Math.round(wins / total * 100);
+    const all = statsScope === "all";
+    const chars = all ? ALL_CHARACTERS_SET : new Set(characters);
+    const scens = all ? ALL_SCENARIOS_SET  : new Set(scenarios);
+    const drds  = all ? ALL_DROIDS_SET     : new Set(droids);
+    const recs  = all ? records : records.filter(r =>
+      r.characters.every(c => chars.has(c)) && scens.has(r.scenario) && (r.droid == null || drds.has(r.droid)));
 
-    const totalPossible = characters.length * (characters.length - 1) * scenarios.length;
-    // Only combos reachable with the currently enabled packs count towards completion,
-    // matching the "N of M combinations played" line in Unplayed Combinations.
-    const activeChars = new Set(characters), activeScenes = new Set(scenarios);
-    const playedKeys  = new Set(records
-      .filter(r => r.characters.every(c => activeChars.has(c)) && activeScenes.has(r.scenario))
-      .map(r => comboKey(r)));
-    const completedPct  = totalPossible > 0 ? Math.round(playedKeys.size / totalPossible * 100) : 0;
+    const scopeHTML = `
+      <div class="stats-scope" role="group" aria-label="Statistics scope">
+        <button type="button" class="stats-scope-btn" id="statsScopeCollection" aria-pressed="${!all}">Your collection</button>
+        <button type="button" class="stats-scope-btn" id="statsScopeAll" aria-pressed="${all}">All logged games</button>
+      </div>
+      <p class="stats-scope-note" id="statsScopeNote">${all
+        ? `Showing <strong>all ${records.length} logged games</strong>, against everything published.`
+        : `Showing <strong>your collection</strong>: ${recs.length} of ${records.length} logged games use only items you own.`}</p>`;
+
+    const total  = recs.length;
+    const wins   = recs.filter(r => r.result === "Win").length;
+    const totals = comboTotals(chars.size, scens.size);
+    const playedKeys = new Set(recs.map(r => comboKey(r)));
+    const playedPairs = new Set(recs.map(r => pairKey(r)));
 
     // ── Summary row ──
-    let html = `<div class="stats-summary">
+    let html = scopeHTML + `<div class="stats-summary">
       <div class="stats-summary-card">
         <div class="stats-summary-value">${total}</div>
         <div class="stats-summary-label">Games</div>
       </div>
       <div class="stats-summary-card">
-        <div class="stats-summary-value">${winPct}%</div>
+        <div class="stats-summary-value">${pctText(wins, total)}</div>
         <div class="stats-summary-label">Win Rate</div>
+        <div class="stats-summary-sub">${wins} of ${total} won</div>
       </div>
       <div class="stats-summary-card">
-        <div class="stats-summary-value">${completedPct}%</div>
+        <div class="stats-summary-value is-small">${playedKeys.size} of ${totals.ordered}</div>
         <div class="stats-summary-label">Combos Played</div>
+        <div class="stats-summary-sub">${pctText(playedKeys.size, totals.ordered)}</div>
       </div>
-    </div>`;
+    </div>
+    <p class="stats-combo-note">Combos count Primary/Secondary order, as the app plays: <strong>${playedKeys.size} of ${totals.ordered}</strong> ordered combinations.
+      Counted as on the box (either order): <strong>${playedPairs.size} of ${totals.unordered}</strong> unordered combinations (${pctText(playedPairs.size, totals.unordered)}).</p>`;
 
     // ── Playtime ──
-    const timed = records.filter(r => r.playtime != null && r.playtime > 0);
+    const timed = recs.filter(r => r.playtime != null && r.playtime > 0);
     if (timed.length) {
       const times    = timed.map(r => r.playtime);
       const avg      = Math.round(times.reduce((a, b) => a + b, 0) / times.length);
-      const longest  = Math.max(...times);
-      const shortest = Math.min(...times);
+      const longest  = times.reduce((a, b) => Math.max(a, b), 0);
+      const shortest = times.reduce((a, b) => Math.min(a, b), Infinity);
       html += `<h3 class="section-heading">Playtime</h3>
+      <p class="stats-combo-note">From ${timed.length} of ${total} games with a recorded time.</p>
       <div class="stats-playtime">
         <div class="stats-summary-card">
           <div class="stats-summary-value is-small">${formatTime(avg)}</div>
@@ -1287,11 +1335,10 @@ function getCurrentElapsed() {
     }
 
     // ── Droid coverage ──
-    if (droids.length) {
-      const droidRecs = records.filter(r => r.droid && playedKeys.has(comboKey(r)));
+    const droidRecs = recs.filter(r => r.droid);
+    if (all ? droidRecs.length > 0 : droids.length > 0) {
       const combosWithDroid = new Set(droidRecs.map(r => comboKey(r)));
       const totalPlayed = playedKeys.size;
-      const coveragePct = totalPlayed > 0 ? Math.round(combosWithDroid.size / totalPlayed * 100) : 0;
       html += `<h3 class="section-heading">Droid Coverage</h3>
       <div class="stats-summary">
         <div class="stats-summary-card">
@@ -1299,17 +1346,21 @@ function getCurrentElapsed() {
           <div class="stats-summary-label">Combos with Droid</div>
         </div>
         <div class="stats-summary-card">
-          <div class="stats-summary-value">${totalPlayed > 0 ? coveragePct + "%" : "&#x2014;"}</div>
+          <div class="stats-summary-value is-small">${combosWithDroid.size} of ${totalPlayed}</div>
           <div class="stats-summary-label">of Played Combos</div>
+          <div class="stats-summary-sub">${pctText(combosWithDroid.size, totalPlayed)}</div>
         </div>
         <div class="stats-summary-card">
           <div class="stats-summary-value is-yellow">${droidRecs.length}</div>
           <div class="stats-summary-label">Droid Games</div>
+          <div class="stats-summary-sub">${droidRecs.length} of ${total} games</div>
         </div>
       </div>`;
     }
 
     el.innerHTML = html;
+    document.getElementById("statsScopeCollection").addEventListener("click", () => setStatsScope("collection"));
+    document.getElementById("statsScopeAll").addEventListener("click", () => setStatsScope("all"));
   }
 
   // ─── Content packs ──────────────────────────────────────────────────────────
@@ -1327,73 +1378,89 @@ function getCurrentElapsed() {
     const playable = new Set(active.flatMap(p => p.characters)).size >= 2 && active.some(p => p.scenarios.length);
     return playable ? set : fallback;
   }
-  let enabledPacks;
-  try { enabledPacks = parseEnabledPacks(localStorage.getItem("enabledPacks")); }
-  catch(e) { enabledPacks = new Set(["series1"]); }
+  // ─── Ownership by item (collection) ─────────────────────────────────────────
+  // What the player owns is a set of item ids: "s:<scenario>", "c:<character>", "d:<droid>".
+  // It is stored under "ownedItems" as { v:1, items:[...], packs:"<signature>" }. The legacy
+  // "enabledPacks" key is still written (every pack with at least one owned item) so older
+  // versions, the rulebook tabs and other tabs keep working. "packs" records which
+  // enabledPacks value the items were saved with: if enabledPacks no longer matches (an older
+  // version in another tab, or a value saved before this feature), the packs win and the
+  // items are re-derived from them, so no stored shape is ever misread.
+  function packItemIds(pack) {
+    return [...pack.scenarios.map(n => "s:" + n), ...pack.characters.map(n => "c:" + n), ...(pack.droids || []).map(n => "d:" + n)];
+  }
+  // Booklets ("b:") are tracked for the Collection Shelf only; they are in no pack.
+  const ALL_ITEM_IDS = new Set([...CONTENT_PACKS.flatMap(packItemIds), "b:syzygy1", "b:syzygy2"]);
+  function itemsFromPacks(packSet) {
+    return new Set(CONTENT_PACKS.filter(p => packSet.has(p.id)).flatMap(packItemIds));
+  }
+  function packsFromItems(items) {
+    return new Set(CONTENT_PACKS.filter(p => packItemIds(p).some(id => items.has(id))).map(p => p.id));
+  }
+  function packSignature(packSet) { return [...packSet].sort().join(","); }
+  function itemCounts(items) {
+    let c = 0, s = 0, d = 0;
+    for (const id of items) { if (id[0] === "c") c++; else if (id[0] === "s") s++; else if (id[0] === "d") d++; }
+    return { characters: c, scenarios: s, droids: d };
+  }
+  function isPlayableItems(items) {
+    const n = itemCounts(items);
+    return n.characters >= 2 && n.scenarios >= 1;
+  }
+  const MIN_CONTENT_MSG = "You need at least 2 characters and 1 scenario to play, so that change was undone.";
+  function parseOwnedItems(rawItems, rawPacks) {
+    const packs = parseEnabledPacks(rawPacks);
+    try {
+      const v = rawItems ? JSON.parse(rawItems) : null;
+      if (v && typeof v === "object" && Array.isArray(v.items) && v.packs === packSignature(packs)) {
+        const items = new Set(v.items.filter(id => typeof id === "string" && ALL_ITEM_IDS.has(id)));
+        if (isPlayableItems(items)) return items;
+      }
+    } catch(e) {}
+    return itemsFromPacks(packs);
+  }
+  let ownedItems, enabledPacks;
+  try { ownedItems = parseOwnedItems(localStorage.getItem("ownedItems"), localStorage.getItem("enabledPacks")); }
+  catch(e) { ownedItems = itemsFromPacks(new Set(["series1"])); }
+  enabledPacks = packsFromItems(ownedItems);
+  function ownsAllScenarios(id) {
+    const p = CONTENT_PACKS.find(x => x.id === id);
+    return !!p && p.scenarios.length > 0 && p.scenarios.every(n => ownedItems.has("s:" + n));
+  }
 
   function saveEnabledPacks() {
+    enabledPacks = packsFromItems(ownedItems);
+    const order = [...ALL_ITEM_IDS].filter(id => ownedItems.has(id));
+    // ownedItems first: another tab reacting to the enabledPacks event then sees matching items.
+    try { localStorage.setItem("ownedItems", JSON.stringify({ v: 1, items: order, packs: packSignature(enabledPacks) })); } catch(e) {}
     try { localStorage.setItem("enabledPacks", JSON.stringify([...enabledPacks])); } catch(e) {}
   }
 
   function buildActiveContent() {
+    enabledPacks = packsFromItems(ownedItems);
     const active = CONTENT_PACKS.filter(p => enabledPacks.has(p.id));
-    characters = [...new Set(active.flatMap(p => p.characters))];
-    scenarios  = [...new Set(active.flatMap(p => p.scenarios))].sort(
+    const owned = (prefix, names) => names.filter(n => ownedItems.has(prefix + n));
+    characters = [...new Set(active.flatMap(p => owned("c:", p.characters)))];
+    scenarios  = [...new Set(active.flatMap(p => owned("s:", p.scenarios)))].sort(
       (a, b) => (parseInt(SCENARIO_NUMBER[a] || "99") - parseInt(SCENARIO_NUMBER[b] || "99"))
     );
-    droids = [...new Set(active.flatMap(p => p.droids || []))];
+    droids = [...new Set(active.flatMap(p => owned("d:", p.droids || [])))];
     // Reset current droid if it's no longer available
     if (_currentDroid && !droids.includes(_currentDroid)) _currentDroid = null;
     // Update the label below the header so the user can always see what's active
     const label = document.getElementById("activePacksLabel");
-    if (label) label.textContent = "Collection: " + active.map(p => p.shortName).join(" · ");
+    if (label) label.textContent = "Collection: " + active.map(p => {
+      const ids = packItemIds(p), n = ids.filter(i => ownedItems.has(i)).length;
+      return n === ids.length ? p.shortName : `${p.shortName} (${n} of ${ids.length})`;
+    }).join(" · ");
   }
 
   let _packsAtOpen = "";
   function openSettings() {
-    _packsAtOpen = [...enabledPacks].sort().join();
-    const list = document.getElementById("packList");
-    list.innerHTML = "";
-    CONTENT_PACKS.forEach(pack => {
-      const item = document.createElement("label");
-      item.className  = "pack-item";
-      item.htmlFor    = "pack-" + pack.id;
-      const cb = document.createElement("input");
-      cb.type    = "checkbox";
-      cb.id      = "pack-" + pack.id;
-      cb.checked = enabledPacks.has(pack.id);
-      cb.addEventListener("change", () => {
-        if (cb.checked) {
-          enabledPacks.add(pack.id);
-        } else {
-          enabledPacks.delete(pack.id);
-        }
-        // Require at least 2 characters and 1 scenario to play
-        const testChars = CONTENT_PACKS.filter(p => enabledPacks.has(p.id)).flatMap(p => p.characters);
-        const testScens = CONTENT_PACKS.filter(p => enabledPacks.has(p.id)).flatMap(p => p.scenarios);
-        const warn = document.getElementById("settingsWarning");
-        if (testChars.length < 2 || testScens.length === 0) {
-          warn.textContent = "Keep at least one pack with characters and scenarios ticked (for example Series 1 or Series 2).";
-          cb.checked = !cb.checked;
-          if (cb.checked) enabledPacks.add(pack.id); else enabledPacks.delete(pack.id);
-        } else {
-          warn.textContent = "";
-        }
-      });
-      const info = document.createElement("div");
-      info.className = "pack-item-info";
-      info.innerHTML = `<div class="pack-item-name">${esc(pack.name)}</div><div class="pack-item-desc">${esc(pack.desc)}</div>`;
-      item.appendChild(cb);
-      item.appendChild(info);
-      list.appendChild(item);
-    });
+    _packsAtOpen = [...ownedItems].sort().join();
     document.getElementById("settingsWarning").textContent = "";
-    // Focus the first interactive element inside the modal once it's visible.
+    renderCollection(); // collection.js: packs, items, presets and the Collection Shelf
     openModal("settingsModal", "pack-" + CONTENT_PACKS[0].id);
-    setTimeout(() => {
-      const first = document.querySelector("#settingsModal input, #settingsModal button");
-      if (first) first.focus();
-    }, 0);
   }
 
   function closeSettings() {
@@ -1401,7 +1468,8 @@ function getCurrentElapsed() {
     saveEnabledPacks();
     applyPacks();
     closeModal("settingsModal");
-    if (_packsAtOpen && _packsAtOpen !== [...enabledPacks].sort().join()) {
+    if (_packsAtOpen && _packsAtOpen !== [...ownedItems].sort().join()) {
+      track("collection_change", { items: ownedItems.size });
       announce(`Collection updated: ${characters.length} characters, ${scenarios.length} scenarios${droids.length ? `, ${droids.length} droids` : ""}.`);
     }
     _packsAtOpen = "";
@@ -1430,6 +1498,8 @@ function getCurrentElapsed() {
     displayHistory();
     displayUnplayed();
     displayStats();
+    // Feature scripts that draw from the owned pools (insights.js) re-render from this.
+    document.dispatchEvent(new Event("tsr:collection-changed"));
   }
 
   // ─── Generic modal helpers ───────────────────────────────────────────────────
@@ -1998,6 +2068,7 @@ function getCurrentElapsed() {
     document.getElementById("saveRecordBtn").textContent = "Save Record";
     document.getElementById("saveStatus").classList.add("hidden");
     announce(`Mission loaded: ${comb.characters[0]} and ${comb.characters[1]}, ${scenarioText(comb.scenario)}. Timer started.`);
+    document.dispatchEvent(new CustomEvent("tsr:mission-loaded", { detail: comb }));
     if (opts && opts.focusCard) document.getElementById("comboHeading").focus({ preventScroll: true });
 
     // Selectors show exactly the loaded mission (Character 1 = Primary). A lock the
@@ -2122,6 +2193,7 @@ function getCurrentElapsed() {
     statusText.focus();
     toast("Record saved to Mission Log.");
     track("save_record", { result, difficulty });
+    document.dispatchEvent(new CustomEvent("tsr:record-saved", { detail: rec }));
   }
 
   // `list` overrides what is exported (the storage-error banner exports unsaved changes too).
@@ -2991,12 +3063,13 @@ function getCurrentElapsed() {
   }
 
   function szRenderSetup(el) {
-    const hasSeries1 = enabledPacks.has("series1");
-    const hasSeries2 = enabledPacks.has("series2");
+    // A campaign uses all 6 scenario cards of one series, so it needs every one of them owned.
+    const hasSeries1 = ownsAllScenarios("series1");
+    const hasSeries2 = ownsAllScenarios("series2");
     const canMode2   = hasSeries1 || hasSeries2;
     if (_szMode === "syzygy1" && !hasSeries1) _szMode = null;
     if (_szMode === "syzygy2" && !canMode2)   _szMode = null;
-    if (!_szSet || !enabledPacks.has(_szSet)) _szSet = hasSeries2 ? "series2" : "series1";
+    if (!_szSet || !ownsAllScenarios(_szSet)) _szSet = hasSeries2 ? "series2" : "series1";
     const allChars = characters;
 
     const modeCard = (id, mode, title, desc, req, ok) => `
@@ -3009,9 +3082,9 @@ function getCurrentElapsed() {
     const modeHTML = `
       <div class="syzygy-mode-cards">
         ${modeCard("szSel1", "syzygy1", "SYZYGY I", "Pay off your debt to the Grosksh. Four scenarios: A, then one card in B, one in C, then D. Lose once and you retry with 3 resources; lose twice and it's over.",
-          hasSeries1 ? "Uses the 6 Series 1 scenarios" : "<em>Needs Series 1 (turn it on in My Collection)</em>", hasSeries1)}
+          hasSeries1 ? "Uses the 6 Series 1 scenarios" : "<em>Needs Series 1: all 6 of its scenarios (tick them in My Collection)</em>", hasSeries1)}
         ${modeCard("szSel2", "syzygy2", "SYZYGY II: Waypoint", "Stranded across the universe. Six scenarios in a pyramid: win 3 to get home, a loss sends you down the red arrows. No retries.",
-          canMode2 ? "Uses the 6 scenarios of one Adventure Series" : "<em>Needs an Adventure Series (turn on Series 1 or 2 in My Collection)</em>", canMode2)}
+          canMode2 ? "Uses the 6 scenarios of one Adventure Series" : "<em>Needs an Adventure Series: all 6 scenarios of Series 1 or 2 (My Collection)</em>", canMode2)}
       </div>`;
 
     let setHTML = "";
@@ -3736,15 +3809,15 @@ function getCurrentElapsed() {
   function reloadPacksFromStorage() {
     if (document.getElementById("settingsModal").classList.contains("open")) return; // this tab is editing them
     let next;
-    try { next = parseEnabledPacks(localStorage.getItem("enabledPacks")); } catch(e) { return; }
-    if ([...next].sort().join() === [...enabledPacks].sort().join()) return;
-    enabledPacks = next;
+    try { next = parseOwnedItems(localStorage.getItem("ownedItems"), localStorage.getItem("enabledPacks")); } catch(e) { return; }
+    if ([...next].sort().join() === [...ownedItems].sort().join()) return;
+    ownedItems = next;
     applyPacks();
   }
   window.addEventListener("storage", e => {
     if (e.storageArea && e.storageArea !== localStorage) return;
     if (e.key === null || e.key === "gameRecords")  reloadRecordsFromStorage();
-    if (e.key === null || e.key === "enabledPacks") reloadPacksFromStorage();
+    if (e.key === null || e.key === "enabledPacks" || e.key === "ownedItems") reloadPacksFromStorage();
     // Another tab changed the SYZYGY campaign: reload it so this tab can't overwrite it with stale state.
     if (e.key === null || e.key === "syzygyCampaign" || e.key === "syzygyCampaignV1") {
       loadSzCampaign(false);
