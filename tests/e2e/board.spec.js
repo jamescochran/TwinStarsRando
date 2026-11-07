@@ -383,7 +383,11 @@ test.describe("opt-in setting", () => {
     await expect(page.locator("#boardToggleBtn")).toHaveCount(0);
     await expect(page.locator("#missionBoard")).toBeHidden();
     await openTips(page);
-    await expect(page.getByRole("checkbox", { name: /Show the Mission Board/ })).not.toBeChecked();
+    const box = page.getByRole("checkbox", { name: /Show the Mission Board/ });
+    await expect(box).not.toBeChecked();
+    // The setting explains what the board is, visibly and to screen readers.
+    await expect(page.locator("#boardSettingHint")).toBeVisible();
+    await expect(box).toHaveAccessibleDescription(/instead of with tokens or paperclips/);
   });
 
   test("switched off, it never opens; turning it on in Tips shows the button on the running mission; turning it off closes the board", async ({ page }) => {
@@ -417,6 +421,7 @@ test.describe("opt-in setting", () => {
     await setup(page, { ...KNOWN, "tsr:board:enabled": null, "tsr:board:last": { health: 4, energy: { Easy: 4, Medium: 3, Hard: 2 } } });
     await loadMission(page, A, B, SC);
     await expect(page.locator("#boardToggleBtn")).toBeVisible();
+    await expect(page.locator("#boardToggleBtn")).toHaveAttribute("title", /health, the shared energy pool/);
     await openTips(page);
     await expect(page.getByRole("checkbox", { name: /Show the Mission Board/ })).toBeChecked();
   });

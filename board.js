@@ -23,6 +23,8 @@
   const K_AUTO    = "tsr:board:auto";
   const K_LAST    = "tsr:board:last";
   const K_ENABLED = "tsr:board:enabled";
+  // What the board is, shown as the button's tooltip (and in Tips & Features).
+  const ABOUT = "Tracks the game on screen instead of with tokens or paperclips: tap counters for each character's health, the shared energy pool, and up to 4 scenario tracks you name. You type each card's starting numbers once and the app remembers them.";
   const kChar = n => "tsr:board:char:" + n;
   const kScn  = n => "tsr:board:scenario:" + n;
   const DIFFS = ["Easy", "Medium", "Hard"];
@@ -182,6 +184,7 @@
     const row = document.createElement("div");
     row.className = "board-row";
     row.innerHTML = `<button type="button" class="btn btn-secondary btn-board" id="boardToggleBtn" aria-controls="missionBoard"></button>`;
+    row.firstChild.title = ABOUT;
     const anchor = card.querySelector(".timer-row");
     if (anchor) anchor.after(row); else card.appendChild(row);
     row.firstChild.addEventListener("click", () => { if (S && S.open) closeBoard(true); else openBoard({ focus: true }); });

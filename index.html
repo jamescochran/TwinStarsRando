@@ -2851,6 +2851,7 @@
     .tips-teach-btn { width: 100%; margin-bottom: var(--space-2); }
     .tips-toggle { display: flex; align-items: center; gap: var(--space-2); font-size: var(--fs-md); color: var(--text-muted); min-height: 44px; cursor: pointer; }
     .tips-toggle input { width: 20px; height: 20px; accent-color: var(--accent-teal); flex-shrink: 0; }
+    .tips-content .tips-toggle-hint { margin: -6px 0 var(--space-2) calc(20px + var(--space-2)); font-size: var(--fs-sm); color: var(--text-muted); line-height: var(--lh-body); }
     .teach-box { max-width: 440px; }
     .teach-progress-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-2); }
     .modal-box p.teach-progress { margin: 0; font-family: var(--font-display); font-size: var(--fs-label); letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--text-dim); }
@@ -4220,7 +4221,8 @@
       <h3 class="tips-section-heading">New to Twin Stars?</h3>
       <button type="button" class="btn btn-secondary tips-teach-btn" id="teachTipsBtn">Learn to play (about 2 minutes)</button>
       <label class="tips-toggle"><input type="checkbox" id="railSetting"> Show turn steps in the Dice Roller</label>
-      <label class="tips-toggle"><input type="checkbox" id="boardSetting"> Show the Mission Board: on-screen health, energy and scenario tracks</label>
+      <label class="tips-toggle"><input type="checkbox" id="boardSetting" aria-describedby="boardSettingHint"> Show the Mission Board</label>
+      <p class="tips-toggle-hint" id="boardSettingHint">Tracks the game on screen instead of with tokens or paperclips: tap counters for each character&#39;s health, the shared energy pool, and up to 4 scenario tracks you name. You type each card&#39;s starting numbers once and the app remembers them. A Mission Board button then appears under the timer.</p>
       <h3 class="tips-section-heading">Randomizing</h3>
       <ul class="tips-list">
         <li>Lock <span aria-hidden="true">🔒</span> any character or scenario to keep it when you randomize</li>
