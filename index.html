@@ -12,6 +12,9 @@
   <meta name="apple-mobile-web-app-title" content="Twin Stars">
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+  <!-- Send no Referer to other sites. SomaFM's stream servers refuse requests referred by this
+       site (403), which silenced the ambient radio; it is also more private for every outside link. -->
+  <meta name="referrer" content="same-origin">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://umami.1jc.in; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src https://umami.1jc.in; img-src 'self' data:; manifest-src 'self'; worker-src 'self'; media-src https://*.somafm.com;">
   <!-- Anti-clickjacking (OWASP frame-busting): hidden until head.js confirms we are top-level.
        GitHub Pages can't send frame-ancestors / X-Frame-Options, and meta CSP can't set frame-ancestors. -->
